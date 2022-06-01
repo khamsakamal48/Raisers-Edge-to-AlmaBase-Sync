@@ -8,6 +8,22 @@ If you encounter error on installing pyscopg2, then try:
 
 pip3 install psycopg2-binary
 
+Install PostgreSQL
+
+CREATE DATABASE "re-almabase-sync"
+
+CREATE TABLE all_alums_in_re
+(
+    system_id character varying,
+    name character varying
+);
+
+CREATE TABLE alread_synced
+(
+    system_id character varying,
+    name character varying
+);
+
 Create a .env file with below parameters
 DB_IP=
 DB_NAME=
