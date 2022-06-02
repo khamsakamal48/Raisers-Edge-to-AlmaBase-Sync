@@ -25,6 +25,7 @@ SMTP_PORT = os.getenv("SMTP_PORT")
 SEND_TO  = os.getenv("SEND_TO")
 ALMABASE_API_KEY = os.getenv("ALMABASE_API_KEY")
 ALMABASE_API_TOKEN = os.getenv("ALMABASE_API_TOKEN")
+RE_LIST_ID_1 = os.getenv("RE_LIST_ID_1")
 
 # Housekeeping
 fileList = glob.glob('Alums_in_RE_*.json')
@@ -50,7 +51,7 @@ headers = {
 # List link - https://host.nxt.blackbaud.com/lists/shared-list/da749c96-9f38-4580-95e4-1d188f788d5e?envid=p-dzY8gGigKUidokeljxaQiA
 # Request parameters for Blackbaud API request
 params = {
-    'list_id':'da749c96-9f38-4580-95e4-1d188f788d5e',
+    'list_id':RE_LIST_ID_1,
     'limit':'5000'
 }
 
