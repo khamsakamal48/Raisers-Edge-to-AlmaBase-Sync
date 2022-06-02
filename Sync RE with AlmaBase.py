@@ -39,10 +39,24 @@ def get_request_re():
     'Authorization': 'Bearer ' + access_token,
     }
     
-    global api_response
-    api_response = requests.get(url, params=params, headers=headers).json()
+    global re_api_response
+    re_api_response = requests.get(url, params=params, headers=headers).json()
     
     check_for_errors()
+
+def get_request_almabase():
+    # Request Headers for AlmaBase API request
+    headers = {
+        'Accept': 'application/json',
+        'X-API-Access-Key': ALMABASE_API_KEY,
+        'X-API-Access-Token': ALMABASE_API_TOKEN,
+    }
+    
+    print(headers)
+    global ab_api_response
+    ab_api_response = requests.get(url, headers=headers).json()
+    
+    # check_for_errors()
   
 def post_request_re():
     headers = {
@@ -52,8 +66,8 @@ def post_request_re():
     'Content-Type': 'application/json',
     }
     
-    global api_response
-    api_response = requests.post(url, params=params, headers=headers, json=params).json()
+    global re_api_response
+    re_api_response = requests.post(url, params=params, headers=headers, json=params).json()
     
     check_for_errors()
 
@@ -65,22 +79,22 @@ def patch_request_re():
     'Content-Type': 'application/json'
     }
     
-    global api_response
-    api_response = requests.patch(url, headers=headers, data=params)
+    global re_api_response
+    re_api_response = requests.patch(url, headers=headers, data=params)
     
     check_for_errors()
     
 def check_for_errors():
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
     
-    if any(x in api_response for x in error_keywords):
+    if any(x in re_api_response for x in error_keywords):
         # Send emails
         print ("Will send email now")
         send_error_emails()
 
 def send_error_emails():
     print ("Calling function Send error emails")
-    print (api_response)
+    print (re_api_response)
     # message = MIMEMultipart("alternative")
     # message["Subject"] = "Unable to find Alum in Raisers Edge for Stay Connected"
     # message["From"] = MAIL_USERN
@@ -144,7 +158,7 @@ def send_error_emails():
     # emailbody = MIMEText(
     # Environment().from_string(TEMPLATE).render(
     #     job_name="Updates from Stay Connected",
-    #     error_log_message=api_response,
+    #     error_log_message=re_api_response,
     #     current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
     #     ), "html"
     # )
@@ -193,5 +207,22 @@ re_system_id = result[0]
 # Get email list
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses" % re_system_id
 
+params = {
+        #'search_text':search_text
+    }
+
 # Blackbaud API GET request
 get_request_re()
+
+# Search in AlmaBase
+for address in re_api_response['value']:
+    try:
+        email = (address['address'])
+        print(email)
+        url = "https://api.almabaseapp.com/api/v1/profiles?page=1&page_size=1&search=%s" % email
+        print(url)
+        get_request_almabase()
+        print(ab_api_response)
+    except:
+        # Can't find Alum in AlmaBase
+        pass
