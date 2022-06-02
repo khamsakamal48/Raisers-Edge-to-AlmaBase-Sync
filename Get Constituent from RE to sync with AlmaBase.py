@@ -61,7 +61,6 @@ url = 'https://api.sky.blackbaud.com/constituent/v1/constituents'
 while url:
     # Blackbaud API GET request
     response = requests.get(url, params=params, headers=headers).json()
-    print(response)
 
     # Incremental File name
     i = 1
