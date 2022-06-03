@@ -696,7 +696,7 @@ result = cur.fetchone()
 re_system_id = result[0]
 
 # Get email list from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses" % re_system_id
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
 
 params = {
         #'search_text':search_text
@@ -743,6 +743,8 @@ for address in ab_profile['email_addresses']:
     except:
         pass
 
+print(ab_email_list)
+
 re_email_list = []
 for address in re_api_response['value']:
     try:
@@ -784,8 +786,8 @@ if missing_in_re != []:
 # Finding missing email addresses to be added in AlmaBase
 set1 = set([i for i in re_email_list if i])
 set2 = set(ab_email_list)
-print(set1)
-print(set2)
 
 missing_in_ab = list(sorted(set1 - set2))
 print(missing_in_ab)
+
+print(ab_api_response)
