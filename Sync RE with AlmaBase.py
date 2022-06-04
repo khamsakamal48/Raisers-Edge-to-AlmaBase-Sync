@@ -881,3 +881,40 @@ for each_id in blank_email_ids:
                send_error_emails()
     except:
         pass
+# Get list of of phone numbers in RE
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
+get_request_re()
+
+re_phone_list = []
+for each_phone in re_api_response['value']:
+    try:
+        phones = re.sub("[^0-9]", "",(each_phone['number']))
+        re_phone_list.append(phones)
+    except:
+        pass
+    
+# Get list of phone numbers in AlmaBase
+url = "https://api.almabaseapp.com/api/v1/profiles/%s/phone_numbers" % ab_system_id
+get_request_almabase()
+
+ab_phone_list = []
+for each_phone in ab_api_response['results']:
+    try:
+        phones = re.sub("[^0-9]", "",(each_phone['number']))
+        ab_phone_list.append(phones)
+    except:
+        pass
+
+# Get list of available custom fields starting with phone, fax, mobile, pager
+regex = re.compile('\w+phone|\w+fax|\w+mobile|\w+pager')
+phone_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+
+blank_phone_ids = []
+for each_id in phone_id_list:
+    try:
+        phones = re.sub("[^0-9]", "",(ab_profile['custom_fields'][each_id]['values'][0]['value']['content']))
+        ab_phone_list.append(phones)
+    except:
+        # Email IDs that don't have any email addresses in AlmaBase
+        blank_phone_ids.append(each_id)
+        pass
