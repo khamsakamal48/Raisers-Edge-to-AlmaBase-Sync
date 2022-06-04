@@ -771,7 +771,6 @@ for each_id in email_id_list:
         # Email IDs that don't have any email addresses in AlmaBase
         blank_email_ids.append(each_id)
         pass
-print(blank_email_ids)
 
 re_email_list = []
 for address in re_api_response['value']:
@@ -827,7 +826,6 @@ set1 = set([i for i in re_email_list if i])
 set2 = set(ab_email_list)
 
 missing_in_ab = list(sorted(set1 - set2))
-print(missing_in_ab)
 
 params = {
     'custom_fields': {
@@ -867,7 +865,6 @@ for each_id in blank_email_ids:
                         }
                     }
                 }
-                print(params)
                 
                 url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
                 
