@@ -24,6 +24,21 @@ CREATE TABLE alread_synced
     name character varying
 );
 
+CREATE TABLE re_emails_added
+(
+    system_id character varying,
+    email character varying,
+    date date
+);
+
+CREATE TABLE ab_emails_added
+(
+    ab_system_id character varying,
+    email character varying,
+    date date
+);
+
+
 Create a .env file with below parameters
 DB_IP=
 DB_NAME=
