@@ -93,6 +93,21 @@ def patch_request_re():
     
     check_for_errors()
     
+def patch_request_ab():
+    # Request Headers for AlmaBase API request
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-API-Access-Key': ALMABASE_API_KEY,
+        'X-API-Access-Token': ALMABASE_API_TOKEN,
+    }
+    
+    global ab_api_response
+    ab_api_response = requests.patch(url, headers=headers, json=params)
+    
+    check_for_errors()
+    
 def check_for_errors():
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
     
@@ -743,7 +758,20 @@ for address in ab_profile['email_addresses']:
     except:
         pass
 
-print(ab_email_list)
+# Get list of available custom fields starting with email_id_
+regex = re.compile('email_id_*')
+email_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+
+blank_email_ids = []
+for each_id in email_id_list:
+    try:
+        emails = (ab_profile['custom_fields'][each_id]['values'][0]['value']['content'])
+        ab_email_list.append(emails)
+    except:
+        # Email IDs that don't have any email addresses in AlmaBase
+        blank_email_ids.append(each_id)
+        pass
+print(blank_email_ids)
 
 re_email_list = []
 for address in re_api_response['value']:
@@ -764,25 +792,25 @@ if missing_in_re != []:
     email_type_list = []
     for emails in missing_in_re:
         try:
-        email_address = emails
-        # Figure the email type
-        types = address['type']
-        email_num = re.sub("[^0-9]", "", types)
-        # Checking if email_num is blank (when there's no Email 1, 2, etc.)
-        if email_num == "":
-            email_num = 0
-        email_type_list.append(email_num)
-        existing_max_count = int(max(email_type_list))
-        new_max_count = existing_max_count + 1
-        try:
-            incremental_max_count
-        except:
-            incremental_max_count = new_max_count
-        else:
-            incremental_max_count = incremental_max_count + 1            
-        global new_email_type
-        new_email_type = "Email " + str(incremental_max_count)
-        update_email_in_re()
+            email_address = emails
+            # Figure the email type
+            types = address['type']
+            email_num = re.sub("[^0-9]", "", types)
+            # Checking if email_num is blank (when there's no Email 1, 2, etc.)
+            if email_num == "":
+                email_num = 0
+            email_type_list.append(email_num)
+            existing_max_count = int(max(email_type_list))
+            new_max_count = existing_max_count + 1
+            try:
+                incremental_max_count
+            except:
+                incremental_max_count = new_max_count
+            else:
+                incremental_max_count = incremental_max_count + 1            
+            global new_email_type
+            new_email_type = "Email " + str(incremental_max_count)
+            update_email_in_re()
             
             # Will update in PostgreSQL
             insert_updates = """
@@ -801,4 +829,58 @@ set2 = set(ab_email_list)
 missing_in_ab = list(sorted(set1 - set2))
 print(missing_in_ab)
 
-print(ab_api_response)
+params = {
+    'custom_fields': {
+            'email_id_3': {
+            'type': 'email',
+            'label': 'email_id_3',      
+            'values': [
+                {
+                    'value': {
+                        'content': 'dhananjay.satale@iitb.ac.in'
+                    },
+                    'display_order': 3
+                }
+            ]
+        }
+        }
+}
+
+
+for each_id in blank_email_ids:
+    try:
+        for each_email in missing_in_ab:
+           try:
+                params = {
+                'custom_fields': {
+                    each_id: {
+                        'type': 'email',
+                        'label': each_id,      
+                        'values': [
+                            {
+                                'value': {
+                                    'content': each_email
+                                    },
+                                'display_order': int(each_id[-2:].replace("_", ""))
+                                }
+                            ]
+                        }
+                    }
+                }
+                print(params)
+                
+                url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                
+                patch_request_ab()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO ab_emails_added (ab_system_id, email, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, each_email])
+                conn.commit()
+           except:
+               send_error_emails()
+    except:
+        pass
