@@ -763,6 +763,7 @@ missing_in_re = list(sorted(set1 - set2))
 if missing_in_re != []:
     email_type_list = []
     for emails in missing_in_re:
+        try:
         email_address = emails
         # Figure the email type
         types = address['type']
@@ -782,6 +783,16 @@ if missing_in_re != []:
         global new_email_type
         new_email_type = "Email " + str(incremental_max_count)
         update_email_in_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_emails_added (system_id, email, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [re_system_id, email_address])
+            conn.commit()
+        except:
+            send_error_emails()
 
 # Finding missing email addresses to be added in AlmaBase
 set1 = set([i for i in re_email_list if i])
