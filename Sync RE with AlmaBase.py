@@ -753,7 +753,7 @@ ab_profile = ab_api_response
 ab_email_list = []
 for address in ab_profile['email_addresses']:
     try:
-        emails = (address['address'])
+        emails = (address['address']).lower()
         ab_email_list.append(emails)
     except:
         pass
@@ -775,7 +775,7 @@ for each_id in email_id_list:
 re_email_list = []
 for address in re_api_response['value']:
     try:
-        emails = (address['address'])
+        emails = (address['address']).lower()
         re_email_list.append(emails)
     except:
         pass
