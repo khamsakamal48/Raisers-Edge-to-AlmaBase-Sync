@@ -3,6 +3,8 @@ sudo apt install python3-pip
 
 pip3 install psycopg2
 pip3 install python-dotenv
+pip3 install fuzzywuzzy
+pip3 install python-Levenshtein
 
 If you encounter error on installing pyscopg2, then try:
 
@@ -38,6 +40,19 @@ CREATE TABLE ab_emails_added
     date date
 );
 
+CREATE TABLE re_phone_added
+(
+    re_system_id character varying,
+    phone character varying,
+    date date
+);
+
+CREATE TABLE ab_phone_added
+(
+    ab_system_id character varying,
+    phone character varying,
+    date date
+);
 
 Create a .env file with below parameters
 DB_IP=
