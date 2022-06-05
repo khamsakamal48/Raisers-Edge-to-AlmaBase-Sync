@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re
+import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Environment
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
 
 # Set current directory
 #os.chdir(os.path.dirname(sys.argv[0]))
@@ -830,9 +832,9 @@ missing_in_ab = list(sorted(set1 - set2))
 # Upload missing email addresses in AlmaBase
 if missing_in_ab != []:
     for each_record in zip(missing_in_ab, blank_email_ids):
-    try:
+        try:
             each_email, each_id = each_record
-                params = {
+            params = {
                 'custom_fields': {
                     each_id: {
                         'type': 'email',
@@ -848,20 +850,19 @@ if missing_in_ab != []:
                         }
                     }
                 }
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
                 
-                url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-                
-                patch_request_ab()
-                
-                # Will update in PostgreSQL
-                insert_updates = """
-                                INSERT INTO ab_emails_added (ab_system_id, email, date)
-                                VALUES (%s, %s, now())
-                                """
-                cur.execute(insert_updates, [ab_system_id, each_email])
-                conn.commit()
-           except:
-               send_error_emails()
+            patch_request_ab()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_emails_added (ab_system_id, email, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, each_email])
+            conn.commit()
+        except:
+            send_error_emails()
     
 # Get list of of phone numbers in RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
@@ -900,3 +901,81 @@ for each_id in phone_id_list:
         # Email IDs that don't have any email addresses in AlmaBase
         blank_phone_ids.append(each_id)
         pass
+
+# Finding missing phone numbers to be added in RE
+missing_in_re = []
+for each_phone in ab_phone_list:
+    try:
+        likely_phone, score = process.extractOne(each_phone, re_phone_list)
+        if score < 80:
+            missing_in_re.append(each_phone)
+    except:
+        pass
+
+# Upload missing numbers in RE
+if missing_in_re != []:
+    for each_phone in missing_in_re:
+        try:
+            url = "https://api.sky.blackbaud.com/constituent/v1/phones"
+        
+            params = {
+                'constituent_id': re_system_id,
+                'number': each_phone,
+                'type': 'Mobile'
+            }
+            
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_phone_added (re_system_id, phone, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [re_system_id, each_phone])
+            conn.commit()
+        except:
+            pass
+        
+# Finding missing phone numbers to be added in AlmaBase
+missing_in_ab = []
+for each_phone in re_phone_list:
+    try:
+        likely_phone, score = process.extractOne(each_phone, ab_phone_list)
+        if score < 80:
+            missing_in_ab.append(each_phone)
+    except:
+        pass
+
+# Upload missing numbers in AlmaBase
+if missing_in_ab != []:
+    for each_record in zip(missing_in_ab, blank_phone_ids):
+        try:
+            each_phone, each_id = each_record
+            params = {
+                            'custom_fields': {
+                                each_id: {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': each_phone
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                        
+            patch_request_ab()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_phone_added (ab_system_id, phone, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, each_phone])
+            conn.commit()
+        except:
+            send_error_emails()
