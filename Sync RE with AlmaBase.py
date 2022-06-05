@@ -827,10 +827,11 @@ set2 = set(ab_email_list)
 
 missing_in_ab = list(sorted(set1 - set2))
 
+# Upload missing email addresses in AlmaBase
+if missing_in_ab != []:
     for each_record in zip(missing_in_ab, blank_email_ids):
     try:
-        for each_email in missing_in_ab:
-           try:
+            each_email, each_id = each_record
                 params = {
                 'custom_fields': {
                     each_id: {
@@ -861,8 +862,7 @@ missing_in_ab = list(sorted(set1 - set2))
                 conn.commit()
            except:
                send_error_emails()
-    except:
-        pass
+    
 # Get list of of phone numbers in RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
 get_request_re()
