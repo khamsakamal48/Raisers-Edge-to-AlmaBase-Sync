@@ -827,25 +827,7 @@ set2 = set(ab_email_list)
 
 missing_in_ab = list(sorted(set1 - set2))
 
-params = {
-    'custom_fields': {
-            'email_id_3': {
-            'type': 'email',
-            'label': 'email_id_3',      
-            'values': [
-                {
-                    'value': {
-                        'content': 'dhananjay.satale@iitb.ac.in'
-                    },
-                    'display_order': 3
-                }
-            ]
-        }
-        }
-}
-
-
-for each_id in blank_email_ids:
+    for each_record in zip(missing_in_ab, blank_email_ids):
     try:
         for each_email in missing_in_ab:
            try:
