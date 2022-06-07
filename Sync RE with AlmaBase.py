@@ -994,7 +994,7 @@ re_org_name_list = []
 
 for each_org in re_api_response['value']:
     try:
-        if each_org['type'] == 'Employer' or each_org['type'] == 'Former Employer':
+        if each_org['type'] == 'Employer' or each_org['type'] == 'Former Employer' or each_org['type'] == 'University':
             # Retrieve the org name
             re_org_name_list.append(each_org['name'])
             
