@@ -1102,13 +1102,7 @@ if missing_in_re != []:
             pass
         
         # Check if organisation is a University
-        # regex = re.compile('\w+school|\w+college|\w+university|\w+institute|^(\w+)iit|\w+iim')
         school_matches = ["school", "college", "university", "institute", "iit", "iim"]
-        # if regex.search(each_org.lower()):
-        #     relationship = "University"
-        # else:
-        #     relationship = "Employer"
-            
         if any(x in each_org.lower() for x in school_matches):
             relationship = "University"
         else:
