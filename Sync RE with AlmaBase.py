@@ -1065,3 +1065,117 @@ for each_org in ab_api_response['results']:
         ab_org_name_list.append(each_org['employer']['name'])
     except:
         pass
+
+# Finding missing employments to be added in RE
+missing_in_re = []
+for each_org in ab_org_name_list:
+    try:
+        likely_phone, score = process.extractOne(each_org, re_org_name_list)
+        if score < 90:
+            missing_in_re.append(each_org)
+    except:
+        pass
+
+# Upload missing employments in RE
+if missing_in_re != []:
+    for each_org in missing_in_re:
+        try:
+            for each_ab_org in ab_api_response_org['results']:
+                if each_org == each_ab_org['employer']['name']:
+                    position = each_ab_org['designation']['name']
+                    if position is None:
+                        position = ""
+                    start_month = each_ab_org['start_month']
+                    if start_month is None:
+                        start_month = ""
+                    start_year = each_ab_org['start_year']
+                    if start_year is None:
+                        start_year = ""
+                    end_month = each_ab_org['end_month']
+                    if end_month is None:
+                        end_month = ""
+                    end_year = each_ab_org['end_year']
+                    if end_year is None:
+                        end_year = ""
+                    break
+        except:
+            pass
+        
+        # Check if organisation is a University
+        # regex = re.compile('\w+school|\w+college|\w+university|\w+institute|^(\w+)iit|\w+iim')
+        school_matches = ["school", "college", "university", "institute", "iit", "iim"]
+        # if regex.search(each_org.lower()):
+        #     relationship = "University"
+        # else:
+        #     relationship = "Employer"
+            
+        if any(x in each_org.lower() for x in school_matches):
+            relationship = "University"
+        else:
+            relationship = "Employer"
+        
+        # Check if start date exists
+        if start_year == "" and end_year != "":
+            params = {
+                'constituent_id': re_system_id,
+                'relation': {
+                    'name': each_org[:60],
+                    'type': 'Organization'},
+                'position': position[:50],
+                'end': {
+                    'm': end_month,
+                    'y': end_year
+                },
+                'type': relationship,
+                'reciprocal_type': 'Employee'
+            }
+        elif start_year == "" and end_year == "":
+            params = {
+                'constituent_id': re_system_id,
+                'relation': {
+                    'name': each_org[:60],
+                    'type': 'Organization'},
+                'position': position[:50],
+                'type': relationship,
+                'reciprocal_type': 'Employee'
+            }
+        elif start_year != "" and end_year == "":
+            params = {
+                'constituent_id': re_system_id,
+                'relation': {
+                    'name': each_org[:60],
+                    'type': 'Organization'},
+                'position': position[:50],
+                'start': {
+                    'm': start_month,
+                    'y': start_year
+                },
+                'type': relationship,
+                'reciprocal_type': 'Employee'
+            }
+        else:
+            params = {
+                'constituent_id': re_system_id,
+                'relation': {
+                    'name': each_org[:60],
+                    'type': 'Organization'},
+                'position': position[:50],
+                'start': {
+                    'm': start_month,
+                    'y': start_year
+                },
+                'end': {
+                    'm': end_month,
+                    'y': end_year
+                },
+                'type': relationship,
+                'reciprocal_type': 'Employee'
+            }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
+        
+        post_request_re()
+        
+# Update missing details in RE
+        
+# Finding missing employments to be added in AlmaBase
