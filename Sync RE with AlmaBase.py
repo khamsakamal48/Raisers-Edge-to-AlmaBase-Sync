@@ -1240,7 +1240,7 @@ for each_org in re_api_response_org['value']:
                     # Check if position needs an update
                     if re_org_position == "" and ab_org_position != "":
                         params = {
-                            'position': ab_org_position
+                            'position': ab_org_position[:50]
                         }
                         
                         # Update in RE
