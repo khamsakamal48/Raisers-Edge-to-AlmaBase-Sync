@@ -1276,3 +1276,54 @@ for each_org in re_api_response_org['value']:
         send_error_emails()
         
 # Finding missing employments to be added in AlmaBase
+missing_in_ab = []
+for each_org in re_org_name_list:
+    try:
+        likely_phone, score = process.extractOne(each_org, ab_org_name_list)
+        if score < 90:
+            missing_in_ab.append(each_org)
+    except:
+        pass
+
+# Upload missing employments in RE
+if missing_in_ab != []:
+    for each_org in missing_in_ab:
+        try:
+            for each_re_org in re_api_response_org['value']:
+                if each_org == each_re_org['name']:
+                    
+                    try:
+                        position = each_re_org['position']
+                    except:
+                        position = ""
+                    
+                    try:
+                        start_month = each_re_org['start']['m']
+                    except:
+                        start_month = ""
+                    
+                    try:
+                        start_year = each_re_org['start']['y']
+                    except:
+                        start_year = ""
+                    
+                    try:
+                        end_month = each_re_org['end']['m']
+                    except:
+                        end_month = ""
+                    
+                    try:
+                        end_year = each_re_org['end']['y']
+                    except:
+                        end_year = ""
+                        
+                    break
+        except:
+            pass
+    
+    print(each_re_org)
+    print(position)
+    print(start_month)
+    print(start_year)
+    print(end_month)
+    print(end_year)
