@@ -91,7 +91,7 @@ def patch_request_re():
     }
     
     global re_api_response
-    re_api_response = requests.patch(url, headers=headers, data=params)
+    re_api_response = requests.patch(url, headers=headers, data=json.dumps(params))
     
     check_for_errors()
     
