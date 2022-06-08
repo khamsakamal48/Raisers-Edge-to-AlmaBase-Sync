@@ -1247,8 +1247,6 @@ for each_org in re_api_response_org['value']:
                         patch_request_re()
                         
                     # Check if joining year needs an update
-                    print(re_org_start_year)
-                    print(ab_org_start_year)
                     if re_org_start_year == "" and ab_org_start_year != "":
                         params = {
                             'start': {
