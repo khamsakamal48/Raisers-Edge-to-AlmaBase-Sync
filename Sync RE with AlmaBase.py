@@ -1172,196 +1172,109 @@ if missing_in_re != []:
         
 # Update missing details in RE
 for each_org in re_api_response_org['value']:
-    # Get values present in RE
-    re_org_name = each_org['name']
-    
-    if 'position' in each_org:
-        re_org_position = each_org['position']
-    else:
-        re_org_position = ""
+    try:
+        # Get values present in RE
+        re_org_name = each_org['name']
         
-    try:
-        re_org_start_month = each_org['start']['m']
-    except:
-        re_org_start_month = ""
+        if 'position' in each_org:
+            re_org_position = each_org['position']
+        else:
+            re_org_position = ""
+            
+        try:
+            re_org_start_month = each_org['start']['m']
+        except:
+            re_org_start_month = ""
+            
+        try:
+            re_org_start_year = each_org['start']['y']
+        except:
+            re_org_start_year = ""
         
-    try:
-        re_org_start_year = each_org['start']['y']
-    except:
-        re_org_start_year = ""
-    
-    try:
-        re_org_end_month = each_org['end']['m']
-    except:
-        re_org_end_month = ""
+        try:
+            re_org_end_month = each_org['end']['m']
+        except:
+            re_org_end_month = ""
+            
+        try:
+            re_org_end_year = each_org['end']['y']
+        except:
+            re_org_end_year = ""
         
-    try:
-        re_org_end_year = each_org['end']['y']
-    except:
-        re_org_end_year = ""
-    
-    relationship_id = each_org['relation_id']
-    
-    # Get values present in AlmaBase for above same organisation
-    for each_ab_org in ab_api_response_org['results']:
-        if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
-            
-            if each_ab_org['designation']['name'] is not None:
-                ab_org_position = each_ab_org['designation']['name']
-            else:
-                ab_org_position = ""
-            
-            if each_ab_org['start_month'] is not None:
-                ab_org_start_month = each_ab_org['start_month']
-            else:
-                ab_org_start_month = ""
-            
-            if each_ab_org['start_year'] is not None:
-                ab_org_start_year = each_ab_org['start_year']
-            else:
-                ab_org_start_year = ""
-            
-            if each_ab_org['end_month'] is not None:
-                ab_org_end_month = each_ab_org['end_month']
-            else:
-                ab_org_end_month = ""
-            
-            if each_ab_org['end_year'] is not None:
-                ab_org_end_year = each_ab_org['end_year']
-            else:
-                ab_org_end_year = ""
-            
-            if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
-                break
-            else:            
-                url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
+        relationship_id = each_org['id']
+        
+        # Get values present in AlmaBase for above same organisation
+        for each_ab_org in ab_api_response_org['results']:
+            if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
                 
-                if re_org_position == "" and re_org_start_month == "" and re_org_start_year == "" and re_org_end_month == "" and re_org_end_year == "":
-                    if ab_org_position != "" and ab_org_start_month != "" and ab_org_start_year != "" and ab_org_end_month != "" and ab_org_end_year != "":
-                        params = {
-                            'position': ab_org_position,
-                            'start': {
-                                'm': ab_org_start_month,
-                                'y': ab_org_start_year
-                            },
-                            'end': {
-                                'm': ab_org_end_month,
-                                'y': ab_org_end_year
-                            }
-                        }
+                if each_ab_org['designation']['name'] is not None:
+                    ab_org_position = each_ab_org['designation']['name']
+                else:
+                    ab_org_position = ""
+                
+                if each_ab_org['start_month'] is not None:
+                    ab_org_start_month = each_ab_org['start_month']
+                else:
+                    ab_org_start_month = ""
+                
+                if each_ab_org['start_year'] is not None:
+                    ab_org_start_year = each_ab_org['start_year']
+                else:
+                    ab_org_start_year = ""
+                
+                if each_ab_org['end_month'] is not None:
+                    ab_org_end_month = each_ab_org['end_month']
+                else:
+                    ab_org_end_month = ""
+                
+                if each_ab_org['end_year'] is not None:
+                    ab_org_end_year = each_ab_org['end_year']
+                else:
+                    ab_org_end_year = ""
+                
+                if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
+                    break
+                else:
+                    url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
                     
-                elif re_org_position != "" and re_org_start_month == "" and re_org_start_year == "" and re_org_end_month == "" and re_org_end_year == "":
-                    if ab_org_start_month != "" or ab_org_start_year != "" or ab_org_end_month != "" or ab_org_end_year != "":
-                        params = {
-                            'start': {
-                                'm': ab_org_start_month,
-                                'y': ab_org_start_year
-                            },
-                            'end': {
-                                'm': ab_org_end_month,
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position != "" and re_org_start_month != "" and re_org_start_year == "" and re_org_end_month == "" and re_org_end_year == "":
-                    if ab_org_start_year != "" or ab_org_end_month != "" or ab_org_end_year != "":
-                        params = {
-                            'start': {
-                                'y': ab_org_start_year
-                            },
-                            'end': {
-                                'm': ab_org_end_month,
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position != "" and re_org_start_month != "" and re_org_start_year != "" and re_org_end_month == "" and re_org_end_year == "":
-                    if ab_org_end_month != "" or ab_org_end_year != "":
-                        params = {
-                            'end': {
-                                'm': ab_org_end_month,
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position != "" and re_org_start_month != "" and re_org_start_year != "" and re_org_end_month != "" and re_org_end_year == "":
-                    if ab_org_end_year != "":
-                        params = {
-                            'end': {
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position == "" and re_org_start_month != "" and re_org_start_year != "" and re_org_end_month == "" and re_org_end_year == "":
-                    if ab_org_position != "" or ab_org_end_month != "" or ab_org_end_year != "":
-                        params = {
-                            'position': ab_org_position,
-                            'end': {
-                                'm': ab_org_end_month,
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position == "" and re_org_start_month != "" and re_org_start_year != "" and re_org_end_month != "" and re_org_end_year == "":
-                    if ab_org_position != "" or ab_org_end_year != "":
-                        params = {
-                            'position': ab_org_position,
-                            'end': {
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position == "" and re_org_start_month != "" and re_org_start_year == "" and re_org_end_month != "" and re_org_end_year == "":
-                    if ab_org_position != "" or ab_org_start_year != "" or ab_org_end_year != "":
-                        params = {
-                            'position': ab_org_position,
-                            'start': {
-                                'y': ab_org_start_year
-                            },
-                            'end': {
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position != "" and re_org_start_month != "" and re_org_start_year == "" and re_org_end_month != "" and re_org_end_year == "":
-                    if ab_org_start_year != "" or ab_org_end_year != "":
-                        params = {
-                            'start': {
-                                'y': ab_org_start_year
-                            },
-                            'end': {
-                                'y': ab_org_end_year
-                            }
-                        }
-                        
-                elif re_org_position == "":
-                    if ab_org_position != "":
+                    # Check if position needs an update
+                    if re_org_position == "" and ab_org_position != "":
                         params = {
                             'position': ab_org_position
                         }
                         
-                elif re_org_start_month == "" or re_org_start_year == "":
-                    if ab_org_start_month != "" or ab_org_start_year != "":
+                        # Update in RE
+                        patch_request_re()
+                        
+                    # Check if joining year needs an update
+                    print(re_org_start_year)
+                    print(ab_org_start_year)
+                    if re_org_start_year == "" and ab_org_start_year != "":
                         params = {
                             'start': {
                                 'm': ab_org_start_month,
                                 'y': ab_org_start_year
                             }
                         }
+
+                        # Update in RE
+                        patch_request_re()
                         
-                elif re_org_end_month != "" or re_org_end_year == "":
-                    if ab_org_end_month != "" or ab_org_end_year != "":
+                    # Check if leaving year needs an update
+                    if re_org_end_year == "" and ab_org_end_year != "":
                         params = {
                             'end': {
                                 'm': ab_org_end_month,
                                 'y': ab_org_end_year
                             }
                         }
-                
-                print(params)
-                patch_request_re()
-                print(re_api_response)
-        break
-
+                        
+                        # Update in RE
+                        patch_request_re()
+                        
+                    break
+            break
+    except:
+        send_error_emails()
         
 # Finding missing employments to be added in AlmaBase
