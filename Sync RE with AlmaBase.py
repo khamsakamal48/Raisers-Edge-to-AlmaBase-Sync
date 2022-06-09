@@ -717,6 +717,7 @@ def update_email_in_re():
     
     check_for_errors()
 
+            del d[key]
 # Query the next data to uploaded in RE
 extract_sql = """
         SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
