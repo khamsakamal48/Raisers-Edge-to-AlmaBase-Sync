@@ -110,6 +110,21 @@ def patch_request_ab():
     
     check_for_errors()
     
+def post_request_ab():
+    # Request Headers for AlmaBase API request
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-API-Access-Key': ALMABASE_API_KEY,
+        'X-API-Access-Token': ALMABASE_API_TOKEN,
+    }
+    
+    global ab_api_response
+    ab_api_response = requests.post(url, headers=headers, json=params)
+    
+    check_for_errors()
+    
 def check_for_errors():
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
     
