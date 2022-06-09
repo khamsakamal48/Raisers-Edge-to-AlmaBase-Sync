@@ -717,7 +717,21 @@ def update_email_in_re():
     
     check_for_errors()
 
+def del_blank_values_in_json(d):
+    """
+    Delete keys with the value ``None`` in a dictionary, recursively.
+
+    This alters the input so you may wish to ``copy`` the dict first.
+    """
+    # For Python 3, write `list(d.items())`; `d.items()` won’t work
+    # For Python 2, write `d.items()`; `d.iteritems()` won’t work
+    for key, value in list(d.items()):
+        if value == "" or value == {}:
             del d[key]
+        elif isinstance(value, dict):
+            del_blank_values_in_json(value)
+    return d  # For convenience
+
 # Query the next data to uploaded in RE
 extract_sql = """
         SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
