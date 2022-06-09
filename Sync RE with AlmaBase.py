@@ -1016,11 +1016,6 @@ get_request_re()
 
 re_api_response_org = re_api_response
 re_org_name_list = []
-# re_org_position_list = []
-# re_org_start_month_list = []
-# re_org_start_year_list = []
-# re_org_end_month_list = []
-# re_org_end_year_list = []
 
 for each_org in re_api_response['value']:
     try:
