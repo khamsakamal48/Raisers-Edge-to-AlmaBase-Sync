@@ -1101,60 +1101,8 @@ for each_org in re_api_response['value']:
         if each_org['type'] == 'Employer' or each_org['type'] == 'Former Employer' or each_org['type'] == 'University':
             # Retrieve the org name
             re_org_name_list.append(each_org['name'])
-            
-            # # Check if position exists & retrieve
-            # if 'position' in each_org:
-            #     re_org_position_list.append(each_org['position'])
-            # else:
-            #     re_org_position_list.append("")
-            
-            # # Check if start month exists & retrieve
-            # if 'start' in each_org: 
-            #     if 'm' in each_org['start']:
-            #         re_org_start_month_list.append(each_org['start']['m'])
-            #     else:
-            #         re_org_start_month_list.append("")
-            # else:
-            #     re_org_start_month_list.append("")
-            
-            # # Check if start year exists & retrieve
-            # if 'start' in each_org: 
-            #     if 'y' in each_org['start']:
-            #         re_org_start_year_list.append(each_org['start']['y'])
-            #     else:
-            #         re_org_start_year_list.append("")
-            # else:
-            #     re_org_start_year_list.append("")
-            
-            # # Check if end month exists & retrieve
-            # if 'end' in each_org: 
-            #     if 'm' in each_org['end']:
-            #         re_org_end_month_list.append(each_org['end']['m'])
-            #     else:
-            #         re_org_end_month_list.append("")
-            # else:
-            #     re_org_end_month_list.append("")
-                
-            # # Check if end year exists & retrieve
-            # if 'end' in each_org: 
-            #     if 'y' in each_org['end']:
-            #         re_org_end_year_list.append(each_org['end']['y'])
-            #     else:
-            #         re_org_end_year_list.append("")
-            # else:
-            #     re_org_end_year_list.append("")
-            
-            # re_org_start_date_list.append(each_org['start'])
-            # re_org_end_date_list.append(each_org['end'])
     except:
         pass
-
-# print(re_org_name_list)
-# print(re_org_position_list)
-# print(re_org_start_month_list)
-# print(re_org_start_year_list)
-# print(re_org_end_month_list)
-# print(re_org_end_year_list)
 
 # Get Employment list from AlmaBase
 url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
