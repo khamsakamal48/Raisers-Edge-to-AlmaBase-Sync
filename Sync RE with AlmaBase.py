@@ -735,6 +735,8 @@ def del_blank_values_in_json(d):
             del_blank_values_in_json(value)
     return d  # For convenience
 
+def print_json(d):
+    print(json.dumps(d, indent=4))
 # Query the next data to uploaded in RE
 extract_sql = """
         SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
