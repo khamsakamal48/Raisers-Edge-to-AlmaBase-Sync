@@ -1326,7 +1326,7 @@ for each_org in re_org_name_list:
             missing_in_ab.append(each_org)
     except:
         pass
-
+    
 # Making sure that there are no duplicates in the missing list
 missing = list(process.dedupe(missing_in_ab, threshold=80))
 missing_in_ab = missing
@@ -1583,7 +1583,7 @@ for each_value in ab_api_response_address['addresses']:
             missing_in_re.append(ab_address)
     except:
         pass
-
+    
 # Making sure that there are no duplicates in the missing list
 missing = list(process.dedupe(missing_in_re, threshold=80))
 missing_in_re = missing
@@ -1613,10 +1613,72 @@ if missing_in_re != []:
         except:
             pass
 
-# Update missing address values in RE
 # Compare the ones in AB with RE and find delta
+ab_address_list = []
+for each_value in ab_api_response_address['addresses']:
+    try:
+        line1 = each_value['line1']
+        if line1 is None:
+            line1 = ""
+    except:
+        line1 = ""
+        
+    try:
+        line2 = each_value['line2']
+        if line2 is None:
+            line2 = ""
+    except:
+        line2 = ""
+    
+    try:
+        city = each_value['location']['city']
+        if city is None:
+            city = ""
+    except:
+        city = ""
+    
+    try:
+        state = each_value['location']['state']
+        if state is None:
+            state = ""
+    except:
+        try:
+            state = each_value['location']['county']
+            if state is None:
+                state = ""
+        except:
+            state = ""
+            
+    try:
+        country = each_value['location']['country']
+        if country is None:
+            country = ""
+    except:
+        country = ""
+        
+    try:
+        zip_code = each_value['zip_code']
+        if zip_code is None:
+            zip_code = ""
+    except:
+        zip_code = ""
+        
+    ab_address = (line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code).replace("  ", " ")
+    ab_address_list.append(ab_address)
+
+# Finding missing addresses to be added in AlmaBase
+missing_in_ab = []
+for each_value in re_api_response_address['value']:
+    re_address = each_value['formatted_address'].replace("\r\n",", ")
+    
+    likely_address, score = process.extractOne(re_address, ab_address_list)
+    if score < 90:
+        missing_in_ab.append(re_address)
+    
 # Making sure that there are no duplicates in the missing list
 missing = list(process.dedupe(missing_in_ab, threshold=80))
 missing_in_ab = missing
+        
+print(missing_in_ab)
+    
 # Create missing address in AB
-# Update missing address values in AB
