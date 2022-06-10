@@ -1490,3 +1490,110 @@ for each_org in ab_api_response_org['results']:
                         patch_request_ab()
     except:
         pass
+    
+# Retrieve addresses from RE
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/addresses?include_inactive=true" % re_system_id
+get_request_re()
+
+re_api_response_address = re_api_response
+
+# Retrieve addresses from Almabase
+url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=addresses" % ab_system_id
+
+get_request_almabase()
+ab_api_response_address = ab_api_response
+
+# Compare the ones in RE with AB and find delta
+re_address_list = []
+for each_value in re_api_response_address['value']:
+    re_address = each_value['formatted_address'].replace("\r\n",", ")
+    re_address_list.append(re_address)
+
+# Finding missing addresses to be added in RE
+missing_in_re = []
+for each_value in ab_api_response_address['addresses']:
+    try:
+        try:
+            line1 = each_value['line1']
+            if line1 is None:
+                line1 = ""
+        except:
+            line1 = ""
+            
+        try:
+            line2 = each_value['line2']
+            if line2 is None:
+                line2 = ""
+        except:
+            line2 = ""
+        
+        try:
+            city = each_value['location']['city']
+            if city is None:
+                city = ""
+        except:
+            city = ""
+        
+        try:
+            state = each_value['location']['state']
+            if state is None:
+                state = ""
+        except:
+            try:
+                state = each_value['location']['county']
+                if state is None:
+                    state = ""
+            except:
+                state = ""
+                
+        try:
+            country = each_value['location']['country']
+            if country is None:
+                country = ""
+        except:
+            country = ""
+            
+        try:
+            zip_code = each_value['zip_code']
+            if zip_code is None:
+                zip_code = ""
+        except:
+            zip_code = ""
+            
+        ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
+                
+        likely_address, score = process.extractOne(ab_address, re_address_list)
+        if score < 90:
+            missing_in_re.append(ab_address)
+    except:
+        pass
+
+# Create missing address in RE
+if missing_in_re != []:
+    for address in missing_in_re:
+        try:
+            # Get city, state and country from Address
+            get_address(address)
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/addresses"
+            
+            params = {
+                'constituent_id': re_system_id,
+                'type': 'Business',
+                'address_lines': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
+                'city': city,
+                'county': state,
+                'country': country,
+                'postal_code': zip
+            }
+            
+            print_json(params)
+            
+            post_request_re()
+        except:
+            pass
+
+# Update missing address values in RE
+# Compare the ones in AB with RE and find delta
+# Create missing address in AB
+# Update missing address values in AB
