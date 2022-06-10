@@ -1021,6 +1021,10 @@ for each_phone in ab_phone_list:
     except:
         pass
 
+# Making sure that there are no duplicates in the missing list
+missing = list(process.dedupe(missing_in_re, threshold=80))
+missing_in_re = missing
+
 # Upload missing numbers in RE
 if missing_in_re != []:
     for each_phone in missing_in_re:
@@ -1054,6 +1058,10 @@ for each_phone in re_phone_list:
             missing_in_ab.append(each_phone)
     except:
         pass
+
+# Making sure that there are no duplicates in the missing list
+missing = list(process.dedupe(missing_in_ab, threshold=80))
+missing_in_ab = missing
 
 # Upload missing numbers in AlmaBase
 if missing_in_ab != []:
@@ -1127,6 +1135,10 @@ for each_org in ab_org_name_list:
             missing_in_re.append(each_org)
     except:
         pass
+
+# Making sure that there are no duplicates in the missing list
+missing = list(process.dedupe(missing_in_re, threshold=80))
+missing_in_re = missing
 
 # Upload missing employments in RE
 if missing_in_re != []:
@@ -1314,6 +1326,10 @@ for each_org in re_org_name_list:
             missing_in_ab.append(each_org)
     except:
         pass
+
+# Making sure that there are no duplicates in the missing list
+missing = list(process.dedupe(missing_in_ab, threshold=80))
+missing_in_ab = missing
 
 # Upload missing employments in RE
 if missing_in_ab != []:
@@ -1568,6 +1584,10 @@ for each_value in ab_api_response_address['addresses']:
     except:
         pass
 
+# Making sure that there are no duplicates in the missing list
+missing = list(process.dedupe(missing_in_re, threshold=80))
+missing_in_re = missing
+
 # Create missing address in RE
 if missing_in_re != []:
     for address in missing_in_re:
@@ -1595,5 +1615,8 @@ if missing_in_re != []:
 
 # Update missing address values in RE
 # Compare the ones in AB with RE and find delta
+# Making sure that there are no duplicates in the missing list
+missing = list(process.dedupe(missing_in_ab, threshold=80))
+missing_in_ab = missing
 # Create missing address in AB
 # Update missing address values in AB
