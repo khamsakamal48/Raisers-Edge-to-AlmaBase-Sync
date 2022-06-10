@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
-import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools 
+from textwrap import indent
+import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Environment
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 
 # Set current directory
 #os.chdir(os.path.dirname(sys.argv[0]))
