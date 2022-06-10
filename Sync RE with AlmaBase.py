@@ -737,6 +737,80 @@ def del_blank_values_in_json(d):
 
 def print_json(d):
     print(json.dumps(d, indent=4))
+
+def get_address(address):
+    # initialize Nominatim API
+    geolocator = Nominatim(user_agent="geoapiExercises")
+
+    # adding 1 second padding between calls
+    global geocode
+    geocode = RateLimiter(geolocator.geocode, min_delay_seconds = 1, return_value_on_exception = None)
+    
+    location = geolocator.geocode(address, addressdetails=True, language='en')
+
+    if location is None:
+        i = 0
+    else:
+        i = 1
+
+    while i == 0:
+        address_split = address[address.index(' ')+1:]
+        address = address_split
+        location = geolocator.geocode(address_split, addressdetails=True)
+        
+        if location is None:
+            address = address_split
+            try:
+                if address == "":
+                    break
+            except:
+                break
+            i = 0
+            
+        if location is not None:
+            break
+
+    address = location.raw['address']
+    
+    global city
+    try:
+        city = address.get('city', '')
+        if city == "":
+            try:
+                city = address.get('state_district', '')
+                if city == "":
+                    try:
+                        city = address.get('county', '')
+                    except:
+                        city = ""
+            except:
+                try:
+                    city = address.get('county', '')
+                except:
+                    city = ""
+    except:
+        try:
+            city = address.get('state_district', '')
+            if city == "":
+                try:
+                    city = address.get('county', '')
+                except:
+                    city = ""
+        except:
+            try:
+                city = address.get('county', '')
+            except:
+                city = ""
+    
+    global state
+    state = address.get('state', '')
+    
+    global country
+    country = address.get('country', '')
+    
+    global zip
+    zip = address.get('postcode', '')
+
 # Query the next data to uploaded in RE
 extract_sql = """
         SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
