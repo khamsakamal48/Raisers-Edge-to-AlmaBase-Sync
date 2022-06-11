@@ -1677,6 +1677,7 @@ for each_value in ab_api_response_address['addresses']:
         except:
             zip_code = ""
             
+        if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
         ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
                 
         likely_address, score = process.extractOne(ab_address, re_address_list)
@@ -1686,6 +1687,7 @@ for each_value in ab_api_response_address['addresses']:
         pass
     
 # Making sure that there are no duplicates in the missing list
+if missing_in_re != []:
 missing = list(process.dedupe(missing_in_re, threshold=80))
 missing_in_re = missing
 
@@ -1777,6 +1779,7 @@ for each_value in re_api_response_address['value']:
         missing_in_ab.append(re_address)
     
 # Making sure that there are no duplicates in the missing list
+if missing_in_ab != []:
 missing = list(process.dedupe(missing_in_ab, threshold=80))
 missing_in_ab = missing
         
