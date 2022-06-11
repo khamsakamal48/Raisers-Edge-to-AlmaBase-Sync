@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from sqlite3 import paramstyle
 from textwrap import indent
 import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy
 from email.mime.text import MIMEText
@@ -1023,8 +1024,8 @@ for each_phone in ab_phone_list:
 
 # Making sure that there are no duplicates in the missing list
 if missing_in_re != []:
-missing = list(process.dedupe(missing_in_re, threshold=80))
-missing_in_re = missing
+    missing = list(process.dedupe(missing_in_re, threshold=80))
+    missing_in_re = missing
 
 # Upload missing numbers in RE
 if missing_in_re != []:
@@ -1062,8 +1063,8 @@ for each_phone in re_phone_list:
 
 # Making sure that there are no duplicates in the missing list
 if missing_in_ab != []:
-missing = list(process.dedupe(missing_in_ab, threshold=80))
-missing_in_ab = missing
+    missing = list(process.dedupe(missing_in_ab, threshold=80))
+    missing_in_ab = missing
 
 # Upload missing numbers in AlmaBase
 if missing_in_ab != []:
@@ -1140,8 +1141,8 @@ for each_org in ab_org_name_list:
 
 # Making sure that there are no duplicates in the missing list
 if missing_in_re != []:
-missing = list(process.dedupe(missing_in_re, threshold=80))
-missing_in_re = missing
+    missing = list(process.dedupe(missing_in_re, threshold=80))
+    missing_in_re = missing
 
 # Upload missing employments in RE
 if missing_in_re != []:
@@ -1332,8 +1333,8 @@ for each_org in re_org_name_list:
     
 # Making sure that there are no duplicates in the missing list
 if missing_in_ab != []:
-missing = list(process.dedupe(missing_in_ab, threshold=80))
-missing_in_ab = missing
+    missing = list(process.dedupe(missing_in_ab, threshold=80))
+    missing_in_ab = missing
 
 # Upload missing employments in RE
 if missing_in_ab != []:
@@ -1676,20 +1677,20 @@ for each_value in ab_api_response_address['addresses']:
                 zip_code = ""
         except:
             zip_code = ""
-            
+        
         if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
-        ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
-                
-        likely_address, score = process.extractOne(ab_address, re_address_list)
-        if score < 90:
-            missing_in_re.append(ab_address)
+            ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
+            
+            likely_address, score = process.extractOne(ab_address, re_address_list)
+            if score < 90:
+                missing_in_re.append(ab_address)
     except:
         pass
-    
+
 # Making sure that there are no duplicates in the missing list
 if missing_in_re != []:
-missing = list(process.dedupe(missing_in_re, threshold=80))
-missing_in_re = missing
+    missing = list(process.dedupe(missing_in_re, threshold=80))
+    missing_in_re = missing
 
 # Create missing address in RE
 if missing_in_re != []:
@@ -1709,8 +1710,6 @@ if missing_in_re != []:
                 'country': country,
                 'postal_code': zip
             }
-            
-            print_json(params)
             
             post_request_re()
         except:
@@ -1777,12 +1776,217 @@ for each_value in re_api_response_address['value']:
     likely_address, score = process.extractOne(re_address, ab_address_list)
     if score < 90:
         missing_in_ab.append(re_address)
-    
+
 # Making sure that there are no duplicates in the missing list
 if missing_in_ab != []:
-missing = list(process.dedupe(missing_in_ab, threshold=80))
-missing_in_ab = missing
-        
-print(missing_in_ab)
-    
+    missing = list(process.dedupe(missing_in_ab, threshold=80))
+    missing_in_ab = missing
+
 # Create missing address in AB
+if missing_in_ab != []:
+    i = 0
+    for address in missing_in_ab:
+        try:
+            # Check where the new address can be added
+            while i == 0:
+                for each_value in ab_api_response_address['addresses']:
+                    try:
+                        line1 = each_value['line1']
+                        if line1 is None:
+                            line1 = ""
+                    except:
+                        line1 = ""
+                        
+                    try:
+                        line2 = each_value['line2']
+                        if line2 is None:
+                            line2 = ""
+                    except:
+                        line2 = ""
+                    
+                    try:
+                        city = each_value['location']['city']
+                        if city is None:
+                            city = ""
+                    except:
+                        city = ""
+                    
+                    try:
+                        state = each_value['location']['state']
+                        if state is None:
+                            state = ""
+                    except:
+                        try:
+                            state = each_value['location']['county']
+                            if state is None:
+                                state = ""
+                        except:
+                            state = ""
+                            
+                    try:
+                        country = each_value['location']['country']
+                        if country is None:
+                            country = ""
+                    except:
+                        country = ""
+                        
+                    try:
+                        zip_code = each_value['zip_code']
+                        if zip_code is None:
+                            zip_code = ""
+                    except:
+                        zip_code = ""
+                    
+                    if line1 != "" or line2 != "" or city != "" or state != "" or country != country or zip_code != "":
+                        i += 1
+                        
+                        # Stop after 4 addresses
+                        if i == 4:
+                            break
+                else:
+                    break
+            
+            ab_address_number = i + 1
+            
+            # Get city, state and country from Address
+            get_address(address)
+            
+            # Patch Profile
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+            
+            # Will add as address    
+            if ab_address_number <= 2:
+                
+                params = {
+                    'addresses': [
+                        {
+                            'line1': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
+                            'zip_code': zip,
+                            'location': {
+                                'name': city + ", " + state + ", " + country,
+                                "type": ab_address_number
+                            },
+                            "type": ab_address_number
+                        }
+                    ]
+                }
+            
+            # Will add as custom field - permanent address   
+            elif ab_address_number == 3:
+                
+                params = {
+                    'custom_fields': {
+                        'permanent_address': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'permanent_city': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': city
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'permanent_state': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': state
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'permanent_country': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': country
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'permanent_postal_code': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': zip
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        }
+                    }
+                }
+            
+            else:
+                
+                params = {
+                    'custom_fields': {
+                        'work_address_line_1': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'work_city': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': city
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'work_state': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': state
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'work_country': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': country
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        },
+                        'work_postal_code': {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': zip
+                                    },
+                                    'display_order': 0
+                                }
+                            ]
+                        }
+                    }
+                }
+            
+            patch_request_ab()
+            i += 1
+        except:
+            pass
