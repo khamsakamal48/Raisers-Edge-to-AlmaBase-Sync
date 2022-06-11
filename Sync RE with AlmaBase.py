@@ -1517,11 +1517,108 @@ get_request_re()
 
 re_api_response_address = re_api_response
 
-# Retrieve addresses from Almabase
+# Retrieve addresses from Almabase - 1
 url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=addresses" % ab_system_id
 
 get_request_almabase()
 ab_api_response_address = ab_api_response
+
+# Retrieve addresses from Almabase - 2
+url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=custom_fields" % ab_system_id
+
+get_request_almabase()
+ab_api_response_address_custom_fields = ab_api_response
+
+# Retrive details from Permanent address in AlmaBase
+try:
+    ab_permanent_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['permanent_address']['values'][0]['value']['content']
+except:
+    ab_permanent_address_line_1 = ""
+
+try:
+    ab_permanent_address_line_2 = ab_api_response_address_custom_fields['custom_fields']['permanent_address_line_2']['values'][0]['value']['content']
+except:
+    ab_permanent_address_line_2 = ""
+
+try:
+    ab_permanent_address_city = ab_api_response_address_custom_fields['custom_fields']['permanent_city']['values'][0]['value']['content']
+except:
+    ab_permanent_address_city = ""
+
+try:
+    ab_permanent_address_state = ab_api_response_address_custom_fields['custom_fields']['permanent_state']['values'][0]['value']['content']
+except:
+    ab_permanent_address_state = ""
+
+try:
+    ab_permanent_address_country = ab_api_response_address_custom_fields['custom_fields']['permanent_country']['values'][0]['value']['content']
+except:
+    ab_permanent_address_country = ""
+
+try:
+    ab_permanent_address_zip = ab_api_response_address_custom_fields['custom_fields']['permanent_postal_code']['values'][0]['value']['content']
+except:
+    ab_permanent_address_zip = ""
+
+# Retrive details from Work address in AlmaBase
+try:
+    ab_work_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_1']['values'][0]['value']['content']
+except:
+    ab_work_address_line_1 = ""
+
+try:
+    ab_work_address_line_2 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_2']['values'][0]['value']['content']
+except:
+    ab_work_address_line_2 = ""
+
+try:
+    ab_work_address_city = ab_api_response_address_custom_fields['custom_fields']['work_city']['values'][0]['value']['content']
+except:
+    ab_work_address_city = ""
+
+try:
+    ab_work_address_state = ab_api_response_address_custom_fields['custom_fields']['work_state']['values'][0]['value']['content']
+except:
+    ab_work_address_state = ""
+
+try:
+    ab_work_address_country = ab_api_response_address_custom_fields['custom_fields']['work_country']['values'][0]['value']['content']
+except:
+    ab_work_address_country = ""
+
+try:
+    ab_work_address_zip = ab_api_response_address_custom_fields['custom_fields']['work_postal_code']['values'][0]['value']['content']
+except:
+    ab_work_address_zip = ""
+    
+ab_api_response_address_custom_fields_json = {
+    'addresses': [
+        {
+            'line1': ab_permanent_address_line_1,
+            'line2': ab_permanent_address_line_2,
+            'zip_code': ab_permanent_address_zip,
+            'location': {
+                'city': ab_permanent_address_city,
+                'state': ab_permanent_address_state,
+                'country': ab_permanent_address_country
+                }
+        },
+        {
+            'line1': ab_work_address_line_1,
+            'line2': ab_work_address_line_2,
+            'zip_code': ab_work_address_zip,
+            'location': {
+                'city': ab_work_address_city,
+                'state': ab_work_address_state,
+                'country': ab_work_address_country
+                }
+        }
+    ]
+}
+
+# Merge JSON strings into one
+for each_address in ab_api_response_address_custom_fields_json['addresses']:
+    ab_api_response_address['addresses'].append(each_address)
 
 # Compare the ones in RE with AB and find delta
 re_address_list = []
