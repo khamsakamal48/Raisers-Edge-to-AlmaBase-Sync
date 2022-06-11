@@ -1022,6 +1022,7 @@ for each_phone in ab_phone_list:
         pass
 
 # Making sure that there are no duplicates in the missing list
+if missing_in_re != []:
 missing = list(process.dedupe(missing_in_re, threshold=80))
 missing_in_re = missing
 
@@ -1060,6 +1061,7 @@ for each_phone in re_phone_list:
         pass
 
 # Making sure that there are no duplicates in the missing list
+if missing_in_ab != []:
 missing = list(process.dedupe(missing_in_ab, threshold=80))
 missing_in_ab = missing
 
@@ -1137,6 +1139,7 @@ for each_org in ab_org_name_list:
         pass
 
 # Making sure that there are no duplicates in the missing list
+if missing_in_re != []:
 missing = list(process.dedupe(missing_in_re, threshold=80))
 missing_in_re = missing
 
@@ -1328,6 +1331,7 @@ for each_org in re_org_name_list:
         pass
     
 # Making sure that there are no duplicates in the missing list
+if missing_in_ab != []:
 missing = list(process.dedupe(missing_in_ab, threshold=80))
 missing_in_ab = missing
 
