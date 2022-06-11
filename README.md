@@ -5,6 +5,7 @@ pip3 install psycopg2
 pip3 install python-dotenv
 pip3 install fuzzywuzzy
 pip3 install python-Levenshtein
+pip3 install geopy
 
 If you encounter error on installing pyscopg2, then try:
 
