@@ -1712,6 +1712,14 @@ if missing_in_re != []:
             }
             
             post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_address_added (re_system_id, address, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [re_system_id, address])
+            conn.commit()
         except:
             pass
 
