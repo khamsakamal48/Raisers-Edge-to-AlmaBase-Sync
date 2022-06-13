@@ -2006,3 +2006,71 @@ if missing_in_ab != []:
             conn.commit()
         except:
             pass
+        
+# Retrieve IITB education from RE
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
+
+get_request_re()
+i = 0
+re_api_response_education = {
+    'value': [
+        
+    ]
+}
+
+for each_education in re_api_response['value']:
+    if each_education['school'] == "Indian Institute of Technology Bombay":
+        re_api_response_education['value'].append(each_education)
+
+# Retrieve IITB education from AlmaBase
+url = "https://api.almabaseapp.com/api/v1/profiles/%s/educations" % ab_system_id
+
+get_request_almabase()
+ab_api_response_education = ab_api_response
+
+print_json(re_api_response_education)
+
+# Compare the ones present in RE with AlmaBase and find delta
+# When only one education exists in both
+if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
+    
+    # Get data from RE
+    try:
+        re_class_of = re_api_response_education['value'][0]['class_of']
+        
+        if int(re_class_of) < 1962:
+            re_class_of = ""
+    except:
+        re_class_of = ""
+        
+    try:
+        re_majors = re_api_response_education['value'][0]['majors'][0]
+    except:
+        re_majors = ""
+        
+    try:
+        re_degree = re_api_response_education['value'][0]['degree']
+    except:
+        re_degree = ""
+        
+    try:
+        re_hostel = re_api_response_education['value'][0]['social_organization']
+    except:
+        re_hostel = ""
+        
+    try:
+        re_joining_year = re_api_response_education['value'][0]['date_entered']['y']
+    except:
+        re_joining_year = ""
+        
+    # Get data from AlmaBase
+    
+    # Upload the delta to RE
+    
+    
+# When more than one exists
+else:
+    print("More than one exists")
+
+# Compare the ones present in AlmaBase with RE and find delta
+# Upload the delta to AlmaBase
