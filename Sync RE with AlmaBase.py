@@ -1988,5 +1988,13 @@ if missing_in_ab != []:
             
             patch_request_ab()
             i += 1
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_address_added (ab_system_id, address, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, address])
+            conn.commit()
         except:
             pass
