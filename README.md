@@ -55,6 +55,20 @@ CREATE TABLE ab_phone_added
     date date
 );
 
+CREATE TABLE re_address_added
+(
+    re_system_id character varying,
+    address character varying,
+    date date
+);
+
+CREATE TABLE ab_address_added
+(
+    ab_system_id character varying,
+    address character varying,
+    date date
+);
+
 Create a .env file with below parameters
 DB_IP=
 DB_NAME=
