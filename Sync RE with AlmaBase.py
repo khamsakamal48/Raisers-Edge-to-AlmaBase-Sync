@@ -2028,8 +2028,6 @@ url = "https://api.almabaseapp.com/api/v1/profiles/%s/educations" % ab_system_id
 get_request_almabase()
 ab_api_response_education = ab_api_response
 
-print_json(re_api_response_education)
-
 # Compare the ones present in RE with AlmaBase and find delta
 # When only one education exists in both
 if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
@@ -2044,9 +2042,9 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
         re_class_of = ""
         
     try:
-        re_majors = re_api_response_education['value'][0]['majors'][0]
+        re_department = re_api_response_education['value'][0]['majors'][0]
     except:
-        re_majors = ""
+        re_department = ""
         
     try:
         re_degree = re_api_response_education['value'][0]['degree']
@@ -2063,14 +2061,238 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
     except:
         re_joining_year = ""
         
+    try:
+        re_roll_number = re_api_response_education['value'][0]['known_name']
+    except:
+        re_roll_number = ""
+        
+    re_education_id = re_api_response_education['value'][0]['id']
+        
     # Get data from AlmaBase
+    try:
+        ab_class_of = ab_api_response_education['results'][0]['class_year']
+        
+        if int(ab_class_of) < 1962 or ab_class_of == "null" or ab_class_of is None:
+            ab_class_of = ""
+    except:
+        ab_class_of = ""
+        
+    try:
+        ab_department = ab_api_response_education['results'][0]['course']['name']
+        
+        if ab_department == "null" or ab_department is None:
+            ab_department = ""
+    except:
+        ab_department = ""
+        
+    try:
+        ab_department = ab_api_response_education['results'][0]['branch']['name']
+        
+        if ab_department == "null" or ab_department is None:
+            ab_department = ""
+    except:
+        ab_department = ""
+        
+    try:
+        ab_degree = ab_api_response_education['results'][0]['course']['name']
+        
+        if ab_degree == "null" or ab_degree is None:
+            ab_degree = ""
+    except:
+        ab_degree = ""
+        
+    try:
+        ab_hostel = ab_api_response_education['results'][0]['custom_fields']['hostel']['values'][0]['value']['label']
+        
+        if ab_hostel == "null" or ab_hostel is None:
+            ab_hostel = ""
+    except:
+        ab_hostel = ""
+    
+    try:
+        ab_joining_year = ab_api_response_education['results'][0]['year_of_joining']
+        
+        if ab_joining_year == "null" or ab_joining_year is None:
+            ab_joining_year = ""
+    except:
+        ab_joining_year = ""
+        
+    try:
+        ab_roll_number = ab_api_response_education['results'][0]['roll_number']
+         
+        if ab_roll_number == "null" or ab_roll_number is None:
+            ab_roll_number = ""
+    except:
+        ab_roll_number = ""
+        
+    ab_education_id = ab_api_response_education['results'][0]['id']
     
     # Upload the delta to RE
+    if re_class_of == "" or re_department == "" or re_degree == "" or re_hostel == "" or re_joining_year == "" or re_roll_number == "":
+        if re_class_of == "" and ab_class_of != "":
+            re_class_of = ab_class_of
+            re_graduation_status = "Graduated"
+        else:
+            re_class_of = ""
+            re_graduation_status = ""
+            
+        if re_department == "" and ab_department != "":
+            extract_department = """
+            SELECT re_department FROM department_mapping WHERE ab_department = '%s' FETCH FIRST 1 ROW ONLY;
+            """
+            cur.execute(extract_sql, [ab_department])
+            result = cur.fetchone()
+            
+            # Ensure no comma or brackets in output
+            re_department = result[0]
+        else:
+            re_department = ""
+            
+        if re_degree == "" and ab_degree != "":
+            extract_degree = """
+            SELECT re_degree FROM degree_mapping WHERE ab_degree = '%s' FETCH FIRST 1 ROW ONLY;
+            """
+            cur.execute(extract_degree, [ab_degree])
+            result = cur.fetchone()
+            
+            # Ensure no comma or brackets in output
+            re_degree = result[0]
+        else:
+            re_degree = ""
+            
+        if re_hostel == "" and ab_hostel != "":
+            re_hostel = ab_hostel
+        else:
+            re_hostel = ""
+        
+        if re_joining_year == "" and ab_joining_year != "":
+            re_joining_year = ab_joining_year
+        else:
+            re_joining_year = ""
+            
+        if re_roll_number == "" and ab_roll_number != "":
+            re_roll_number = ab_roll_number
+        else:
+            re_roll_number = ""
+        
+        params_re = {
+            'known_name': re_roll_number,
+            'class_of': re_class_of,
+            'date_entered': {
+                'y': re_joining_year
+            },
+            'date_graduated': {
+                'y': re_class_of
+            },
+            'date_left': {
+                'y': re_class_of
+            },
+            'degree': re_degree,
+            'majors': [
+                re_department
+            ],
+            'social_organization': re_hostel,
+            'status': re_graduation_status,
+        }
+        
+        # Delete blank values from JSON
+        for i in range(10):
+            params = del_blank_values_in_json(params_re.copy())
+            
+        print_json(params)
+            
+        if params != {}:
+            url = "https://api.sky.blackbaud.com/constituent/v1/educations/%s" % re_education_id
+            patch_request_re()
+            
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_iitb_education_added (re_system_id, roll_number, department, joining_year, class_of, degree, hostel)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_roll_number, re_department, re_joining_year, re_class_of, re_degree, re_hostel])
+        conn.commit()
     
+    # # Compare the ones present in AlmaBase with RE and find delta
+    # if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
+    #     if re_class_of != "" and ab_class_of == "":
+    #         ab_class_of = re_class_of
+            
+    #     if re_department != "" and ab_department == "":
+    #         extract_department = """
+    #         SELECT ab_department FROM department_mapping WHERE re_department = '%s' FETCH FIRST 1 ROW ONLY;
+    #         """
+    #         cur.execute(extract_sql, [re_department])
+    #         result = cur.fetchone()
+            
+    #         # Ensure no comma or brackets in output
+    #         ab_department = result[0]
+            
+    #     if re_degree != "" and ab_degree == "":
+    #         extract_degree = """
+    #         SELECT ab_degree FROM degree_mapping WHERE re_degree = '%s' FETCH FIRST 1 ROW ONLY;
+    #         """
+    #         cur.execute(extract_degree, [re_degree])
+    #         result = cur.fetchone()
+            
+    #         # Ensure no comma or brackets in output
+    #         ab_degree = result[0]
+            
+    #     if re_hostel != "" and ab_hostel == "":
+    #         # Taking the last Hostel after comma
+    #         ab_hostel = re_hostel[re_hostel.rfind(",") +1:].lower().replace(" ","_")
+    #     else:
+    #         ab_hostel_content = ab_hostel.lower().replace(" ","_")
+    #         ab_hostel = ab_hostel_content
+            
+    #     if re_joining_year != "" and ab_joining_year == "":
+    #         ab_joining_year = re_joining_year
+            
+    #     if re_roll_number != "" and ab_roll_number == "":
+    #             ab_roll_number = re_roll_number
+            
+    #     params_ab = {
+    #         'course': {
+    #             'name': ab_degree
+    #             },
+    #         'branch': {
+    #             'name': ab_department
+    #             },
+    #         'custom_fields': {
+    #             'hostel': {
+    #                 'values': [
+    #                     {
+    #                         'value': {
+    #                             'content': ab_hostel
+    #                         },
+    #                         'display_order': 0
+    #                     }
+    #                 ]
+    #             }
+    #         },
+    #         'year_of_graduation': ab_class_of,
+    #         'year_of_joining': ab_joining_year,
+    #         'year_of_leaving': ab_class_of,
+    #         'roll_number': ab_roll_number,
+    #         'college': {
+    #             'name': "IIT Bombay"
+    #         }
+    #     }
+        
+    #     # Delete blank values from JSON
+    #     for i in range(10):
+    #         params = del_blank_values_in_json(params_ab.copy())
+            
+    #     print_json(params)
+        
+    #     if params != {} and ab_class_of != "":
+    #         url = "https://api.almabaseapp.com/api/profiles/%s/educations" % (ab_system_id, ab_education_id)
+    #         print(url)
+    #         patch_request_ab()
+    #         print(ab_api_response)
     
 # When more than one exists
 else:
     print("More than one exists")
 
-# Compare the ones present in AlmaBase with RE and find delta
 # Upload the delta to AlmaBase
