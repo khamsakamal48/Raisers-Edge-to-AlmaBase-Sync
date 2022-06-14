@@ -2011,6 +2011,9 @@ if missing_in_ab != []:
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
 
 get_request_re()
+
+re_api_response_education_all = re_api_response
+
 i = 0
 re_api_response_education = {
     'value': [
@@ -2207,7 +2210,7 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
             
         # Will update in PostgreSQL
         insert_updates = """
-                        INSERT INTO re_iitb_education_added (re_system_id, roll_number, department, joining_year, class_of, degree, hostel)
+                        INSERT INTO re_iitb_education_added (re_system_id, roll_number, department, joining_year, class_of, degree, hostel, date)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, now())
                         """
         cur.execute(insert_updates, [re_system_id, re_roll_number, re_department, re_joining_year, re_class_of, re_degree, re_hostel])
@@ -2293,6 +2296,24 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
     
 # When more than one exists
 else:
-    print("More than one exists")
+    subject = "Multiple IITB Education details exists in either Raisers Edge or AlmaBase for syncing"
+    constituent_not_found_email()
 
-# Upload the delta to AlmaBase
+# Get other education details from RE
+re_other_school_name_list = []
+
+for each_education in re_api_response_org['value']:
+    try:
+        if each_education['reciprocal_type'] == 'Student':
+            # Retrieve the University name
+            re_other_school_name_list.append(each_education['name'])
+    except:
+        pass
+
+for each_education in re_api_response_education_all['value']:
+    try:
+        if each_education['school'] != 'Indian Institute of Technology Bombay':
+            # Retrieve the University name
+            re_other_school_name_list.append(each_education['name'])
+    except:
+        pass
