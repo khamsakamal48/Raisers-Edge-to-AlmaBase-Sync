@@ -28,7 +28,7 @@ share/python-wheels/
 MANIFEST
 *.json
 *.bak
-*.csv
+Alums_in_RE.csv
 Test.*
 
 # PyInstaller
