@@ -69,6 +69,33 @@ CREATE TABLE ab_address_added
     date date
 );
 
+CREATE TABLE degree_mapping
+(
+    ab_degree character varying,
+    re_degree character varying
+);
+
+CREATE TABLE department_mapping
+(
+    ab_department character varying,
+    re_department character varying
+);
+
+CREATE TABLE re_iitb_education_added
+(
+    re_system_id character varying,
+    roll_number character varying,
+    department character varying,
+    joining_year character varying,
+    class_of character varying,
+    degree character varying,
+    hostel character varying,
+    date date
+);
+
+Import Degree Mapping.csv to degree_mapping table
+Import Department Mapping.csv to department_mapping table
+
 Create a .env file with below parameters
 DB_IP=
 DB_NAME=
