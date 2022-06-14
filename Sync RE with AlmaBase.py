@@ -730,7 +730,7 @@ def del_blank_values_in_json(d):
     # For Python 3, write `list(d.items())`; `d.items()` won’t work
     # For Python 2, write `d.items()`; `d.iteritems()` won’t work
     for key, value in list(d.items()):
-        if value == "" or value == {}:
+        if value == "" or value == {} or value == [] or value == [""]:
             del d[key]
         elif isinstance(value, dict):
             del_blank_values_in_json(value)
