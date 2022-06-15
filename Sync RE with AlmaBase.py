@@ -2363,7 +2363,10 @@ if missing_in_re != []:
     
     for each_school in missing_in_re:
         try:
-            likely_school, score = process.extractOne(each_school, re_school_name_list, score_cutoff = 85)
+            try:
+                likely_school, score = process.extractOne(each_school, re_school_name_list, score_cutoff = 85)
+            except:
+                likely_school = ""
             
             if likely_school != "":
                 # Will add a new education in RE
@@ -2392,12 +2395,90 @@ if missing_in_re != []:
                             except:
                                 degree = ""
                             
+                            if degree != "":
+                                extract_sql = """
+                                            SELECT long_description FROM re_degrees;
+                                            """
+                                cur.execute(extract_sql)
+                                
+                                re_degree_name_list = []
+                                
+                                for i in cur.fetchall():
+                                    re_degree_name_list.extend(i)
+                                
+                                try:
+                                    likely_degree, score = process.extractOne(degree, re_degree_name_list, score_cutoff = 90)
+                                except:
+                                    likely_degree = ""
+
+                                if likely_degree != "":
+                                    degree = likely_degree.replace(",", ";")
+                                else:
+                                    try:
+                                        params = {
+                                            'long_description': degree
+                                        }
+                                        
+                                        url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/6/tableentries"
+                                        
+                                        post_request_re()
+                                        
+                                        # Will update in PostgreSQL
+                                        insert_updates = """
+                                                        INSERT INTO re_degrees (long_description)
+                                                        VALUES (%s)
+                                                        """
+                                        cur.execute(insert_updates, [degree.replace(";", ",")])
+                                        conn.commit()
+                                    except:
+                                        degree = ""
+                            
                             try:
                                 department = ab_school['field_of_study']['name']
                                 if department == "" or department is None or department == "Null":
                                     department = ""
                             except:
                                 department = ""
+                                
+                            if department != "":
+                                extract_sql = """
+                                            SELECT long_description FROM re_departments;
+                                            """
+                                cur.execute(extract_sql)
+                                
+                                re_department_name_list = []
+                                
+                                for i in cur.fetchall():
+                                    re_department_name_list.extend(i)
+                                
+                                try:
+                                    likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
+                                except:
+                                    likely_department = ""
+                                    
+                                print(likely_department)
+
+                                if likely_department != "":
+                                    department = likely_department.replace(",", ";")
+                                else:
+                                    try:
+                                        params = {
+                                            'long_description': department
+                                        }
+                                        
+                                        url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
+                                        
+                                        post_request_re()
+                                        
+                                        # Will update in PostgreSQL
+                                        insert_updates = """
+                                                        INSERT INTO re_departments (long_description)
+                                                        VALUES (%s)
+                                                        """
+                                        cur.execute(insert_updates, [department.replace(";", ",")])
+                                        conn.commit()
+                                    except:
+                                        degree = ""
                                 
                             break
                     except:
@@ -2419,15 +2500,16 @@ if missing_in_re != []:
                     },
                     'date_entered': date_entered,
                     'degree': degree,
-                    'department': department,
+                    'campus': department[:50]
                 }
                 
                 # Delete blank values from JSON
                 for i in range(10):
                     params = del_blank_values_in_json(params_ab.copy())
-                    
-                print_json(params)
                 
+                url = "https://api.sky.blackbaud.com/constituent/v1/educations"
+                
+                post_request_re()
             else:
                 print("School doesn't exist in RE")
                 # Will add a new school in RE
