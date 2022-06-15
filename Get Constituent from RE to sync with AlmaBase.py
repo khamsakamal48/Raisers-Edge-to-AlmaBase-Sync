@@ -37,16 +37,31 @@ for filePath in fileList:
     except:
         pass
 
+# Housekeeping
+fileList = glob.glob('Schools_in_RE_*.json')
+
+# Iterate over the list of filepaths & remove each file.
+for filePath in fileList:
+    try:
+        os.remove(filePath)
+    except:
+        pass
+
 # Retrieve access_token from file
 with open('access_token_output.json') as access_token_output:
   data = json.load(access_token_output)
   access_token = data["access_token"]
-
-# Request Headers for Blackbaud API request
-headers = {
+  
+def get_request_re():
+    # Request Headers for Blackbaud API request
+    headers = {
+    # Request headers
     'Bb-Api-Subscription-Key': RE_API_KEY,
-    'Authorization': 'Bearer ' + access_token
-}
+    'Authorization': 'Bearer ' + access_token,
+    }
+    
+    global re_api_response
+    re_api_response = requests.get(url, params=params, headers=headers).json()
 
 # List link - https://host.nxt.blackbaud.com/lists/shared-list/da749c96-9f38-4580-95e4-1d188f788d5e?envid=p-dzY8gGigKUidokeljxaQiA
 # Request parameters for Blackbaud API request
@@ -61,19 +76,19 @@ url = 'https://api.sky.blackbaud.com/constituent/v1/constituents'
 # Pagination request to retreive list
 while url:
     # Blackbaud API GET request
-    response = requests.get(url, params=params, headers=headers).json()
+    get_request_re()
 
     # Incremental File name
     i = 1
     while os.path.exists("Alums_in_RE_%s.json" % i):
         i += 1
     with open("Alums_in_RE_%s.json" % i, "w") as list_output:
-        json.dump(response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
+        json.dump(re_api_response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
     
     # Check if a variable is present in file
     with open("Alums_in_RE_%s.json" % i) as list_output_last:
         if 'next_link' in list_output_last.read():
-            url = response["next_link"]
+            url = re_api_response["next_link"]
         else:
             break
         
@@ -135,6 +150,88 @@ with open('Alums_in_RE.csv', 'r') as input_csv:
     # Skip the header row.
     next(input_csv)
     cur.copy_from(input_csv, 'all_alums_in_re', sep=';')
+
+# Commit changes
+conn.commit()
+
+# Get School name list from RE
+params = {}
+
+# Table ID for School name in RE: 5010
+url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/5010/tableentries?limit=5000"
+
+# Pagination request to retreive list
+while url:
+    # Blackbaud API GET request
+    get_request_re()
+
+    # Incremental File name
+    i = 1
+    while os.path.exists("Schools_in_RE_%s.json" % i):
+        i += 1
+    with open("Schools_in_RE_%s.json" % i, "w") as list_output:
+        json.dump(re_api_response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
+    
+    # Check if a variable is present in file
+    with open("Schools_in_RE_%s.json" % i) as list_output_last:
+        if 'next_link' in list_output_last.read():
+            url = re_api_response["next_link"]
+        else:
+            break
+        
+# Read multiple files
+multiple_files = glob.glob("Schools_in_RE_*.json")
+
+# Parse from JSON and write to CSV file
+# Header of CSV file
+header = ['table_entries_id', 'is_active', 'long_description', 'short_description', 'sequence', 'is_system_entry', 'code_tables_id', 'added_by_id', 'code_tables_name']
+
+
+with open('Schools_in_RE.csv', 'w', encoding='UTF8') as csv_file:
+    writer = csv.writer(csv_file, delimiter = ";")
+
+    # Write the header
+    writer.writerow(header)
+    
+# Read each file
+for each_file in multiple_files:
+
+    # Open JSON file
+    with open(each_file, 'r') as json_file:
+        json_content = json.load(json_file)
+
+        for results in json_content['value']:
+            try:
+                data = (results['table_entries_id'],results['is_active'],results['long_description'],results['short_description'],results['sequence'],results['is_system_entry'],results['code_tables_id'],results['added_by_id'],results['code_tables_name'])
+                
+                with open('Schools_in_RE.csv', 'a', encoding='UTF8') as csv_file:
+                    writer = csv.writer(csv_file, delimiter = ";")
+                    writer.writerow(data)
+            except:
+                pass
+
+# Delete paginated JSON files
+# Get a list of all the file paths that ends with wildcard from in specified directory
+fileList = glob.glob('Schools_in_RE_*.json')
+
+# Iterate over the list of filepaths & remove each file.
+for filePath in fileList:
+    try:
+        os.remove(filePath)
+    except:
+        pass
+    
+# Delete rows in table
+cur.execute("truncate re_schools;")
+
+# Commit changes
+conn.commit()
+
+# Copying contents of CSV file to PostgreSQL DB
+with open('Schools_in_RE.csv', 'r') as input_csv:
+    # Skip the header row.
+    next(input_csv)
+    cur.copy_from(input_csv, 're_schools', sep=';')
 
 # Commit changes
 conn.commit()
