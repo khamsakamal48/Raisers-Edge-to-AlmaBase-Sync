@@ -1020,7 +1020,7 @@ for each_phone in ab_phone_list:
         if score < 80:
             missing_in_re.append(each_phone)
     except:
-        pass
+        missing_in_re.append(each_phone)
 
 # Making sure that there are no duplicates in the missing list
 if missing_in_re != []:
@@ -1059,7 +1059,7 @@ for each_phone in re_phone_list:
         if score < 80:
             missing_in_ab.append(each_phone)
     except:
-        pass
+        missing_in_ab.append(each_phone)
 
 # Making sure that there are no duplicates in the missing list
 if missing_in_ab != []:
@@ -1137,7 +1137,7 @@ for each_org in ab_org_name_list:
         if score < 90:
             missing_in_re.append(each_org)
     except:
-        pass
+        missing_in_re.append(each_org)
 
 # Making sure that there are no duplicates in the missing list
 if missing_in_re != []:
@@ -1329,7 +1329,7 @@ for each_org in re_org_name_list:
         if score < 90:
             missing_in_ab.append(each_org)
     except:
-        pass
+        missing_in_ab.append(each_org)
     
 # Making sure that there are no duplicates in the missing list
 if missing_in_ab != []:
@@ -1681,8 +1681,11 @@ for each_value in ab_api_response_address['addresses']:
         if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
             ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
             
+            try:
             likely_address, score = process.extractOne(ab_address, re_address_list)
             if score < 90:
+                missing_in_re.append(ab_address)
+    except:
                 missing_in_re.append(ab_address)
     except:
         pass
@@ -1781,8 +1784,11 @@ missing_in_ab = []
 for each_value in re_api_response_address['value']:
     re_address = each_value['formatted_address'].replace("\r\n",", ")
     
+    try:
     likely_address, score = process.extractOne(re_address, ab_address_list)
     if score < 90:
+        missing_in_ab.append(re_address)
+    except:
         missing_in_ab.append(re_address)
 
 # Making sure that there are no duplicates in the missing list
