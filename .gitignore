@@ -29,6 +29,7 @@ MANIFEST
 *.json
 *.bak
 Alums_in_RE.csv
+Schools_in_RE.csv
 Test.*
 
 # PyInstaller
