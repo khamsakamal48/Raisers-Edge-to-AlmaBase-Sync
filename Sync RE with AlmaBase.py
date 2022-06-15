@@ -1682,10 +1682,10 @@ for each_value in ab_api_response_address['addresses']:
             ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
             
             try:
-            likely_address, score = process.extractOne(ab_address, re_address_list)
-            if score < 90:
-                missing_in_re.append(ab_address)
-    except:
+                likely_address, score = process.extractOne(ab_address, re_address_list)
+                if score < 90:
+                    missing_in_re.append(ab_address)
+            except:
                 missing_in_re.append(ab_address)
     except:
         pass
@@ -1785,9 +1785,9 @@ for each_value in re_api_response_address['value']:
     re_address = each_value['formatted_address'].replace("\r\n",", ")
     
     try:
-    likely_address, score = process.extractOne(re_address, ab_address_list)
-    if score < 90:
-        missing_in_ab.append(re_address)
+        likely_address, score = process.extractOne(re_address, ab_address_list)
+        if score < 90:
+            missing_in_ab.append(re_address)
     except:
         missing_in_ab.append(re_address)
 
@@ -2323,3 +2323,129 @@ for each_education in re_api_response_education_all['value']:
             re_other_school_name_list.append(each_education['name'])
     except:
         pass
+
+# Get other education details from AlmaBase
+ab_other_school_name_list = []
+
+url  = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
+get_request_almabase()
+
+try:
+    for each_education in ab_api_response['results']:
+        try:
+            ab_other_school_name_list.append(each_education['college']['name'])
+        except:
+            pass
+except:
+    pass
+
+# Finding missing other schools to be added in Raisers Edge
+missing_in_re = []
+for each_school in ab_other_school_name_list:
+    try:
+        likely_school, score = process.extractOne(each_school, re_other_school_name_list)
+        if score < 90:
+            missing_in_re.append(each_school)
+    except:
+        missing_in_re.append(each_school)
+        
+# Add missing records in RE
+if missing_in_re != []:
+    # Get from PostgreSQL
+    extract_sql = """
+            SELECT long_description FROM re_schools;
+            """
+    cur.execute(extract_sql)
+    
+    re_school_name_list = []
+    for i in cur.fetchall():
+        re_school_name_list.extend(i)
+    
+    for each_school in missing_in_re:
+        try:
+            likely_school, score = process.extractOne(each_school, re_school_name_list, score_cutoff = 85)
+            
+            if likely_school != "":
+                # Will add a new education in RE
+                for ab_school in ab_api_response['results']:
+                    try:
+                        if each_school == ab_school['college']['name']:
+                            
+                            try:
+                                class_of = ab_school['year_of_graduation']
+                                if class_of == "" or class_of is None or class_of == "Null":
+                                    class_of = ""
+                            except:
+                                class_of = ""
+                                
+                            try:
+                                date_entered = ab_school['date_entered']
+                                if date_entered == "" or date_entered is None or date_entered == "Null":
+                                    date_entered = ""
+                            except:
+                                date_entered = ""
+                            
+                            try:
+                                degree = ab_school['degree']['name']
+                                if degree == "" or degree is None or degree == "Null":
+                                    degree = ""
+                            except:
+                                degree = ""
+                            
+                            try:
+                                department = ab_school['field_of_study']['name']
+                                if department == "" or department is None or department == "Null":
+                                    department = ""
+                            except:
+                                department = ""
+                                
+                            break
+                    except:
+                        each_school = ""
+                        class_of = ""
+                        date_entered = ""
+                        degree = ""
+                        department = ""
+                
+                params_ab = {
+                    'constituent_id': re_system_id,
+                    'school': likely_school,
+                    'class_of': class_of,
+                    'date_graduated': {
+                        'y': class_of
+                    },
+                    'date_left': {
+                        'y': class_of
+                    },
+                    'date_entered': date_entered,
+                    'degree': degree,
+                    'department': department,
+                }
+                
+                # Delete blank values from JSON
+                for i in range(10):
+                    params = del_blank_values_in_json(params_ab.copy())
+                    
+                print_json(params)
+                
+            else:
+                print("School doesn't exist in RE")
+                # Will add a new school in RE
+                
+                # Will add a new education in RE
+            
+        except:
+            pass
+
+# Finding missing other schools to be added in AlmaBase
+missing_in_ab = []
+for each_school in re_other_school_name_list:
+    try:
+        likely_phone, score = process.extractOne(each_school, ab_other_school_name_list)
+        if score < 90:
+            missing_in_ab.append(each_school)
+    except:
+        missing_in_ab.append(each_school)
+
+print(missing_in_re)
+print(missing_in_ab)
