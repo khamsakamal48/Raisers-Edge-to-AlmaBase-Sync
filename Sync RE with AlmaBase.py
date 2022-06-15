@@ -2145,7 +2145,7 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
             re_class_of = ""
             re_graduation_status = ""
             
-        if re_department == "" and ab_department != "":
+        if re_department == "" or re_department == "Other" and ab_department != "":
             extract_department = """
             SELECT re_department FROM department_mapping WHERE ab_department = '%s' FETCH FIRST 1 ROW ONLY;
             """
@@ -2157,7 +2157,7 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
         else:
             re_department = ""
             
-        if re_degree == "" and ab_degree != "":
+        if re_degree == "" or re_degree == "Other" and ab_degree != "":
             extract_degree = """
             SELECT re_degree FROM degree_mapping WHERE ab_degree = '%s' FETCH FIRST 1 ROW ONLY;
             """
@@ -2169,7 +2169,7 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
         else:
             re_degree = ""
             
-        if re_hostel == "" and ab_hostel != "":
+        if re_hostel == "" or re_hostel == "Other" and ab_hostel != "":
             re_hostel = ab_hostel
         else:
             re_hostel = ""
