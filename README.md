@@ -93,6 +93,19 @@ CREATE TABLE re_iitb_education_added
     date date
 );
 
+CREATE TABLE re_schools
+(
+    table_entries_id character varying,
+    is_active character varying,
+    long_description character varying,
+    short_description character varying,
+    sequence character varying,
+    is_system_entry character varying,
+    code_tables_id character varying,
+    added_by_id character varying,
+    code_tables_name character varying
+);
+
 Import Degree Mapping.csv to degree_mapping table
 Import Department Mapping.csv to department_mapping table
 
