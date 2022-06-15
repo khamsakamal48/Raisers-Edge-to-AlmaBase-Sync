@@ -106,6 +106,30 @@ CREATE TABLE re_schools
     code_tables_name character varying
 );
 
+CREATE TABLE re_degrees
+(
+    table_entries_id character varying,
+    is_active character varying,
+    long_description character varying,
+    sequence character varying,
+    is_system_entry character varying,
+    code_tables_id character varying,
+    added_by_id character varying,
+    code_tables_name character varying
+);
+
+CREATE TABLE re_departments
+(
+    table_entries_id character varying,
+    is_active character varying,
+    long_description character varying,
+    sequence character varying,
+    is_system_entry character varying,
+    code_tables_id character varying,
+    added_by_id character varying,
+    code_tables_name character varying
+);
+
 Import Degree Mapping.csv to degree_mapping table
 Import Department Mapping.csv to department_mapping table
 
