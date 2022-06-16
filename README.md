@@ -130,6 +130,21 @@ CREATE TABLE re_departments
     code_tables_name character varying
 );
 
+CREATE TABLE re_other_education_added
+(
+    re_system_id character varying,
+    school_name character varying,
+    date date
+);
+
+CREATE TABLE ab_other_education_added
+(
+    ab_system_id character varying,
+    school_name character varying,
+    date date
+);
+
+
 Import Degree Mapping.csv to degree_mapping table
 Import Department Mapping.csv to department_mapping table
 
