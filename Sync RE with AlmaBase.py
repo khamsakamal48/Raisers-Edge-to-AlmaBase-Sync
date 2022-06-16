@@ -2833,7 +2833,7 @@ try:
 except:
     re_dob_year = ""
     
-re_dob = re_dob_year + "-" + re_dob_month + "-" + re_dob_day
+re_dob = str(re_dob_year) + "-" + str(re_dob_month) + "-" + str(re_dob_day)
 
 try:
     re_first_name = re_api_response_generic_details['first']
@@ -2843,11 +2843,20 @@ except:
     re_first_name = ""
     
 try:
+    re_middle_name = re_api_response_generic_details['middle']
+    if re_middle_name is None or re_middle_name =="Null" or re_middle_name == "null":
+        re_middle_name = ""
+except:
+    re_middle_name = ""
+    
+try:
     re_last_name = re_api_response_generic_details['last']
     if re_last_name is None or re_last_name =="Null" or re_last_name == "null":
         re_last_name = ""
 except:
     re_last_name = ""
+
+re_full_name = (re_first_name + " " + re_middle_name + " " + re_last_name).replace("  ", " ")
 
 try:
     re_deceased = re_api_response_generic_details['deceased']
@@ -2873,6 +2882,11 @@ try:
     ab_dob = ab_api_response_generic_details['date_of_birth']
     if ab_dob is None or ab_dob =="Null" or ab_dob == "null":
         ab_dob = ""
+    else:
+        date_time_obj = datetime.strptime(ab_dob, '%Y-%m-%d')
+        ab_dob_day = date_time_obj.day
+        ab_dob_month = date_time_obj.month 
+        ab_dob_year = date_time_obj.year
 except:
     ab_dob = ""
 
@@ -2882,13 +2896,22 @@ try:
         ab_first_name = ""
 except:
     ab_first_name = ""
-    
+
+try:
+    ab_middle_name = ab_api_response_generic_details['middle_name']
+    if ab_middle_name is None or ab_middle_name =="Null" or ab_middle_name == "null":
+        ab_middle_name = ""
+except:
+    ab_middle_name = ""
+
 try:
     ab_last_name = ab_api_response_generic_details['last_name']
     if ab_last_name is None or ab_last_name =="Null" or ab_last_name == "null":
         ab_last_name = ""
 except:
     ab_last_name = ""
+
+ab_full_name = (ab_first_name + " " + ab_middle_name + " " + ab_last_name).replace("  ", " ")
 
 try:
     ab_deceased = ab_api_response_generic_details['deceased']
@@ -2905,19 +2928,84 @@ except:
     ab_nickname = ""
 
 # Compare RE with AB
-if re_gender == "" and ab_gender != "":
+re_gender_update = ""
+if re_gender == "" or re_gender == "Unknown" and ab_gender != "":
     re_gender_update = ab_gender
-# elif re_gender == "" and ab_gender == "":
-    
+elif re_gender == "" or re_gender == "Unknown" and ab_gender == "":
+    if re_first_name != "" and len(re_first_name) <= 2:
+        url = "https://api.genderize.io?name=%s" % re_first_name
+        response = requests.get(url)
+        json_response = response.json()
+        re_gender_update = json_response['gender'].title()
+    else:
+        re_gender_update = "Male"
 
-if len(re_dob) < len(ab_dob):
-    re_dob_update = ab_dob
+
+if re_dob_day == "" and re_dob_month == "" and re_dob_year == "":
+    re_dob_day_update = ab_dob_day
+    re_dob_month_update = ab_dob_month 
+    re_dob_year_update = ab_dob_year
 else:
-    re_dob_update = ""
+    re_dob_day_update = ""
+    re_dob_month_update = "" 
+    re_dob_year_update = ""
 
+if len(re_first_name) < len(ab_first_name) or re_first_name == ".":
+    re_first_name_update = ab_first_name.title()
+else:
+    re_first_name_update = ""
 
+if len(re_middle_name) < len(ab_middle_name) or re_middle_name == ".":
+    re_middle_name_update = ab_middle_name.title()
+else:
+    re_middle_name_update = ""
 
+if len(re_last_name) < len(ab_last_name) or re_last_name == ".":
+    re_last_name_update = ab_last_name.title()
+else:
+    re_last_name_update = ""
+
+re_former_name_update = ""
+if re_first_name_update != "" or re_middle_name_update != "" or re_last_name_update != "":
+    if len(re_full_name) > len(ab_full_name):
+        re_first_name_update = ""
+        re_middle_name_update = ""
+        re_last_name_update = ""
+        re_former_name_update = ""
+    else:
+        re_former_name_update = re_full_name
+
+if re_deceased == "false" and ab_deceased == "true":
+    re_deceased_update = "true"
+else:
+    re_deceased_update = ""
+
+re_preferred_name_update = ab_nickname
 
 # Find delta and upload
+params_re = {
+    'birthdate': {
+        'd': re_dob_day_update,
+        'm': re_dob_month_update,
+        'y': re_dob_year_update
+    },
+    'deceased': re_deceased_update,
+    'first': re_first_name_update,
+    'former_name': re_former_name_update,
+    'gender': re_gender_update,
+    'last': re_last_name_update,
+    'middle': re_middle_name_update,
+    'preferred_name': re_preferred_name_update[:50],
+}
+
+# Delete blank values from JSON
+for i in range(10):
+    params = del_blank_values_in_json(params_re.copy())
+    
+print_json(params)
+
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
+patch_request_re()
+
 # Compare AB with RE
 # Find delta and upload
