@@ -2,6 +2,7 @@
 
 from sqlite3 import paramstyle
 from textwrap import indent
+from click import echo
 import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -2208,8 +2209,6 @@ if len(re_api_response_education['value']) == 1 and ab_api_response_education['c
         for i in range(10):
             params = del_blank_values_in_json(params_re.copy())
             
-        print_json(params)
-            
         if params != {}:
             url = "https://api.sky.blackbaud.com/constituent/v1/educations/%s" % re_education_id
             patch_request_re()
@@ -2320,7 +2319,7 @@ for each_education in re_api_response_education_all['value']:
     try:
         if each_education['school'] != 'Indian Institute of Technology Bombay':
             # Retrieve the University name
-            re_other_school_name_list.append(each_education['name'])
+            re_other_school_name_list.append(each_education['school'])
     except:
         pass
 
@@ -2344,7 +2343,7 @@ missing_in_re = []
 for each_school in ab_other_school_name_list:
     try:
         likely_school, score = process.extractOne(each_school, re_other_school_name_list)
-        if score < 90:
+        if score < 80:
             missing_in_re.append(each_school)
     except:
         missing_in_re.append(each_school)
@@ -2455,8 +2454,6 @@ if missing_in_re != []:
                                     likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
                                 except:
                                     likely_department = ""
-                                    
-                                print(likely_department)
 
                                 if likely_department != "":
                                     department = likely_department.replace(",", ";")
@@ -2488,7 +2485,7 @@ if missing_in_re != []:
                         degree = ""
                         department = ""
                 
-                params_ab = {
+                params_re = {
                     'constituent_id': re_system_id,
                     'school': likely_school,
                     'class_of': class_of,
@@ -2505,17 +2502,171 @@ if missing_in_re != []:
                 
                 # Delete blank values from JSON
                 for i in range(10):
-                    params = del_blank_values_in_json(params_ab.copy())
+                    params = del_blank_values_in_json(params_re.copy())
                 
                 url = "https://api.sky.blackbaud.com/constituent/v1/educations"
                 
                 post_request_re()
             else:
-                print("School doesn't exist in RE")
                 # Will add a new school in RE
+                try:
+                    params = {
+                        'long_description': each_school
+                    }
+                    
+                    url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
+                    
+                    post_request_re()
+                    
+                    # Will update in PostgreSQL
+                    insert_updates = """
+                                    INSERT INTO re_schools (long_description)
+                                    VALUES (%s)
+                                    """
+                    cur.execute(insert_updates, [each_school.replace(";", ",")])
+                    conn.commit()
+                    
+                    # Will add a new education in RE
+                    for ab_school in ab_api_response['results']:
+                        try:
+                            if each_school == ab_school['college']['name']:
+                                
+                                try:
+                                    class_of = ab_school['year_of_graduation']
+                                    if class_of == "" or class_of is None or class_of == "Null":
+                                        class_of = ""
+                                except:
+                                    class_of = ""
+                                    
+                                try:
+                                    date_entered = ab_school['date_entered']
+                                    if date_entered == "" or date_entered is None or date_entered == "Null":
+                                        date_entered = ""
+                                except:
+                                    date_entered = ""
+                                
+                                try:
+                                    degree = ab_school['degree']['name']
+                                    if degree == "" or degree is None or degree == "Null":
+                                        degree = ""
+                                except:
+                                    degree = ""
+                                
+                                if degree != "":
+                                    extract_sql = """
+                                                SELECT long_description FROM re_degrees;
+                                                """
+                                    cur.execute(extract_sql)
+                                    
+                                    re_degree_name_list = []
+                                    
+                                    for i in cur.fetchall():
+                                        re_degree_name_list.extend(i)
+                                    
+                                    try:
+                                        likely_degree, score = process.extractOne(degree, re_degree_name_list, score_cutoff = 90)
+                                    except:
+                                        likely_degree = ""
+
+                                    if likely_degree != "":
+                                        degree = likely_degree.replace(",", ";")
+                                    else:
+                                        try:
+                                            params = {
+                                                'long_description': degree
+                                            }
+                                            
+                                            url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/6/tableentries"
+                                            
+                                            post_request_re()
+                                            
+                                            # Will update in PostgreSQL
+                                            insert_updates = """
+                                                            INSERT INTO re_degrees (long_description)
+                                                            VALUES (%s)
+                                                            """
+                                            cur.execute(insert_updates, [degree.replace(";", ",")])
+                                            conn.commit()
+                                        except:
+                                            degree = ""
+                                
+                                try:
+                                    department = ab_school['field_of_study']['name']
+                                    if department == "" or department is None or department == "Null":
+                                        department = ""
+                                except:
+                                    department = ""
+                                    
+                                if department != "":
+                                    extract_sql = """
+                                                SELECT long_description FROM re_departments;
+                                                """
+                                    cur.execute(extract_sql)
+                                    
+                                    re_department_name_list = []
+                                    
+                                    for i in cur.fetchall():
+                                        re_department_name_list.extend(i)
+                                    
+                                    try:
+                                        likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
+                                    except:
+                                        likely_department = ""
+
+                                    if likely_department != "":
+                                        department = likely_department.replace(",", ";")
+                                    else:
+                                        try:
+                                            params = {
+                                                'long_description': department
+                                            }
+                                            
+                                            url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
+                                            
+                                            post_request_re()
+                                            
+                                            # Will update in PostgreSQL
+                                            insert_updates = """
+                                                            INSERT INTO re_departments (long_description)
+                                                            VALUES (%s)
+                                                            """
+                                            cur.execute(insert_updates, [department.replace(";", ",")])
+                                            conn.commit()
+                                        except:
+                                            degree = ""
+                                    
+                                break
+                        except:
+                            each_school = ""
+                            class_of = ""
+                            date_entered = ""
+                            degree = ""
+                            department = ""
                 
-                # Will add a new education in RE
-            
+                    params_re = {
+                        'constituent_id': re_system_id,
+                        'school': likely_school,
+                        'class_of': class_of,
+                        'date_graduated': {
+                            'y': class_of
+                        },
+                        'date_left': {
+                            'y': class_of
+                        },
+                        'date_entered': date_entered,
+                        'degree': degree,
+                        'campus': department[:50]
+                    }
+                    
+                    # Delete blank values from JSON
+                    for i in range(10):
+                        params = del_blank_values_in_json(params_re.copy())
+                    
+                    url = "https://api.sky.blackbaud.com/constituent/v1/educations"
+                    
+                    post_request_re()
+                except:
+                    pass
         except:
             pass
 
@@ -2524,10 +2675,107 @@ missing_in_ab = []
 for each_school in re_other_school_name_list:
     try:
         likely_phone, score = process.extractOne(each_school, ab_other_school_name_list)
-        if score < 90:
+        if score < 80:
             missing_in_ab.append(each_school)
     except:
         missing_in_ab.append(each_school)
 
-print(missing_in_re)
-print(missing_in_ab)
+if missing_in_ab != []:
+    for each_school in missing_in_ab:
+        try:
+            for each_education in re_api_response_org['value']:
+                try:
+                    i = 0
+                    if each_education['name'] == each_school:
+                        
+                        try:
+                            year_of_graduation = each_education['end']['y']
+                            if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
+                                year_of_graduation = ""
+                        except:
+                            year_of_graduation = ""
+                        
+                        try:
+                            year_of_joining = each_education['start']['y']
+                            if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
+                                year_of_joining = ""
+                        except:
+                            year_of_joining = ""
+                            
+                        try:
+                            course = each_education['position']
+                            if course == "" or course is None or course == "Null":
+                                course = ""
+                        except:
+                            course = ""
+                        i = 1
+                        
+                        department = ""
+                        
+                        break
+                except:
+                    pass
+                
+            if i == 0:
+                for each_education in re_api_response_education_all['value']:
+                    try:
+                        if each_education['school'] == each_school:
+                            
+                            try:
+                                year_of_graduation = each_education['class_of']
+                                if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
+                                    year_of_graduation = ""
+                            except:
+                                year_of_graduation = ""
+                                
+                            try:
+                                year_of_joining = each_education['date_entered']['y']
+                                if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
+                                    year_of_joining = ""
+                            except:
+                                year_of_joining = ""
+                            
+                            try:
+                                course = each_education['degree']
+                                if course == "" or course is None or course == "Null":
+                                    course = ""
+                            except:
+                                course = ""
+                                
+                            try:
+                                department = each_education['campus']
+                                if department == "" or department is None or department == "Null":
+                                    department = ""
+                            except:
+                                department = ""
+                                
+                            break
+                    except:
+                        pass
+            
+            params_ab = {
+                'college': {
+                    'name': each_school
+                },
+                'course': {
+                    'name': course
+                },
+                'branch': {
+                    'name': department
+                },
+                'year_of_graduation': year_of_graduation,
+                'year_of_joining': year_of_joining
+            }
+            
+            # Delete blank values from JSON
+            for i in range(10):
+                params = del_blank_values_in_json(params_ab.copy())
+            
+            print_json(params)
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
+            
+            post_request_ab()
+            print(ab_api_response)
+        except:
+            pass
+
