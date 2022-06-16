@@ -2940,7 +2940,6 @@ elif re_gender == "" or re_gender == "Unknown" and ab_gender == "":
     else:
         re_gender_update = "Male"
 
-
 if re_dob_day == "" and re_dob_month == "" and re_dob_year == "":
     re_dob_day_update = ab_dob_day
     re_dob_month_update = ab_dob_month 
@@ -3002,10 +3001,75 @@ params_re = {
 for i in range(10):
     params = del_blank_values_in_json(params_re.copy())
     
-print_json(params)
-
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
-patch_request_re()
+if params != {}:
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
+    patch_request_re()
+    
+    # Will update in PostgreSQL
+    insert_updates = """
+                    INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+                    """
+    cur.execute(insert_updates, [re_system_id, re_dob_day_update, re_dob_month_update, re_dob_year_update, re_deceased_update, re_first_name_update, re_former_name_update, re_gender_update, re_last_name_update, re_middle_name_update, re_preferred_name_update])
+    conn.commit()
 
 # Compare AB with RE
+ab_gender_update = ""
+if re_gender != "" and ab_gender == "":
+    ab_gender_update = re_gender
+elif re_gender == "" and ab_gender == "":
+    ab_gender_update = re_gender_update
+
+if ab_dob_day == "" and ab_dob_month == "" and ab_dob_year == "":
+    if re_dob_day != "" and re_dob_month != "" and re_dob_year != "":
+        ab_dob_update = datetime(re_dob_year, re_dob_month, re_dob_day).date()
+    elif re_dob_day != "" and re_dob_month != "":
+        ab_dob_update = str(re_dob_month) + "-" + str(re_dob_day)
+else:
+    ab_dob_update = ""
+    
+if len(re_first_name) > len(ab_first_name) or ab_first_name == ".":
+    ab_first_name_update = re_first_name.title()
+else:
+    ab_first_name_update = ""
+    
+if len(re_middle_name) > len(ab_middle_name) or ab_middle_name == ".":
+    ab_middle_name_update = re_middle_name.title()
+else:
+    ab_middle_name_update = ""
+    
+if len(re_last_name) > len(ab_last_name) or ab_last_name == ".":
+    ab_last_name_update = re_last_name.title()
+else:
+    ab_last_name_update = ""
+    
+if re_deceased == "true" and ab_deceased == "false":
+    ab_deceased_update = "true"
+else:
+    ab_deceased_update = ""
+
 # Find delta and upload
+params_ab = {
+    'first_name': ab_first_name_update,
+    'middle_name': ab_middle_name_update,
+    'last_name': ab_last_name_update,
+    'gender': ab_gender_update,
+    'date_of_birth': ab_dob_update,
+    'deceased': ab_deceased_update
+}
+
+# Delete blank values from JSON
+for i in range(10):
+    params = del_blank_values_in_json(params_ab.copy())
+    
+if params != {}:
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+    patch_request_ab()
+    
+    # Will update in PostgreSQL
+    insert_updates = """
+                    INSERT INTO ab_personal_details_added (ab_system_id, first_name, middle_name, last_name, gender, dob, deceased, date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                    """
+    cur.execute(insert_updates, [ab_system_id, ab_first_name_update, ab_middle_name_update, ab_last_name_update, ab_gender_update, ab_dob_update, ab_deceased_update])
+    conn.commit()
