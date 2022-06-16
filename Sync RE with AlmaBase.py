@@ -2856,7 +2856,7 @@ try:
 except:
     re_last_name = ""
 
-re_full_name = (re_first_name + " " + re_middle_name + " " + re_last_name).replace("  ", " ")
+re_full_name = (re_first_name + " " + re_middle_name + " " + re_last_name).replace(".", " ").replace("  ", " ")
 
 try:
     re_deceased = re_api_response_generic_details['deceased']
