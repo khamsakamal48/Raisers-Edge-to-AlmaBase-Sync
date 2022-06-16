@@ -1683,7 +1683,7 @@ for each_value in ab_api_response_address['addresses']:
             
             try:
                 likely_address, score = process.extractOne(ab_address, re_address_list)
-                if score < 90:
+                if score < 80:
                     missing_in_re.append(ab_address)
             except:
                 missing_in_re.append(ab_address)
@@ -1786,7 +1786,7 @@ for each_value in re_api_response_address['value']:
     
     try:
         likely_address, score = process.extractOne(re_address, ab_address_list)
-        if score < 90:
+        if score < 80:
             missing_in_ab.append(re_address)
     except:
         missing_in_ab.append(re_address)
