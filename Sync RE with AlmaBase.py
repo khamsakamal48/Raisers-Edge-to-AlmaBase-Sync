@@ -2798,3 +2798,125 @@ if missing_in_ab != []:
         except:
             pass
 
+# Sync Generic person Details
+# Get personal details from RE
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
+get_request_re()
+re_api_response_generic_details = re_api_response
+
+try:
+    re_gender = re_api_response_generic_details['gender']
+    if re_gender is None or re_gender =="Null" or re_gender == "null":
+        re_gender = ""
+except:
+    re_gender = ""
+
+try:
+    re_dob_day = re_api_response_generic_details['birthdate']['d']
+    if re_dob_day is None or re_dob_day =="Null" or re_dob_day == "null":
+        re_dob_day = ""
+except:
+    re_dob_day = ""
+    
+try:
+    re_dob_month = re_api_response_generic_details['birthdate']['m']
+    if re_dob_month is None or re_dob_month =="Null" or re_dob_month == "null":
+        re_dob_month = ""
+except:
+    re_dob_month = ""
+    
+try:
+    re_dob_year = re_api_response_generic_details['birthdate']['y']
+    if re_dob_year is None or re_dob_year =="Null" or re_dob_year == "null":
+        re_dob_year = ""
+except:
+    re_dob_year = ""
+    
+re_dob = re_dob_year + "-" + re_dob_month + "-" + re_dob_day
+
+try:
+    re_first_name = re_api_response_generic_details['first']
+    if re_first_name is None or re_first_name =="Null" or re_first_name == "null":
+        re_first_name = ""
+except:
+    re_first_name = ""
+    
+try:
+    re_last_name = re_api_response_generic_details['last']
+    if re_last_name is None or re_last_name =="Null" or re_last_name == "null":
+        re_last_name = ""
+except:
+    re_last_name = ""
+
+try:
+    re_deceased = re_api_response_generic_details['deceased']
+    if re_deceased is None or re_deceased =="Null" or re_deceased == "null":
+        re_deceased = ""
+except:
+    re_deceased = ""
+
+# Get personal details from Almabase
+url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+get_request_almabase()
+
+ab_api_response_generic_details = ab_api_response
+
+try:
+    ab_gender = ab_api_response_generic_details['gender']
+    if ab_gender is None or ab_gender =="Null" or ab_gender == "null":
+        ab_gender = ""
+except:
+    ab_gender = ""
+
+try:
+    ab_dob = ab_api_response_generic_details['date_of_birth']
+    if ab_dob is None or ab_dob =="Null" or ab_dob == "null":
+        ab_dob = ""
+except:
+    ab_dob = ""
+
+try:
+    ab_first_name = ab_api_response_generic_details['first_name']
+    if ab_first_name is None or ab_first_name =="Null" or ab_first_name == "null":
+        ab_first_name = ""
+except:
+    ab_first_name = ""
+    
+try:
+    ab_last_name = ab_api_response_generic_details['last_name']
+    if ab_last_name is None or ab_last_name =="Null" or ab_last_name == "null":
+        ab_last_name = ""
+except:
+    ab_last_name = ""
+
+try:
+    ab_deceased = ab_api_response_generic_details['deceased']
+    if ab_deceased is None or ab_deceased =="Null" or ab_deceased == "null":
+        ab_deceased = ""
+except:
+    ab_deceased = ""
+    
+try:
+    ab_nickname = ab_api_response_generic_details['nick_name']
+    if ab_nickname is None or ab_nickname =="Null" or ab_nickname == "null":
+        ab_nickname = ""
+except:
+    ab_nickname = ""
+
+# Compare RE with AB
+if re_gender == "" and ab_gender != "":
+    re_gender_update = ab_gender
+# elif re_gender == "" and ab_gender == "":
+    
+
+if len(re_dob) < len(ab_dob):
+    re_dob_update = ab_dob
+else:
+    re_dob_update = ""
+
+
+
+
+# Find delta and upload
+# Compare AB with RE
+# Find delta and upload
