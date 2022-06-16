@@ -2505,8 +2505,15 @@ if missing_in_re != []:
                     params = del_blank_values_in_json(params_re.copy())
                 
                 url = "https://api.sky.blackbaud.com/constituent/v1/educations"
-                
                 post_request_re()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_other_education_added (re_system_id, school_name, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [re_system_id, likely_school])
+                conn.commit()
             else:
                 # Will add a new school in RE
                 try:
@@ -2663,8 +2670,15 @@ if missing_in_re != []:
                         params = del_blank_values_in_json(params_re.copy())
                     
                     url = "https://api.sky.blackbaud.com/constituent/v1/educations"
-                    
                     post_request_re()
+                    
+                    # Will update in PostgreSQL
+                    insert_updates = """
+                                    INSERT INTO re_other_education_added (re_system_id, school_name, date)
+                                    VALUES (%s, %s, now())
+                                    """
+                    cur.execute(insert_updates, [re_system_id, likely_school])
+                    conn.commit()
                 except:
                     pass
         except:
@@ -2771,11 +2785,16 @@ if missing_in_ab != []:
             for i in range(10):
                 params = del_blank_values_in_json(params_ab.copy())
             
-            print_json(params)
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
-            
             post_request_ab()
-            print(ab_api_response)
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_other_education_added (ab_system_id, school_name, date)
+                            VALUES (%s, %s, now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, each_school])
+            conn.commit()
         except:
             pass
 
