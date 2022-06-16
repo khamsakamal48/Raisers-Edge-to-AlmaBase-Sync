@@ -3,7 +3,7 @@
 from sqlite3 import paramstyle
 from textwrap import indent
 from click import echo
-import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy
+import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy, datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Environment
@@ -11,6 +11,7 @@ from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
+from datetime import datetime
 
 # Set current directory
 #os.chdir(os.path.dirname(sys.argv[0]))
