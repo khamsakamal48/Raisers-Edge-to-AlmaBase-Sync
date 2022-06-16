@@ -144,6 +144,32 @@ CREATE TABLE ab_other_education_added
     date date
 );
 
+CREATE TABLE re_personal_details_added
+(
+    re_system_id character varying,
+    birth_day character varying,
+    birth_month character varying,
+    deceased character varying,
+    first_name character varying,
+    former_name character varying,
+    gender character varying,
+    last_name character varying,
+    middle_name character varying,
+    preferred_name character varying,
+    date date
+);
+
+CREATE TABLE ab_personal_details_added
+(
+    ab_system_id character varying,
+    first_name character varying,
+    middle_name character varying,
+    last_name character varying,
+    gender character varying,
+    dob character varying,
+    deceased character varying,
+    date date
+);
 
 Import Degree Mapping.csv to degree_mapping table
 Import Department Mapping.csv to department_mapping table
