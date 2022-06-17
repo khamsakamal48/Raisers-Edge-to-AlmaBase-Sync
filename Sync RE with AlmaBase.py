@@ -3515,3 +3515,102 @@ if ab_website != "" or ab_linkedin != "" or ab_facebook != "" or ab_twitter != "
                         """
         cur.execute(insert_updates, [ab_system_id, ab_google])
         conn.commit()
+
+# Sync interests
+# Get interests from RE
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/customfields" % re_system_id
+get_request_re()
+
+re_interest_list = []
+for each_value in re_api_response['value']:
+    try:
+        if each_value['category'] == "Interests":
+            re_interest_list.append(each_value['value'])
+    except:
+        pass
+
+# Get interests from AB
+url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=interests" % ab_system_id
+get_request_almabase()
+
+ab_interest_list = []
+for each_value in ab_api_response['interests']:
+    try:
+        ab_interest_list.append(each_value['name'])
+    except:
+        pass
+
+# Compare interests between RE & AB
+missing_in_re = []
+for each_interest in ab_interest_list:
+    try:
+        likely_interest, score = process.extractOne(each_interest, re_interest_list)
+        if score < 80:
+            missing_in_re.append(each_interest)
+    except:
+        missing_in_re.append(each_interest)
+
+# Upload delta to RE
+if missing_in_re != []:
+    try:
+        for each_interest in missing_in_re:
+            params = {
+                'category': 'Interests',
+                'value': each_interest,
+                'comment': 'Added from AlmaBase',
+                'date': datetime.now().replace(microsecond=0).isoformat(),
+                'parent_id': re_system_id
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                            VALUES (%s, %s, 'Interests', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, each_interest])
+            conn.commit()
+    except:
+        pass
+
+# Compare interests between AB & RE
+missing_in_ab_db = []
+for each_interest in re_interest_list:
+    try:
+        likely_interest, score = process.extractOne(each_interest, ab_interest_list)
+        if score < 80:
+            missing_in_ab_db.append(each_interest)
+    except:
+        missing_in_ab_db.append(each_interest)
+
+missing_in_almabase = re_interest_list + ab_interest_list
+missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
+
+# Upload delta to AB
+if missing_in_ab_db != []:
+    try:
+        names = []
+        for each_interest in missing_in_ab:
+            name = {
+                'name': each_interest
+            }
+            names.append(name)
+        
+        params = {
+            'interests': names
+        }
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+        patch_request_ab()
+            
+        # Will update in PostgreSQL
+        for each_interest in missing_in_ab_db:
+            insert_updates = """
+                            INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
+                            VALUES (%s, %s, 'Interests', now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, each_interest])
+            conn.commit()
+    except:
+        pass
