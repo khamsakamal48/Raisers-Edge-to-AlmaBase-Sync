@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from cmath import e
 from sqlite3 import paramstyle
 from textwrap import indent
 from click import echo
@@ -3073,3 +3074,444 @@ if params != {}:
                     """
     cur.execute(insert_updates, [ab_system_id, ab_first_name_update, ab_middle_name_update, ab_last_name_update, ab_gender_update, ab_dob_update, ab_deceased_update])
     conn.commit()
+    
+# Sync Social media details
+# Get social media details from RE
+url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/onlinepresences" % re_system_id
+get_request_re()
+re_api_response_social = re_api_response
+
+website_re = ""
+linkedin_re = ""
+facebook_re = ""
+twitter_re = ""
+google_re = ""
+
+for each_social in re_api_response_social['value']:
+    try:
+        # Get Website
+        try:
+            if each_social['type'] == "Website":
+                website_re = each_social['address']
+                
+                if website_re is None or website_re == "Null" or website_re == "null":
+                    website_re = ""
+        except:
+            website_re = ""
+        
+        # Get LinkedIn
+        try:
+            if each_social['type'] == "LinkedIn":
+                linkedin_re = each_social['address']
+                
+                if linkedin_re is None or linkedin_re == "Null" or linkedin_re == "null":
+                    linkedin_re = ""
+        except:
+            linkedin_re = ""
+
+        # Get Facebook
+        try:
+            if each_social['type'] == "Facebook":
+                facebook_re = each_social['address']
+                
+                if facebook_re is None or facebook_re == "Null" or facebook_re == "null":
+                    facebook_re = ""
+        except:
+            facebook_re = ""
+        
+        # Get Twitter
+        try:
+            if each_social['type'] == "Twitter":
+                twitter_re = each_social['address']
+                
+                if twitter_re is None or twitter_re == "Null" or twitter_re == "null":
+                    twitter_re = ""
+        except:
+            twitter_re = ""
+        
+        # Get Google
+        try:
+            if each_social['type'] == "Google":
+                google_re = each_social['address']
+                
+                if google_re is None or google_re == "Null" or google_re == "null":
+                    google_re = ""
+        except:
+            google_re = ""
+    except:
+        website_re = ""
+        linkedin_re = ""
+        facebook_re = ""
+        twitter_re = ""
+        google_re = ""
+
+if website_re != "":
+    re_website = "https://" + website_re.replace("https://", "").replace("http://", "")
+    website_re = re_website
+else:
+    re_website = ""
+    website_re = ""
+
+if linkedin_re != "":
+    re_linkedin = "https://www." + linkedin_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
+    linkedin_re = re_linkedin
+else:
+    re_linkedin = ""
+    linkedin_re = ""
+
+if facebook_re != "":
+    re_facebook = "https://www." + facebook_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
+    facebook_re = re_facebook
+else:
+    re_facebook = ""
+    facebook_re = ""
+
+if twitter_re != "":
+    re_twitter = "https://www." + twitter_re.replace("https://www.", "").replace("www.", "").replace("http://", "").replace("@", "twitter.com/")
+    twitter_re = re_twitter
+else:
+    re_twitter = ""
+    twitter_re = ""
+
+if google_re != "":
+    re_google = "https://www." + google_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
+    google_re = re_google
+else:
+    re_google = ""
+    google_re = ""
+
+# Get social media details from AB
+url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+get_request_almabase()
+ab_api_response_social = ab_api_response
+
+website_ab = ""
+linkedin_ab = ""
+facebook_ab = ""
+twitter_ab = ""
+google_ab = ""
+
+for each_social in ab_api_response_social['results']:
+    try:
+        # Get Website
+        try:
+            if each_social['type_display'] == "Website":
+                website_ab = each_social['link']
+                
+                if website_ab is None or website_ab == "Null" or website_ab == "null":
+                    website_ab = ""
+        except:
+            website_ab = ""
+        
+        # Get LinkedIn
+        try:
+            if each_social['type_display'] == "LinkedIn":
+                linkedin = each_social['link']
+                
+                if linkedin_ab is None or linkedin_ab == "Null" or linkedin_ab == "null":
+                    linkedin_ab = ""
+        except:
+            linkedin_ab = ""
+
+        # Get Facebook
+        try:
+            if each_social['type_display'] == "Facebook":
+                facebook_ab = each_social['link']
+                
+                if facebook_ab is None or facebook_ab == "Null" or facebook_ab == "null":
+                    facebook_ab = ""
+        except:
+            facebook_ab = ""
+        
+        # Get Twitter
+        try:
+            if each_social['type_display'] == "Twitter":
+                twitter_ab = each_social['link']
+
+                if twitter_ab is None or twitter_ab == "Null" or twitter_ab == "null":
+                    twitter_ab = ""
+        except:
+            twitter_ab = ""
+        
+        # Get Google
+        try:
+            if each_social['type_display'] == "Google":
+                google_ab = each_social['link']
+                
+                if google_ab is None or google_ab == "Null" or google_ab == "null":
+                    google_ab = ""
+        except:
+            google_ab = ""
+    except:
+        website_ab = ""
+        linkedin_ab = ""
+        facebook_ab = ""
+        twitter_ab = ""
+        google_ab = ""
+
+if website_ab != "":
+    ab_website = website_ab.replace("https://", "").replace("http://", "")
+    website_ab = ab_website
+else:
+    ab_website = ""
+    website_ab = ""
+
+if linkedin_ab != "":
+    ab_linkedin = linkedin_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
+    linkedin_ab = ab_linkedin
+else:
+    ab_linkedin = ""
+    linkedin_ab = ""
+
+if facebook_ab != "":
+    ab_facebook = facebook_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
+    facebook_ab = ab_facebook
+else:
+    ab_facebook = ""
+    facebook_ab = ""
+
+if twitter_ab != "":
+    ab_twitter = "@" + twitter_ab.replace("https://www.", "").replace("www.", "").replace("http://", "").replace("twitter.com/", "")
+    twitter_ab = ab_twitter
+else:
+    ab_twitter = ""
+    twitter_ab = ""
+
+if google_ab != "":
+    ab_google = google_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
+    google_ab = ab_google
+else:
+    ab_google = ""
+    google_ab = ""
+
+# Compare RE with AB
+if re_website == "" and ab_website != "":
+    re_website = ab_website
+else:
+    re_website = ""
+
+if re_linkedin == "" and ab_linkedin != "":
+    re_linkedin = ab_linkedin
+else:
+    re_linkedin = ""
+
+if re_facebook == "" and ab_facebook != "":
+    re_facebook = ab_facebook
+else:
+    re_facebook = ""
+
+if re_twitter == "" and ab_twitter != "":
+    re_twitter = ab_twitter
+else:
+    re_twitter = ""
+
+if re_google == "" and ab_google != "":
+    re_google = ab_google
+else:
+    re_google = ""
+
+# Upload the delta to RE
+if re_website != "" or re_linkedin != "" or re_facebook != "" or re_twitter != "" or re_google != "":
+    if re_website != "":
+        params = {
+            'address': re_website,
+            'constituent_id': re_system_id,
+            'type': 'Website'
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+        post_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                        VALUES (%s, %s, 'Website', now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_website])
+        conn.commit()
+        
+    if re_linkedin != "":
+        params = {
+            'address': re_linkedin,
+            'constituent_id': re_system_id,
+            'type': 'LinkedIn',
+            'primary': 'true'
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+        post_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                        VALUES (%s, %s, 'LinkedIn', now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_linkedin])
+        conn.commit()
+        
+    if re_facebook != "":
+        params = {
+            'address': re_facebook,
+            'constituent_id': re_system_id,
+            'type': 'Facebook'
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+        post_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                        VALUES (%s, %s, 'Facebook', now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_facebook])
+        conn.commit()
+        
+    if re_twitter != "":
+        params = {
+            'address': re_twitter,
+            'constituent_id': re_system_id,
+            'type': 'Twitter'
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+        post_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                        VALUES (%s, %s, 'Twitter', now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_twitter])
+        conn.commit()
+    
+    if re_google != "":
+        params = {
+            'address': re_google,
+            'constituent_id': re_system_id,
+            'type': 'Google'
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+        post_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                        VALUES (%s, %s, 'Google', now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_google])
+        conn.commit()
+        
+# Compare AB with RE
+if ab_website == "" and website_re != "":
+    ab_website = website_re
+else:
+    ab_website = ""
+
+if ab_linkedin == "" and linkedin_re != "":
+    ab_linkedin = linkedin_re
+else:
+    ab_linkedin = ""
+
+if ab_facebook == "" and facebook_re != "":
+    ab_facebook = facebook_re
+else:
+    ab_facebook = ""
+
+if ab_twitter == "" and twitter_re != "":
+    ab_twitter = twitter_re
+else:
+    ab_twitter = ""
+
+if ab_google == "" and google_re != "":
+    ab_google = google_re
+else:
+    ab_google = ""
+
+# Upload the delta to AB
+if ab_website != "" or ab_linkedin != "" or ab_facebook != "" or ab_twitter != "" or ab_google != "":
+    if ab_website != "":
+        params = {
+            'link': ab_website,
+            'type': 0
+        }
+        
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+        post_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                        VALUES (%s, %s, 'Website', now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, ab_website])
+        conn.commit()
+        
+    if ab_linkedin != "":
+        params = {
+            'link': ab_linkedin,
+            'type': 1
+        }
+        
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+        post_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                        VALUES (%s, %s, 'LinkedIn', now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, ab_linkedin])
+        conn.commit()
+        
+    if ab_facebook != "":
+        params = {
+            'link': ab_facebook,
+            'type': 2
+        }
+        
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+        post_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                        VALUES (%s, %s, 'Facebook', now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, ab_facebook])
+        conn.commit()
+        
+    if ab_twitter != "":
+        params = {
+            'link': ab_twitter,
+            'type': 3
+        }
+        
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+        post_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                        VALUES (%s, %s, 'Twitter', now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, ab_twitter])
+        conn.commit()
+        
+    if ab_google != "":
+        params = {
+            'link': ab_google,
+            'type': 4
+        }
+        
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+        post_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                        VALUES (%s, %s, 'Google', now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, ab_google])
+        conn.commit()
