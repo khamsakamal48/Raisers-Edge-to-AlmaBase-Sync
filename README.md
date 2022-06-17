@@ -187,6 +187,22 @@ CREATE TABLE ab_social_media_added
     date date
 );
 
+CREATE TABLE re_interests_skills_added
+(
+    re_system_id character varying,
+    value character varying,
+    type character varying,
+    date date
+);
+
+CREATE TABLE ab_interests_skills_added
+(
+    ab_system_id character varying,
+    value character varying,
+    type character varying,
+    date date
+);
+
 Import Degree Mapping.csv to degree_mapping table
 Import Department Mapping.csv to department_mapping table
 
