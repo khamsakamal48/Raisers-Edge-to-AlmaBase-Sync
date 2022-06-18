@@ -3740,3 +3740,58 @@ if missing_in_ab_db != []:
             conn.commit()
     except:
         pass
+
+# Get Chapter from RE
+re_chapter = ""
+try:
+    for each_value in re_api_response_custom_fields['value']:
+        if each_value['category'] == 'Chapter':
+            custom_field_id = each_value['custom_field_id']
+            re_chapter = each_value['value']
+            break
+except:
+    re_chapter = ""
+
+# Get Chapter from AlmaBase
+try:
+    ab_chapter = ab_profile['custom_fields']['chapter']['values'][0]['value']['content']
+except:
+    ab_chapter = ""
+    
+print(re_chapter)
+print(ab_chapter)
+    
+# Compare Chapters and update in RE
+if ab_chapter != "" and re_chapter != ab_chapter:
+    
+    if re_chapter == "":
+        # Will post in RE
+        params = {
+            'category': 'Chapter',
+            'value': ab_chapter,
+            'comment': 'Added from AlmaBase',
+            'date': datetime.now().replace(microsecond=0).isoformat(),
+            'parent_id': re_system_id
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
+        post_request_re()
+        
+    else:
+        # Will patch in RE
+        params = {
+            'value': ab_chapter,
+            'comment': 'Updated from AlmaBase',
+            'date': datetime.now().replace(microsecond=0).isoformat(),
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields/%s" % custom_field_id
+        patch_request_re()
+    
+    # Will update in PostgreSQL
+    insert_updates = """
+                    INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                    VALUES (%s, %s, 'Chapter', now())
+                    """
+    cur.execute(insert_updates, [re_system_id, ab_chapter])
+    conn.commit()
