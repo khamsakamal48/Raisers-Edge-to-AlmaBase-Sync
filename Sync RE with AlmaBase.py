@@ -3827,3 +3827,26 @@ if ab_life_member == "yes":
                         """
         cur.execute(insert_updates, [re_system_id])
         conn.commit()
+        
+# Add RE ID in AlmaBase (external_database_id)
+try:
+    external_database_id = ab_profile['external_database_id']
+except:
+    external_database_id = ""
+    
+if external_database_id == "":
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+    
+    params = {
+        'external_database_id': ab_system_id
+    }
+    
+    patch_request_ab()
+    
+    # Will update in PostgreSQL
+    insert_updates = """
+                    INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
+                    VALUES (%s, %s, 'Externa Database ID', now())
+                    """
+    cur.execute(insert_updates, [ab_system_id, re_system_id])
+    conn.commit()
