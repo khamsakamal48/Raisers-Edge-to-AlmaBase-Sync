@@ -3792,3 +3792,38 @@ if ab_chapter != "" and re_chapter != ab_chapter:
                     """
     cur.execute(insert_updates, [re_system_id, ab_chapter])
     conn.commit()
+    
+# Life member update
+ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
+
+if ab_life_member == "yes":
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/constituentcodes" % re_system_id
+    params = {}
+    get_request_re()
+    
+    re_life_member = "no"
+    try:
+        for each_value in re_api_response['value']:
+            if each_value['description'] == "Life Member":
+                re_life_member = "yes"
+                break
+    except:
+        re_life_member = "no"
+    
+    if re_life_member == "no":
+        url = "https://api.sky.blackbaud.com/constituent/v1/constituentcodes"
+        
+        params = {
+            'constituent_id': re_system_id,
+            'description': 'Life Member'
+        }
+        
+        post_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                        VALUES (%s, 'TRUE', 'Life Member', now())
+                        """
+        cur.execute(insert_updates, [re_system_id])
+        conn.commit()
