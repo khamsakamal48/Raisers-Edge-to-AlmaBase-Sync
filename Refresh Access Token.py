@@ -1,6 +1,20 @@
 #!/usr/bin/env python3
 
 import json, requests, os, shutil
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
+
+# API Request strategy
+retry_strategy = Retry(
+    total=3,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["HEAD", "GET", "OPTIONS"],
+    backoff_factor=10
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+http = requests.Session()
+http.mount("https://", adapter)
+http.mount("http://", adapter)
 
 # Set current directory
 #os.chdir(os.path.dirname(sys.argv[0]))
@@ -52,7 +66,7 @@ data = {
 }
 
 # API Request
-response = requests.post(url, data=data, headers=headers).json()
+response = http.post(url, data=data, headers=headers).json()
 
 # Write output to JSON file
 with open("access_token_output.json", "w") as response_output:
