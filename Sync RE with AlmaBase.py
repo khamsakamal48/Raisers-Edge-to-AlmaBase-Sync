@@ -13,6 +13,20 @@ from fuzzywuzzy import process
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from datetime import datetime
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
+
+# API Request strategy
+retry_strategy = Retry(
+    total=3,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["HEAD", "GET", "OPTIONS"],
+    backoff_factor=10
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+http = requests.Session()
+http.mount("https://", adapter)
+http.mount("http://", adapter)
 
 # Set current directory
 #os.chdir(os.path.dirname(sys.argv[0]))
@@ -50,6 +64,7 @@ with open('access_token_output.json') as access_token_output:
   access_token = data["access_token"]
 
 def get_request_re():
+    time.sleep(5)
     # Request Headers for Blackbaud API request
     headers = {
     # Request headers
@@ -58,11 +73,12 @@ def get_request_re():
     }
     
     global re_api_response
-    re_api_response = requests.get(url, params=params, headers=headers).json()
+    re_api_response = http.get(url, params=params, headers=headers).json()
     
     check_for_errors()
 
 def get_request_almabase():
+    time.sleep(5)
     # Request Headers for AlmaBase API request
     headers = {
         "User-Agent":"Mozilla/5.0",
@@ -72,11 +88,12 @@ def get_request_almabase():
     }
     
     global ab_api_response
-    ab_api_response = requests.get(url, headers=headers).json()
+    ab_api_response = http.get(url, headers=headers).json()
     
     check_for_errors()
   
 def post_request_re():
+    time.sleep(5)
     headers = {
     # Request headers
     'Bb-Api-Subscription-Key': RE_API_KEY,
@@ -85,11 +102,12 @@ def post_request_re():
     }
     
     global re_api_response
-    re_api_response = requests.post(url, params=params, headers=headers, json=params).json()
+    re_api_response = http.post(url, params=params, headers=headers, json=params).json()
     
     check_for_errors()
 
 def patch_request_re():
+    time.sleep(5)
     headers = {
     # Request headers
     'Bb-Api-Subscription-Key': RE_API_KEY,
@@ -98,11 +116,12 @@ def patch_request_re():
     }
     
     global re_api_response
-    re_api_response = requests.patch(url, headers=headers, data=json.dumps(params))
+    re_api_response = http.patch(url, headers=headers, data=json.dumps(params))
     
     check_for_errors()
     
 def patch_request_ab():
+    time.sleep(5)
     # Request Headers for AlmaBase API request
     headers = {
         'User-Agent': 'Mozilla/5.0',
@@ -113,11 +132,12 @@ def patch_request_ab():
     }
     
     global ab_api_response
-    ab_api_response = requests.patch(url, headers=headers, json=params)
+    ab_api_response = http.patch(url, headers=headers, json=params)
     
     check_for_errors()
 
 def post_request_ab():
+    time.sleep(5)
     # Request Headers for AlmaBase API request
     headers = {
         'User-Agent': 'Mozilla/5.0',
@@ -128,7 +148,7 @@ def post_request_ab():
     }
     
     global ab_api_response
-    ab_api_response = requests.post(url, headers=headers, json=params)
+    ab_api_response = http.post(url, headers=headers, json=params)
     
     check_for_errors()
     
@@ -709,6 +729,7 @@ def constituent_not_found_email():
     sys.exit()
 
 def update_email_in_re():
+    time.sleep(5)
     global params
     params = {
         'address': email_address,
@@ -743,6 +764,7 @@ def print_json(d):
     print(json.dumps(d, indent=4))
 
 def get_address(address):
+    time.sleep(5)
     # initialize Nominatim API
     geolocator = Nominatim(user_agent="geoapiExercises")
 
@@ -979,6 +1001,7 @@ if missing_in_ab != []:
     
 # Get list of of phone numbers in RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
+params = {}
 get_request_re()
 
 re_phone_list = []
@@ -1105,6 +1128,7 @@ if missing_in_ab != []:
             
 # Get Relation list from RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/relationships" % re_system_id
+params = {}
 get_request_re()
 
 re_api_response_org = re_api_response
@@ -1517,6 +1541,7 @@ for each_org in ab_api_response_org['results']:
     
 # Retrieve addresses from RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/addresses?include_inactive=true" % re_system_id
+params = {}
 get_request_re()
 
 re_api_response_address = re_api_response
@@ -2018,7 +2043,7 @@ if missing_in_ab != []:
         
 # Retrieve IITB education from RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
-
+params = {}
 get_request_re()
 
 re_api_response_education_all = re_api_response
@@ -2803,6 +2828,7 @@ if missing_in_ab != []:
 # Sync Generic person Details
 # Get personal details from RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
+params = {}
 get_request_re()
 re_api_response_generic_details = re_api_response
 
@@ -2935,7 +2961,7 @@ if re_gender == "" or re_gender == "Unknown" and ab_gender != "":
 elif re_gender == "" or re_gender == "Unknown" and ab_gender == "":
     if re_first_name != "" and len(re_first_name) <= 2:
         url = "https://api.genderize.io?name=%s" % re_first_name
-        response = requests.get(url)
+        response = http.get(url)
         json_response = response.json()
         re_gender_update = json_response['gender'].title()
     else:
@@ -3078,6 +3104,7 @@ if params != {}:
 # Sync Social media details
 # Get social media details from RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/onlinepresences" % re_system_id
+params = {}
 get_request_re()
 re_api_response_social = re_api_response
 
@@ -3519,7 +3546,10 @@ if ab_website != "" or ab_linkedin != "" or ab_facebook != "" or ab_twitter != "
 # Sync interests
 # Get interests from RE
 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/customfields" % re_system_id
+params = {}
 get_request_re()
+
+re_api_response_custom_fields = re_api_response
 
 re_interest_list = []
 for each_value in re_api_response['value']:
@@ -3611,6 +3641,102 @@ if missing_in_ab_db != []:
                             VALUES (%s, %s, 'Interests', now())
                             """
             cur.execute(insert_updates, [ab_system_id, each_interest])
+            conn.commit()
+    except:
+        pass
+    
+# Sync skills
+# Get skills from RE
+re_skill_list = []
+for each_value in re_api_response_custom_fields['value']:
+    try:
+        if each_value['category'] == "Skills":
+            re_skill_list.append(each_value['value'])
+    except:
+        pass
+
+# Get interests from AB
+url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=skills" % ab_system_id
+get_request_almabase()
+
+ab_skill_list = []
+for each_value in ab_api_response['skills']:
+    try:
+        ab_skill_list.append(each_value['name'])
+    except:
+        pass
+
+# Compare interests between RE & AB
+missing_in_re = []
+for each_skill in ab_skill_list:
+    try:
+        likely_skill, score = process.extractOne(each_skill, re_skill_list)
+        if score < 80:
+            missing_in_re.append(each_skill)
+    except:
+        missing_in_re.append(each_skill)
+
+# Upload delta to RE
+if missing_in_re != []:
+    try:
+        for each_skill in missing_in_re:
+            params = {
+                'category': 'Skills',
+                'value': each_skill,
+                'comment': 'Added from AlmaBase',
+                'date': datetime.now().replace(microsecond=0).isoformat(),
+                'parent_id': re_system_id
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                            VALUES (%s, %s, 'Skills', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, each_skill])
+            conn.commit()
+    except:
+        pass
+
+# Compare interests between AB & RE
+missing_in_ab_db = []
+for each_skill in re_skill_list:
+    try:
+        likely_skill, score = process.extractOne(each_skill, ab_skill_list)
+        if score < 80:
+            missing_in_ab_db.append(each_skill)
+    except:
+        missing_in_ab_db.append(each_skill)
+
+missing_in_almabase = re_skill_list + ab_skill_list
+missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
+
+# Upload delta to AB
+if missing_in_ab_db != []:
+    try:
+        names = []
+        for each_skill in missing_in_ab:
+            name = {
+                'name': each_skill
+            }
+            names.append(name)
+        
+        params = {
+            'skills': names
+        }
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+        patch_request_ab()
+            
+        # Will update in PostgreSQL
+        for each_skill in missing_in_ab_db:
+            insert_updates = """
+                            INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
+                            VALUES (%s, %s, 'Skills', now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, each_skill])
             conn.commit()
     except:
         pass
