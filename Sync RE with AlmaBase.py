@@ -3745,8 +3745,8 @@ if missing_in_ab_db != []:
 re_chapter = ""
 try:
     for each_value in re_api_response_custom_fields['value']:
-        if each_value['category'] == 'Chapter':
-            custom_field_id = each_value['custom_field_id']
+        if each_value['category'] == "Chapter":
+            custom_field_id = each_value['id']
             re_chapter = each_value['value']
             break
 except:
@@ -3757,9 +3757,6 @@ try:
     ab_chapter = ab_profile['custom_fields']['chapter']['values'][0]['value']['content']
 except:
     ab_chapter = ""
-    
-print(re_chapter)
-print(ab_chapter)
     
 # Compare Chapters and update in RE
 if ab_chapter != "" and re_chapter != ab_chapter:
