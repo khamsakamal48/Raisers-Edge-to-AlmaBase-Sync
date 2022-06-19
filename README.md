@@ -275,7 +275,7 @@ crontab -e
 ```bash
 
 */42 * * * * cd Raisers-Edge-to-AlmaBase-Sync/ && python3 Refresh\ Access\ Token.py > /dev/null 2>&1
-@weekly cd Raisers-Edge-to-AlmaBase-Sync/ && python3 Get\ Constituent\ from\ RE\ to\ sync\ with\ AlmaBase.py > /dev/null 2>&1
+@monthly cd Raisers-Edge-to-AlmaBase-Sync/ && python3 Get\ Constituent\ from\ RE\ to\ sync\ with\ AlmaBase.py > /dev/null 2>&1
 @weekly cd Raisers-Edge-to-AlmaBase-Sync/ && python3 Get\ Education\ Details\ from\ RE.py > /dev/null 2>&1
 */10 * * * * cd Raisers-Edge-to-AlmaBase-Sync/ && python3 Sync\ RE\ with\ AlmaBase.py > /dev/null 2>&1
 
