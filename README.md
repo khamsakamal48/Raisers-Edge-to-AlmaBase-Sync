@@ -41,19 +41,20 @@ CREATE DATABASE "re-almabase-sync"
 
 CREATE TABLE all_alums_in_re
 (
-    system_id character varying,
+    re_system_id character varying,
     name character varying
 );
 
-CREATE TABLE alread_synced
+CREATE TABLE already_synced
 (
-    system_id character varying,
-    name character varying
+    re_system_id character varying,
+    ab_system_id character varying,
+    date date
 );
 
 CREATE TABLE re_emails_added
 (
-    system_id character varying,
+    re_system_id character varying,
     email character varying,
     date date
 );

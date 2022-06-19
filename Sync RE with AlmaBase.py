@@ -268,7 +268,7 @@ def send_error_emails():
 def constituent_not_found_email():
     # Query the next data to uploaded in RE
     extract_sql = """
-            SELECT name FROM all_alums_in_re EXCEPT SELECT name FROM alread_synced FETCH FIRST 1 ROW ONLY;
+            SELECT name FROM all_alums_in_re EXCEPT SELECT name FROM already_synced FETCH FIRST 1 ROW ONLY;
             """
     cur.execute(extract_sql)
     result = cur.fetchone()
@@ -849,7 +849,7 @@ def get_address(address):
 try:
     # Query the next data to uploaded in RE
     extract_sql = """
-            SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
+            SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
             """
     cur.execute(extract_sql)
     result = cur.fetchone()
@@ -960,7 +960,7 @@ try:
                 
                 # Will update in PostgreSQL
                 insert_updates = """
-                                INSERT INTO re_emails_added (system_id, email, date)
+                                INSERT INTO re_emails_added (re_system_id, email, date)
                                 VALUES (%s, %s, now())
                                 """
                 cur.execute(insert_updates, [re_system_id, email_address])
@@ -3894,6 +3894,14 @@ try:
         
         url = "https://api.sky.blackbaud.com/constituent/v1/aliases/%s" % alias_id
         patch_request_re()
+        
+    # Will update in PostgreSQL
+    insert_updates = """
+                    INSERT INTO already_synced (re_system_id, ab_system_id, date)
+                    VALUES (%s, %s, now())
+                    """
+    cur.execute(insert_updates, [re_system_id, ab_system_id])
+    conn.commit()
         
 except Exception as Argument:
     send_error_emails()
