@@ -3850,3 +3850,37 @@ if external_database_id == "":
                     """
     cur.execute(insert_updates, [ab_system_id, re_system_id])
     conn.commit()
+    
+# Add AlmaBase ID in Raisers Edge (Alias - Almabase ID)
+try:
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/aliases" % re_system_id
+    params = {}
+    get_request_re()
+    
+    alias_id = ""
+    for each_alias in re_api_response['value']:
+        if each_alias['type'] == "Almasbase ID":
+            alias_id = each_alias['id']
+except:
+    alias_id = ""
+    
+if alias_id == "":
+    # Post Alias
+    params = {
+        'constituent_id': re_system_id,
+        'name': ab_system_id,
+        'type': "Almabase ID"
+    }
+    
+    url = "https://api.sky.blackbaud.com/constituent/v1/aliases"
+    post_request_re()
+    
+else:
+    # Patch Alias
+    params = {
+        'name': ab_system_id,
+        'type': 'Almabase ID'
+    }
+    
+    url = "https://api.sky.blackbaud.com/constituent/v1/aliases/%s" % alias_id
+    patch_request_re()
