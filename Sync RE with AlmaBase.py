@@ -4,7 +4,7 @@ from cmath import e
 from sqlite3 import paramstyle
 from textwrap import indent
 from click import echo
-import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy, datetime
+import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy, datetime, logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Environment
@@ -161,94 +161,103 @@ def check_for_errors():
         send_error_emails()
 
 def send_error_emails():
-    print ("Calling function Send error emails")
-    print (re_api_response)
-    # message = MIMEMultipart("alternative")
-    # message["Subject"] = "Unable to find Alum in Raisers Edge for Stay Connected"
-    # message["From"] = MAIL_USERN
-    # message["To"] = MAIL_USERN
+    
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = MAIL_USERN
+    message["To"] = SEND_TO
 
-    # # Adding Reply-to header
-    # message.add_header('reply-to', MAIL_USERN)
+    # Adding Reply-to header
+    message.add_header('reply-to', MAIL_USERN)
         
-    # TEMPLATE="""
-    # <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
-    # <tbody>
-    # <tr style="height: 127px;">
-    # <td style="background-color: #363636; width: 100%; text-align: center; vertical-align: middle; height: 127px;">&nbsp;
-    # <h1><span style="color: #ffffff;">&nbsp;Raiser's Edge Automation: {job_name} Failed</span>&nbsp;</h1>
-    # </td>
-    # </tr>
-    # <tr style="height: 18px;">
-    # <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
-    # </tr>
-    # <tr style="height: 18px;">
-    # <td style="width: 100%; height: 18px; background-color: #ffffff; border-color: #ffffff; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #455362;">This is to notify you that execution of Auto-updating Alumni records has failed.</span>&nbsp;</td>
-    # </tr>
-    # <tr style="height: 18px;">
-    # <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
-    # </tr>
-    # <tr style="height: 61px;">
-    # <td style="width: 100%; background-color: #2f2f2f; height: 61px; text-align: center; vertical-align: middle;">
-    # <h2><span style="color: #ffffff;">Job details:</span></h2>
-    # </td>
-    # </tr>
-    # <tr style="height: 52px;">
-    # <td style="height: 52px;">
-    # <table style="background-color: #2f2f2f; width: 100%; margin-left: auto; margin-right: auto; height: 42px;">
-    # <tbody>
-    # <tr>
-    # <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Job :</span>&nbsp;</td>
-    # <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{job_name}&nbsp;</td>
-    # </tr>
-    # <tr>
-    # <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Failed on :</span>&nbsp;</td>
-    # <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{current_time}&nbsp;</td>
-    # </tr>
-    # </tbody>
-    # </table>
-    # </td>
-    # </tr>
-    # <tr style="height: 18px;">
-    # <td style="height: 18px; background-color: #ffffff;">&nbsp;</td>
-    # </tr>
-    # <tr style="height: 18px;">
-    # <td style="height: 18px; width: 100%; background-color: #ffffff; text-align: center; vertical-align: middle;">Below is the detailed error log,</td>
-    # </tr>
-    # <tr style="height: 217.34375px;">
-    # <td style="height: 217.34375px; background-color: #f8f9f9; width: 100%; text-align: left; vertical-align: middle;">{error_log_message}</td>
-    # </tr>
-    # </tbody>
-    # </table>
-    # """
+    TEMPLATE="""
+    <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
+    <tbody>
+    <tr style="height: 127px;">
+    <td style="background-color: #363636; width: 100%; text-align: center; vertical-align: middle; height: 127px;">&nbsp;
+    <h1><span style="color: #ffffff;">&nbsp;Raiser's Edge Automation: {{job_name}} Failed</span>&nbsp;</h1>
+    </td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="width: 100%; height: 18px; background-color: #ffffff; border-color: #ffffff; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #455362;">This is to notify you that execution of Auto-updating Alumni records has failed.</span>&nbsp;</td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
+    </tr>
+    <tr style="height: 61px;">
+    <td style="width: 100%; background-color: #2f2f2f; height: 61px; text-align: center; vertical-align: middle;">
+    <h2><span style="color: #ffffff;">Job details:</span></h2>
+    </td>
+    </tr>
+    <tr style="height: 52px;">
+    <td style="height: 52px;">
+    <table style="background-color: #2f2f2f; width: 100%; margin-left: auto; margin-right: auto; height: 42px;">
+    <tbody>
+    <tr>
+    <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Job :</span>&nbsp;</td>
+    <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{job_name}}&nbsp;</td>
+    </tr>
+    <tr>
+    <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Failed on :</span>&nbsp;</td>
+    <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{current_time}}&nbsp;</td>
+    </tr>
+    </tbody>
+    </table>
+    </td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; background-color: #ffffff;">&nbsp;</td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; width: 100%; background-color: #ffffff; text-align: center; vertical-align: middle;">Below is the detailed error log,</td>
+    </tr>
+    <tr style="height: 217.34375px;">
+    <td style="height: 217.34375px; background-color: #f8f9f9; width: 100%; text-align: left; vertical-align: middle;">{{error_log_message}}</td>
+    </tr>
+    </tbody>
+    </table>
+    """
     
-    # # Create a text/html message from a rendered template
-    # emailbody = MIMEText(
-    # Environment().from_string(TEMPLATE).render(
-    #     job_name="Updates from Stay Connected",
-    #     error_log_message=re_api_response,
-    #     current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-    #     ), "html"
-    # )
+    # Create a text/html message from a rendered template
+    emailbody = MIMEText(
+        Environment().from_string(TEMPLATE).render(
+            job_name = "Syncing Raisers Edge and AlmaBase",
+            current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            error_log_message = Argument
+        ), "html"
+    )
     
-    # # Add HTML parts to MIMEMultipart message
-    # # The email client will try to render the last part first
-    # message.attach(emailbody)
-    # emailcontent = message.as_string()
+    # Add HTML parts to MIMEMultipart message
+    # The email client will try to render the last part first
+    message.attach(emailbody)
+    emailcontent = message.as_string()
 
-    # # Create secure connection with server and send email
-    # context = ssl._create_unverified_context()
-    # with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
-    #     server.login(MAIL_USERN, MAIL_PASSWORD)
-    #     server.sendmail(
-    #         MAIL_USERN, MAIL_USERN, emailcontent
-    #     )
+    # Create a secure SSL context
+    context = ssl.create_default_context()
+    
+    # Try to log in to server and send email
+    try:
+        server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
+        server.ehlo() # Can be omitted
+        server.starttls(context=context) # Secure the connection
+        server.ehlo() # Can be omitted
+        server.login(MAIL_USERN, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
+        # TODO: Send email here
+    except Exception as e:
+        # Print any error messages to stdout
+        print(e)
+    finally:
+        server.quit() 
 
-    # # Save copy of the sent email to sent items folder
-    # with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
-    #     imap.login(MAIL_USERN, MAIL_PASSWORD)
-    #     imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
-    #     imap.logout()
+    # Save copy of the sent email to sent items folder
+    with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
+        imap.login(MAIL_USERN, MAIL_PASSWORD)
+        imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
+        imap.logout()
 
     # Close DB connection
     cur.close()
@@ -837,828 +846,927 @@ def get_address(address):
     global zip
     zip = address.get('postcode', '')
 
-# Query the next data to uploaded in RE
-extract_sql = """
-        SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
-        """
-cur.execute(extract_sql)
-result = cur.fetchone()
+try:
+    # Query the next data to uploaded in RE
+    extract_sql = """
+            SELECT system_id FROM all_alums_in_re EXCEPT SELECT system_id FROM alread_synced FETCH FIRST 1 ROW ONLY;
+            """
+    cur.execute(extract_sql)
+    result = cur.fetchone()
 
-# Ensure no comma or brackets in output
-re_system_id = result[0]
+    # Ensure no comma or brackets in output
+    re_system_id = result[0]
 
-# Get email list from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
+    # Get email list from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
 
-params = {
-        #'search_text':search_text
-    }
+    params = {
+            #'search_text':search_text
+        }
 
-# Blackbaud API GET request
-get_request_re()
+    # Blackbaud API GET request
+    get_request_re()
 
-count = 0
-while count != 1:
-    # Search in AlmaBase
+    count = 0
+    while count != 1:
+        # Search in AlmaBase
+        for address in re_api_response['value']:
+            try:
+                email = (address['address'])
+                url = "https://api.almabaseapp.com/api/v1/profiles?search=%s&page=1&listed=true" % email
+                get_request_almabase()
+                count = ab_api_response["count"]
+                if count == 1:
+                    break
+            except:
+                # Can't find Alum in AlmaBase
+                status = ab_api_response["status"]
+                if status == 404:
+                    subject = "Unable to find Alums in AlmaBase because of Network Failure"
+                else:
+                    subject = "Unable to find Alums in AlmaBase for sync"
+                constituent_not_found_email()
+    else:
+        ab_system_id = ab_api_response["results"][0]["id"]
+
+    # Retrieve the AlmaBase Profile
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+
+    get_request_almabase()
+
+    ab_profile = ab_api_response
+
+    # Get email list from AlmaBase
+    ab_email_list = []
+    for address in ab_profile['email_addresses']:
+        try:
+            emails = (address['address']).lower()
+            ab_email_list.append(emails)
+        except:
+            pass
+
+    # Get list of available custom fields starting with email_id_
+    regex = re.compile('email_id_*')
+    email_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+
+    blank_email_ids = []
+    for each_id in email_id_list:
+        try:
+            emails = (ab_profile['custom_fields'][each_id]['values'][0]['value']['content'])
+            ab_email_list.append(emails)
+        except:
+            # Email IDs that don't have any email addresses in AlmaBase
+            blank_email_ids.append(each_id)
+            pass
+
+    re_email_list = []
     for address in re_api_response['value']:
         try:
-            email = (address['address'])
-            url = "https://api.almabaseapp.com/api/v1/profiles?search=%s&page=1&listed=true" % email
-            get_request_almabase()
-            count = ab_api_response["count"]
-            if count == 1:
-                break
+            emails = (address['address']).lower()
+            re_email_list.append(emails)
         except:
-            # Can't find Alum in AlmaBase
-            status = ab_api_response["status"]
-            if status == 404:
-                subject = "Unable to find Alums in AlmaBase because of Network Failure"
-            else:
-                subject = "Unable to find Alums in AlmaBase for sync"
-            constituent_not_found_email()
-else:
-    ab_system_id = ab_api_response["results"][0]["id"]
+            pass
+        
+    # Finding missing email addresses to be added in RE
+    set1 = set([i for i in ab_email_list if i])
+    set2 = set(re_email_list)
 
-# Retrieve the AlmaBase Profile
-url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+    missing_in_re = list(sorted(set1 - set2))
 
-get_request_almabase()
-
-ab_profile = ab_api_response
-
-# Get email list from AlmaBase
-ab_email_list = []
-for address in ab_profile['email_addresses']:
-    try:
-        emails = (address['address']).lower()
-        ab_email_list.append(emails)
-    except:
-        pass
-
-# Get list of available custom fields starting with email_id_
-regex = re.compile('email_id_*')
-email_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
-
-blank_email_ids = []
-for each_id in email_id_list:
-    try:
-        emails = (ab_profile['custom_fields'][each_id]['values'][0]['value']['content'])
-        ab_email_list.append(emails)
-    except:
-        # Email IDs that don't have any email addresses in AlmaBase
-        blank_email_ids.append(each_id)
-        pass
-
-re_email_list = []
-for address in re_api_response['value']:
-    try:
-        emails = (address['address']).lower()
-        re_email_list.append(emails)
-    except:
-        pass
-    
-# Finding missing email addresses to be added in RE
-set1 = set([i for i in ab_email_list if i])
-set2 = set(re_email_list)
-
-missing_in_re = list(sorted(set1 - set2))
-
-# Will update missing email IDs to RE
-if missing_in_re != []:
-    email_type_list = []
-    for emails in missing_in_re:
-        try:
-            email_address = emails
-            # Figure the email type
-            types = address['type']
-            email_num = re.sub("[^0-9]", "", types)
-            # Checking if email_num is blank (when there's no Email 1, 2, etc.)
-            if email_num == "":
-                email_num = 0
-            email_type_list.append(email_num)
-            existing_max_count = int(max(email_type_list))
-            new_max_count = existing_max_count + 1
+    # Will update missing email IDs to RE
+    if missing_in_re != []:
+        email_type_list = []
+        for emails in missing_in_re:
             try:
-                incremental_max_count
+                email_address = emails
+                # Figure the email type
+                types = address['type']
+                email_num = re.sub("[^0-9]", "", types)
+                # Checking if email_num is blank (when there's no Email 1, 2, etc.)
+                if email_num == "":
+                    email_num = 0
+                email_type_list.append(email_num)
+                existing_max_count = int(max(email_type_list))
+                new_max_count = existing_max_count + 1
+                try:
+                    incremental_max_count
+                except:
+                    incremental_max_count = new_max_count
+                else:
+                    incremental_max_count = incremental_max_count + 1            
+                global new_email_type
+                new_email_type = "Email " + str(incremental_max_count)
+                update_email_in_re()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_emails_added (system_id, email, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [re_system_id, email_address])
+                conn.commit()
             except:
-                incremental_max_count = new_max_count
-            else:
-                incremental_max_count = incremental_max_count + 1            
-            global new_email_type
-            new_email_type = "Email " + str(incremental_max_count)
-            update_email_in_re()
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO re_emails_added (system_id, email, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [re_system_id, email_address])
-            conn.commit()
-        except:
-            send_error_emails()
+                send_error_emails()
 
-# Finding missing email addresses to be added in AlmaBase
-set1 = set([i for i in re_email_list if i])
-set2 = set(ab_email_list)
+    # Finding missing email addresses to be added in AlmaBase
+    set1 = set([i for i in re_email_list if i])
+    set2 = set(ab_email_list)
 
-missing_in_ab = list(sorted(set1 - set2))
+    missing_in_ab = list(sorted(set1 - set2))
 
-# Upload missing email addresses in AlmaBase
-if missing_in_ab != []:
-    for each_record in zip(missing_in_ab, blank_email_ids):
-        try:
-            each_email, each_id = each_record
-            params = {
-                'custom_fields': {
-                    each_id: {
-                        'type': 'email',
-                        'label': each_id,      
-                        'values': [
-                            {
-                                'value': {
-                                    'content': each_email
-                                    },
-                                'display_order': int(each_id[-2:].replace("_", ""))
-                                }
-                            ]
+    # Upload missing email addresses in AlmaBase
+    if missing_in_ab != []:
+        for each_record in zip(missing_in_ab, blank_email_ids):
+            try:
+                each_email, each_id = each_record
+                params = {
+                    'custom_fields': {
+                        each_id: {
+                            'type': 'email',
+                            'label': each_id,      
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': each_email
+                                        },
+                                    'display_order': int(each_id[-2:].replace("_", ""))
+                                    }
+                                ]
+                            }
                         }
                     }
-                }
-            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                    
+                patch_request_ab()
                 
-            patch_request_ab()
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO ab_emails_added (ab_system_id, email, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [ab_system_id, each_email])
-            conn.commit()
-        except:
-            send_error_emails()
-    
-# Get list of of phone numbers in RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
-params = {}
-get_request_re()
-
-re_phone_list = []
-for each_phone in re_api_response['value']:
-    try:
-        phones = re.sub("[^0-9]", "",(each_phone['number']))
-        re_phone_list.append(phones)
-    except:
-        pass
-    
-# Get list of phone numbers in AlmaBase
-url = "https://api.almabaseapp.com/api/v1/profiles/%s/phone_numbers" % ab_system_id
-get_request_almabase()
-
-ab_phone_list = []
-for each_phone in ab_api_response['results']:
-    try:
-        phones = re.sub("[^0-9]", "",(each_phone['number']))
-        ab_phone_list.append(phones)
-    except:
-        pass
-
-# Get list of available custom fields starting with phone, fax, mobile, pager
-regex = re.compile('\w+phone|\w+fax|\w+mobile|\w+pager')
-phone_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
-
-blank_phone_ids = []
-for each_id in phone_id_list:
-    try:
-        phones = re.sub("[^0-9]", "",(ab_profile['custom_fields'][each_id]['values'][0]['value']['content']))
-        ab_phone_list.append(phones)
-    except:
-        # Email IDs that don't have any email addresses in AlmaBase
-        blank_phone_ids.append(each_id)
-        pass
-
-# Finding missing phone numbers to be added in RE
-missing_in_re = []
-for each_phone in ab_phone_list:
-    try:
-        likely_phone, score = process.extractOne(each_phone, re_phone_list)
-        if score < 80:
-            missing_in_re.append(each_phone)
-    except:
-        missing_in_re.append(each_phone)
-
-# Making sure that there are no duplicates in the missing list
-if missing_in_re != []:
-    missing = list(process.dedupe(missing_in_re, threshold=80))
-    missing_in_re = missing
-
-# Upload missing numbers in RE
-if missing_in_re != []:
-    for each_phone in missing_in_re:
-        try:
-            url = "https://api.sky.blackbaud.com/constituent/v1/phones"
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO ab_emails_added (ab_system_id, email, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, each_email])
+                conn.commit()
+            except:
+                send_error_emails()
         
-            params = {
-                'constituent_id': re_system_id,
-                'number': each_phone,
-                'type': 'Mobile'
-            }
-            
-            post_request_re()
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO re_phone_added (re_system_id, phone, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [re_system_id, each_phone])
-            conn.commit()
+    # Get list of of phone numbers in RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
+    params = {}
+    get_request_re()
+
+    re_phone_list = []
+    for each_phone in re_api_response['value']:
+        try:
+            phones = re.sub("[^0-9]", "",(each_phone['number']))
+            re_phone_list.append(phones)
         except:
             pass
         
-# Finding missing phone numbers to be added in AlmaBase
-missing_in_ab = []
-for each_phone in re_phone_list:
-    try:
-        likely_phone, score = process.extractOne(each_phone, ab_phone_list)
-        if score < 80:
-            missing_in_ab.append(each_phone)
-    except:
-        missing_in_ab.append(each_phone)
+    # Get list of phone numbers in AlmaBase
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s/phone_numbers" % ab_system_id
+    get_request_almabase()
 
-# Making sure that there are no duplicates in the missing list
-if missing_in_ab != []:
-    missing = list(process.dedupe(missing_in_ab, threshold=80))
-    missing_in_ab = missing
-
-# Upload missing numbers in AlmaBase
-if missing_in_ab != []:
-    for each_record in zip(missing_in_ab, blank_phone_ids):
+    ab_phone_list = []
+    for each_phone in ab_api_response['results']:
         try:
-            each_phone, each_id = each_record
-            params = {
-                            'custom_fields': {
-                                each_id: {
-                                    'values': [
-                                        {
-                                            'value': {
-                                                'content': each_phone
-                                            },
-                                            'display_order': 0
-                                        }
-                                    ]
+            phones = re.sub("[^0-9]", "",(each_phone['number']))
+            ab_phone_list.append(phones)
+        except:
+            pass
+
+    # Get list of available custom fields starting with phone, fax, mobile, pager
+    regex = re.compile('\w+phone|\w+fax|\w+mobile|\w+pager')
+    phone_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+
+    blank_phone_ids = []
+    for each_id in phone_id_list:
+        try:
+            phones = re.sub("[^0-9]", "",(ab_profile['custom_fields'][each_id]['values'][0]['value']['content']))
+            ab_phone_list.append(phones)
+        except:
+            # Email IDs that don't have any email addresses in AlmaBase
+            blank_phone_ids.append(each_id)
+            pass
+
+    # Finding missing phone numbers to be added in RE
+    missing_in_re = []
+    for each_phone in ab_phone_list:
+        try:
+            likely_phone, score = process.extractOne(each_phone, re_phone_list)
+            if score < 80:
+                missing_in_re.append(each_phone)
+        except:
+            missing_in_re.append(each_phone)
+
+    # Making sure that there are no duplicates in the missing list
+    if missing_in_re != []:
+        missing = list(process.dedupe(missing_in_re, threshold=80))
+        missing_in_re = missing
+
+    # Upload missing numbers in RE
+    if missing_in_re != []:
+        for each_phone in missing_in_re:
+            try:
+                url = "https://api.sky.blackbaud.com/constituent/v1/phones"
+            
+                params = {
+                    'constituent_id': re_system_id,
+                    'number': each_phone,
+                    'type': 'Mobile'
+                }
+                
+                post_request_re()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_phone_added (re_system_id, phone, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [re_system_id, each_phone])
+                conn.commit()
+            except:
+                pass
+            
+    # Finding missing phone numbers to be added in AlmaBase
+    missing_in_ab = []
+    for each_phone in re_phone_list:
+        try:
+            likely_phone, score = process.extractOne(each_phone, ab_phone_list)
+            if score < 80:
+                missing_in_ab.append(each_phone)
+        except:
+            missing_in_ab.append(each_phone)
+
+    # Making sure that there are no duplicates in the missing list
+    if missing_in_ab != []:
+        missing = list(process.dedupe(missing_in_ab, threshold=80))
+        missing_in_ab = missing
+
+    # Upload missing numbers in AlmaBase
+    if missing_in_ab != []:
+        for each_record in zip(missing_in_ab, blank_phone_ids):
+            try:
+                each_phone, each_id = each_record
+                params = {
+                                'custom_fields': {
+                                    each_id: {
+                                        'values': [
+                                            {
+                                                'value': {
+                                                    'content': each_phone
+                                                },
+                                                'display_order': 0
+                                            }
+                                        ]
+                                    }
                                 }
                             }
-                        }
-            
-            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-                        
-            patch_request_ab()
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO ab_phone_added (ab_system_id, phone, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [ab_system_id, each_phone])
-            conn.commit()
-        except:
-            send_error_emails()
-            
-# Get Relation list from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/relationships" % re_system_id
-params = {}
-get_request_re()
+                
+                url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                            
+                patch_request_ab()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO ab_phone_added (ab_system_id, phone, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, each_phone])
+                conn.commit()
+            except:
+                send_error_emails()
+                
+    # Get Relation list from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/relationships" % re_system_id
+    params = {}
+    get_request_re()
 
-re_api_response_org = re_api_response
-re_org_name_list = []
+    re_api_response_org = re_api_response
+    re_org_name_list = []
 
-for each_org in re_api_response['value']:
-    try:
-        if each_org['type'] == 'Employer' or each_org['type'] == 'Former Employer' or each_org['type'] == 'University':
-            # Retrieve the org name
-            re_org_name_list.append(each_org['name'])
-    except:
-        pass
-
-# Get Employment list from AlmaBase
-url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
-get_request_almabase()
-
-ab_api_response_org = ab_api_response
-ab_org_name_list = []
-
-for each_org in ab_api_response['results']:
-    try:
-        # Retrieve the org name
-        ab_org_name_list.append(each_org['employer']['name'])
-    except:
-        pass
-
-# Finding missing employments to be added in RE
-missing_in_re = []
-for each_org in ab_org_name_list:
-    try:
-        likely_phone, score = process.extractOne(each_org, re_org_name_list)
-        if score < 90:
-            missing_in_re.append(each_org)
-    except:
-        missing_in_re.append(each_org)
-
-# Making sure that there are no duplicates in the missing list
-if missing_in_re != []:
-    missing = list(process.dedupe(missing_in_re, threshold=80))
-    missing_in_re = missing
-
-# Upload missing employments in RE
-if missing_in_re != []:
-    for each_org in missing_in_re:
+    for each_org in re_api_response['value']:
         try:
+            if each_org['type'] == 'Employer' or each_org['type'] == 'Former Employer' or each_org['type'] == 'University':
+                # Retrieve the org name
+                re_org_name_list.append(each_org['name'])
+        except:
+            pass
+
+    # Get Employment list from AlmaBase
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
+    get_request_almabase()
+
+    ab_api_response_org = ab_api_response
+    ab_org_name_list = []
+
+    for each_org in ab_api_response['results']:
+        try:
+            # Retrieve the org name
+            ab_org_name_list.append(each_org['employer']['name'])
+        except:
+            pass
+
+    # Finding missing employments to be added in RE
+    missing_in_re = []
+    for each_org in ab_org_name_list:
+        try:
+            likely_phone, score = process.extractOne(each_org, re_org_name_list)
+            if score < 90:
+                missing_in_re.append(each_org)
+        except:
+            missing_in_re.append(each_org)
+
+    # Making sure that there are no duplicates in the missing list
+    if missing_in_re != []:
+        missing = list(process.dedupe(missing_in_re, threshold=80))
+        missing_in_re = missing
+
+    # Upload missing employments in RE
+    if missing_in_re != []:
+        for each_org in missing_in_re:
+            try:
+                for each_ab_org in ab_api_response_org['results']:
+                    if each_org == each_ab_org['employer']['name']:
+                        position = each_ab_org['designation']['name']
+                        if position is None:
+                            position = ""
+                        start_month = each_ab_org['start_month']
+                        if start_month is None:
+                            start_month = ""
+                        start_year = each_ab_org['start_year']
+                        if start_year is None:
+                            start_year = ""
+                        end_month = each_ab_org['end_month']
+                        if end_month is None:
+                            end_month = ""
+                        end_year = each_ab_org['end_year']
+                        if end_year is None:
+                            end_year = ""
+                        break
+            except:
+                pass
+            
+            # Check if organisation is a University
+            school_matches = ["school", "college", "university", "institute", "iit", "iim"]
+            if any(x in each_org.lower() for x in school_matches):
+                relationship = "University"
+            else:
+                relationship = "Employer"
+            
+            params_re = {
+                'constituent_id': re_system_id,
+                'relation': {
+                    'name': each_org[:60],
+                    'type': 'Organization'},
+                'position': position[:50],
+                'start': {
+                    'm': start_month,
+                    'y': start_year
+                },
+                'end': {
+                    'm': end_month,
+                    'y': end_year
+                },
+                'type': relationship,
+                'reciprocal_type': 'Employee'
+            }
+            
+            # Delete blank values from JSON
+            for i in range(10):
+                params = del_blank_values_in_json(params_re.copy())
+            print(params)
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
+            
+            post_request_re()
+        
+    # Update missing details in RE
+    for each_org in re_api_response_org['value']:
+        try:
+            # Get values present in RE
+            re_org_name = each_org['name']
+            
+            if 'position' in each_org:
+                re_org_position = each_org['position']
+            else:
+                re_org_position = ""
+                
+            try:
+                re_org_start_month = each_org['start']['m']
+            except:
+                re_org_start_month = ""
+                
+            try:
+                re_org_start_year = each_org['start']['y']
+            except:
+                re_org_start_year = ""
+            
+            try:
+                re_org_end_month = each_org['end']['m']
+            except:
+                re_org_end_month = ""
+                
+            try:
+                re_org_end_year = each_org['end']['y']
+            except:
+                re_org_end_year = ""
+            
+            relationship_id = each_org['id']
+            
+            # Get values present in AlmaBase for above same organisation
             for each_ab_org in ab_api_response_org['results']:
-                if each_org == each_ab_org['employer']['name']:
-                    position = each_ab_org['designation']['name']
-                    if position is None:
-                        position = ""
-                    start_month = each_ab_org['start_month']
-                    if start_month is None:
-                        start_month = ""
-                    start_year = each_ab_org['start_year']
-                    if start_year is None:
-                        start_year = ""
-                    end_month = each_ab_org['end_month']
-                    if end_month is None:
-                        end_month = ""
-                    end_year = each_ab_org['end_year']
-                    if end_year is None:
-                        end_year = ""
-                    break
+                if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
+                    
+                    try:
+                        if each_ab_org['designation']['name'] is not None:
+                            ab_org_position = each_ab_org['designation']['name']
+                        else:
+                            ab_org_position = ""
+                    except:
+                        ab_org_position = ""
+                    
+                    try:
+                        if each_ab_org['start_month'] is not None:
+                            ab_org_start_month = each_ab_org['start_month']
+                        else:
+                            ab_org_start_month = ""
+                    except:
+                        ab_org_start_month = ""
+                    
+                    try:
+                        if each_ab_org['start_year'] is not None:
+                            ab_org_start_year = each_ab_org['start_year']
+                        else:
+                            ab_org_start_year = ""
+                    except:
+                        ab_org_start_year = ""
+                    
+                    try:
+                        if each_ab_org['end_month'] is not None:
+                            ab_org_end_month = each_ab_org['end_month']
+                        else:
+                            ab_org_end_month = ""
+                    except:
+                        ab_org_end_month = ""
+                    
+                    try:
+                        if each_ab_org['end_year'] is not None:
+                            ab_org_end_year = each_ab_org['end_year']
+                        else:
+                            ab_org_end_year = ""
+                    except:
+                        pass
+                    
+                    if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
+                        break
+                    else:
+                        url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
+                        
+                        # Check if position needs an update
+                        if re_org_position != "" or ab_org_position == "":
+                            ab_org_position = ""
+                            
+                        # Check if joining year needs an update
+                        if re_org_start_year != "" or ab_org_start_year == "":
+                            ab_org_start_month = ""
+                            ab_org_start_year = ""
+                            
+                        # Check if leaving year needs an update
+                        if re_org_end_year != "" or ab_org_end_year == "":
+                            ab_org_end_month = ""
+                            ab_org_end_year = ""
+                        
+                        params_re = {
+                                'position': ab_org_position[:50],
+                                'start': {
+                                    'm': ab_org_start_month,
+                                    'y': ab_org_start_year
+                                },
+                                'end': {
+                                    'm': ab_org_end_month,
+                                    'y': ab_org_end_year
+                                }
+                            }
+                        
+                        # Delete blank values from JSON
+                        for i in range(10):
+                            params = del_blank_values_in_json(params_re.copy())
+
+                        if params != {}:
+                            # Update in RE
+                            patch_request_re()
         except:
             pass
         
-        # Check if organisation is a University
-        school_matches = ["school", "college", "university", "institute", "iit", "iim"]
-        if any(x in each_org.lower() for x in school_matches):
-            relationship = "University"
-        else:
-            relationship = "Employer"
-        
-        params_re = {
-            'constituent_id': re_system_id,
-            'relation': {
-                'name': each_org[:60],
-                'type': 'Organization'},
-            'position': position[:50],
-            'start': {
-                'm': start_month,
-                'y': start_year
-            },
-            'end': {
-                'm': end_month,
-                'y': end_year
-            },
-            'type': relationship,
-            'reciprocal_type': 'Employee'
-        }
-        
-        # Delete blank values from JSON
-        for i in range(10):
-            params = del_blank_values_in_json(params_re.copy())
-        print(params)
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
-        
-        post_request_re()
-     
-# Update missing details in RE
-for each_org in re_api_response_org['value']:
-    try:
-        # Get values present in RE
-        re_org_name = each_org['name']
-        
-        if 'position' in each_org:
-            re_org_position = each_org['position']
-        else:
-            re_org_position = ""
-            
+    # Finding missing employments to be added in AlmaBase
+    missing_in_ab = []
+    for each_org in re_org_name_list:
         try:
-            re_org_start_month = each_org['start']['m']
+            likely_phone, score = process.extractOne(each_org, ab_org_name_list)
+            if score < 90:
+                missing_in_ab.append(each_org)
         except:
-            re_org_start_month = ""
-            
-        try:
-            re_org_start_year = each_org['start']['y']
-        except:
-            re_org_start_year = ""
-        
-        try:
-            re_org_end_month = each_org['end']['m']
-        except:
-            re_org_end_month = ""
-            
-        try:
-            re_org_end_year = each_org['end']['y']
-        except:
-            re_org_end_year = ""
-        
-        relationship_id = each_org['id']
-        
-        # Get values present in AlmaBase for above same organisation
-        for each_ab_org in ab_api_response_org['results']:
-            if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
-                
-                try:
-                    if each_ab_org['designation']['name'] is not None:
-                        ab_org_position = each_ab_org['designation']['name']
-                    else:
-                        ab_org_position = ""
-                except:
-                    ab_org_position = ""
-                
-                try:
-                    if each_ab_org['start_month'] is not None:
-                        ab_org_start_month = each_ab_org['start_month']
-                    else:
-                        ab_org_start_month = ""
-                except:
-                    ab_org_start_month = ""
-                
-                try:
-                    if each_ab_org['start_year'] is not None:
-                        ab_org_start_year = each_ab_org['start_year']
-                    else:
-                        ab_org_start_year = ""
-                except:
-                    ab_org_start_year = ""
-                
-                try:
-                    if each_ab_org['end_month'] is not None:
-                        ab_org_end_month = each_ab_org['end_month']
-                    else:
-                        ab_org_end_month = ""
-                except:
-                    ab_org_end_month = ""
-                
-                try:
-                    if each_ab_org['end_year'] is not None:
-                        ab_org_end_year = each_ab_org['end_year']
-                    else:
-                        ab_org_end_year = ""
-                except:
-                    pass
-                
-                if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
-                    break
-                else:
-                    url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
-                    
-                    # Check if position needs an update
-                    if re_org_position != "" or ab_org_position == "":
-                        ab_org_position = ""
-                        
-                    # Check if joining year needs an update
-                    if re_org_start_year != "" or ab_org_start_year == "":
-                        ab_org_start_month = ""
-                        ab_org_start_year = ""
-                        
-                    # Check if leaving year needs an update
-                    if re_org_end_year != "" or ab_org_end_year == "":
-                        ab_org_end_month = ""
-                        ab_org_end_year = ""
-                    
-                    params_re = {
-                            'position': ab_org_position[:50],
-                            'start': {
-                                'm': ab_org_start_month,
-                                'y': ab_org_start_year
-                            },
-                            'end': {
-                                'm': ab_org_end_month,
-                                'y': ab_org_end_year
-                            }
-                        }
-                    
-                    # Delete blank values from JSON
-                    for i in range(10):
-                        params = del_blank_values_in_json(params_re.copy())
-
-                    if params != {}:
-                        # Update in RE
-                        patch_request_re()
-    except:
-        pass
-      
-# Finding missing employments to be added in AlmaBase
-missing_in_ab = []
-for each_org in re_org_name_list:
-    try:
-        likely_phone, score = process.extractOne(each_org, ab_org_name_list)
-        if score < 90:
             missing_in_ab.append(each_org)
-    except:
-        missing_in_ab.append(each_org)
-    
-# Making sure that there are no duplicates in the missing list
-if missing_in_ab != []:
-    missing = list(process.dedupe(missing_in_ab, threshold=80))
-    missing_in_ab = missing
+        
+    # Making sure that there are no duplicates in the missing list
+    if missing_in_ab != []:
+        missing = list(process.dedupe(missing_in_ab, threshold=80))
+        missing_in_ab = missing
 
-# Upload missing employments in RE
-if missing_in_ab != []:
-    for each_org in missing_in_ab:
-        try:
-            for each_re_org in re_api_response_org['value']:
-                if each_org == each_re_org['name']:
-                    
-                    try:
-                        position = each_re_org['position']
-                    except:
-                        position = ""
-                    
-                    try:
-                        start_month = each_re_org['start']['m']
-                    except:
-                        start_month = ""
-                    
-                    try:
-                        start_year = each_re_org['start']['y']
-                    except:
-                        start_year = ""
-                    
-                    try:
-                        end_month = each_re_org['end']['m']
-                    except:
-                        end_month = ""
-                    
-                    try:
-                        end_year = each_re_org['end']['y']
-                    except:
-                        end_year = ""
+    # Upload missing employments in RE
+    if missing_in_ab != []:
+        for each_org in missing_in_ab:
+            try:
+                for each_re_org in re_api_response_org['value']:
+                    if each_org == each_re_org['name']:
                         
-                    if position == "" and start_month == "" and start_year == "" and end_month == "" and end_year == "":
+                        try:
+                            position = each_re_org['position']
+                        except:
+                            position = ""
+                        
+                        try:
+                            start_month = each_re_org['start']['m']
+                        except:
+                            start_month = ""
+                        
+                        try:
+                            start_year = each_re_org['start']['y']
+                        except:
+                            start_year = ""
+                        
+                        try:
+                            end_month = each_re_org['end']['m']
+                        except:
+                            end_month = ""
+                        
+                        try:
+                            end_year = each_re_org['end']['y']
+                        except:
+                            end_year = ""
+                            
+                        if position == "" and start_month == "" and start_year == "" and end_month == "" and end_year == "":
+                            break
+                        else:
+                            # Create an employment in RE
+                            url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
+                            
+                            params_ab = {
+                                'employer': {
+                                    'name': each_org
+                                },
+                                'designation': {
+                                    'name': position
+                                },
+                                'start_month': start_month,
+                                'start_year': start_year,
+                                'end_month': end_month,
+                                'end_year': end_year
+                            }
+                            
+                            # Delete blank values from JSON
+                            for i in range(10):
+                                params = del_blank_values_in_json(params_ab.copy())
+                            
+                            # Update in Almabase
+                            post_request_ab()
+                        break
+            except:
+                pass
+
+    # Update missing details in AlmaBase
+    for each_org in ab_api_response_org['results']:
+        try:
+            # Get values present in AB
+            ab_org_name = each_org['employer']['name']
+            
+            try:
+                if each_org['designation']['name'] is not None:
+                    ab_org_position = each_org['designation']['name']
+                else:
+                    ab_org_position = ""
+            except:
+                ab_org_position = ""
+                
+            try:
+                if each_org['start_month'] is not None:
+                    ab_org_start_month = each_org['start_month']
+                else:
+                    ab_org_start_month = ""
+            except:
+                ab_org_start_month = ""
+                
+            try:
+                if each_org['start_year'] is not None:
+                    ab_org_start_year = each_org['start_year']
+                else:
+                    ab_org_start_year = ""
+            except:
+                ab_org_start_year = ""
+                
+            try:
+                if each_org['end_month'] is not None:
+                    ab_org_end_month = each_org['end_month']
+                else:
+                    ab_org_end_month = ""
+            except:
+                ab_org_end_month = ""
+                
+            try:
+                if each_org['end_year'] is not None:
+                    ab_org_end_year = each_org['end_year']
+                else:
+                    ab_org_end_year = ""
+            except:
+                ab_org_end_year = ""
+            
+            ab_org_relationship_id = each_org['id']
+
+            # Get values present in RE for above same organisation
+            for each_re_org in re_api_response_org['value']:
+                if fuzz.token_set_ratio(ab_org_name.lower(),each_re_org['name'].lower()) >= 90:
+                    
+                    try:
+                        re_org_position = each_re_org['position']
+                    except:
+                        re_org_position = ""
+                    
+                    try:
+                        re_org_start_month = each_re_org['start']['m']
+                    except:
+                        re_org_start_month = ""
+                    
+                    try:
+                        re_org_start_year = each_re_org['start']['y']
+                    except:
+                        re_org_start_year = ""
+                    
+                    try:
+                        re_org_end_month = each_re_org['end']['m']
+                    except:
+                        re_org_end_month = ""
+                    
+                    try:
+                        re_org_end_year = each_re_org['end']['y']
+                    except:
+                        re_org_end_year = ""
+                    
+                    if re_org_position == "" and re_org_start_month == "" and re_org_start_year == "" and re_org_end_month == "" and re_org_end_year == "":
                         break
                     else:
-                        # Create an employment in RE
-                        url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
+                        url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments/%s" % (ab_system_id, ab_org_relationship_id)
                         
+                        # Check if position needs an update
+                        if re_org_position == "" or ab_org_position != "":
+                            re_org_position = ""
+                            
+                        # Check if joining year needs an update
+                        if re_org_start_year == "" or ab_org_start_year != "":
+                            re_org_start_month = ""
+                            re_org_start_year = ""
+                            
+                        # Check if leaving year needs an update
+                        if re_org_end_year == "" or ab_org_end_year != "":
+                            re_org_end_month = ""
+                            re_org_end_year = ""
+
                         params_ab = {
-                            'employer': {
-                                'name': each_org
-                            },
-                            'designation': {
-                                'name': position
-                            },
-                            'start_month': start_month,
-                            'start_year': start_year,
-                            'end_month': end_month,
-                            'end_year': end_year
-                        }
+                                'designation': {
+                                    'name': re_org_position
+                                },
+                                'start_month': re_org_start_month,
+                                'start_year': re_org_start_year,
+                                'end_month': re_org_end_month,
+                                'end_year': re_org_end_year
+                            }
                         
                         # Delete blank values from JSON
                         for i in range(10):
                             params = del_blank_values_in_json(params_ab.copy())
-                        
-                        # Update in Almabase
-                        post_request_ab()
-                    break
+                            
+                        if params != {}:           
+                            patch_request_ab()
+        except:
+            pass
+        
+    # Retrieve addresses from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/addresses?include_inactive=true" % re_system_id
+    params = {}
+    get_request_re()
+
+    re_api_response_address = re_api_response
+
+    # Retrieve addresses from Almabase - 1
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=addresses" % ab_system_id
+
+    get_request_almabase()
+    ab_api_response_address = ab_api_response
+
+    # Retrieve addresses from Almabase - 2
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=custom_fields" % ab_system_id
+
+    get_request_almabase()
+    ab_api_response_address_custom_fields = ab_api_response
+
+    # Retrive details from Permanent address in AlmaBase
+    try:
+        ab_permanent_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['permanent_address']['values'][0]['value']['content']
+    except:
+        ab_permanent_address_line_1 = ""
+
+    try:
+        ab_permanent_address_line_2 = ab_api_response_address_custom_fields['custom_fields']['permanent_address_line_2']['values'][0]['value']['content']
+    except:
+        ab_permanent_address_line_2 = ""
+
+    try:
+        ab_permanent_address_city = ab_api_response_address_custom_fields['custom_fields']['permanent_city']['values'][0]['value']['content']
+    except:
+        ab_permanent_address_city = ""
+
+    try:
+        ab_permanent_address_state = ab_api_response_address_custom_fields['custom_fields']['permanent_state']['values'][0]['value']['content']
+    except:
+        ab_permanent_address_state = ""
+
+    try:
+        ab_permanent_address_country = ab_api_response_address_custom_fields['custom_fields']['permanent_country']['values'][0]['value']['content']
+    except:
+        ab_permanent_address_country = ""
+
+    try:
+        ab_permanent_address_zip = ab_api_response_address_custom_fields['custom_fields']['permanent_postal_code']['values'][0]['value']['content']
+    except:
+        ab_permanent_address_zip = ""
+
+    # Retrive details from Work address in AlmaBase
+    try:
+        ab_work_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_1']['values'][0]['value']['content']
+    except:
+        ab_work_address_line_1 = ""
+
+    try:
+        ab_work_address_line_2 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_2']['values'][0]['value']['content']
+    except:
+        ab_work_address_line_2 = ""
+
+    try:
+        ab_work_address_city = ab_api_response_address_custom_fields['custom_fields']['work_city']['values'][0]['value']['content']
+    except:
+        ab_work_address_city = ""
+
+    try:
+        ab_work_address_state = ab_api_response_address_custom_fields['custom_fields']['work_state']['values'][0]['value']['content']
+    except:
+        ab_work_address_state = ""
+
+    try:
+        ab_work_address_country = ab_api_response_address_custom_fields['custom_fields']['work_country']['values'][0]['value']['content']
+    except:
+        ab_work_address_country = ""
+
+    try:
+        ab_work_address_zip = ab_api_response_address_custom_fields['custom_fields']['work_postal_code']['values'][0]['value']['content']
+    except:
+        ab_work_address_zip = ""
+        
+    ab_api_response_address_custom_fields_json = {
+        'addresses': [
+            {
+                'line1': ab_permanent_address_line_1,
+                'line2': ab_permanent_address_line_2,
+                'zip_code': ab_permanent_address_zip,
+                'location': {
+                    'city': ab_permanent_address_city,
+                    'state': ab_permanent_address_state,
+                    'country': ab_permanent_address_country
+                    }
+            },
+            {
+                'line1': ab_work_address_line_1,
+                'line2': ab_work_address_line_2,
+                'zip_code': ab_work_address_zip,
+                'location': {
+                    'city': ab_work_address_city,
+                    'state': ab_work_address_state,
+                    'country': ab_work_address_country
+                    }
+            }
+        ]
+    }
+
+    # Merge JSON strings into one
+    for each_address in ab_api_response_address_custom_fields_json['addresses']:
+        ab_api_response_address['addresses'].append(each_address)
+
+    # Compare the ones in RE with AB and find delta
+    re_address_list = []
+    for each_value in re_api_response_address['value']:
+        re_address = each_value['formatted_address'].replace("\r\n",", ")
+        re_address_list.append(re_address)
+
+    # Finding missing addresses to be added in RE
+    missing_in_re = []
+    for each_value in ab_api_response_address['addresses']:
+        try:
+            try:
+                line1 = each_value['line1']
+                if line1 is None:
+                    line1 = ""
+            except:
+                line1 = ""
+                
+            try:
+                line2 = each_value['line2']
+                if line2 is None:
+                    line2 = ""
+            except:
+                line2 = ""
+            
+            try:
+                city = each_value['location']['city']
+                if city is None:
+                    city = ""
+            except:
+                city = ""
+            
+            try:
+                state = each_value['location']['state']
+                if state is None:
+                    state = ""
+            except:
+                try:
+                    state = each_value['location']['county']
+                    if state is None:
+                        state = ""
+                except:
+                    state = ""
+                    
+            try:
+                country = each_value['location']['country']
+                if country is None:
+                    country = ""
+            except:
+                country = ""
+                
+            try:
+                zip_code = each_value['zip_code']
+                if zip_code is None:
+                    zip_code = ""
+            except:
+                zip_code = ""
+            
+            if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
+                ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
+                
+                try:
+                    likely_address, score = process.extractOne(ab_address, re_address_list)
+                    if score < 80:
+                        missing_in_re.append(ab_address)
+                except:
+                    missing_in_re.append(ab_address)
         except:
             pass
 
-# Update missing details in AlmaBase
-for each_org in ab_api_response_org['results']:
-    try:
-        # Get values present in AB
-        ab_org_name = each_org['employer']['name']
-        
-        try:
-            if each_org['designation']['name'] is not None:
-                ab_org_position = each_org['designation']['name']
-            else:
-                ab_org_position = ""
-        except:
-            ab_org_position = ""
-            
-        try:
-            if each_org['start_month'] is not None:
-                ab_org_start_month = each_org['start_month']
-            else:
-                ab_org_start_month = ""
-        except:
-            ab_org_start_month = ""
-            
-        try:
-            if each_org['start_year'] is not None:
-                ab_org_start_year = each_org['start_year']
-            else:
-                ab_org_start_year = ""
-        except:
-            ab_org_start_year = ""
-            
-        try:
-            if each_org['end_month'] is not None:
-                ab_org_end_month = each_org['end_month']
-            else:
-                ab_org_end_month = ""
-        except:
-            ab_org_end_month = ""
-            
-        try:
-            if each_org['end_year'] is not None:
-                ab_org_end_year = each_org['end_year']
-            else:
-                ab_org_end_year = ""
-        except:
-            ab_org_end_year = ""
-        
-        ab_org_relationship_id = each_org['id']
+    # Making sure that there are no duplicates in the missing list
+    if missing_in_re != []:
+        missing = list(process.dedupe(missing_in_re, threshold=80))
+        missing_in_re = missing
 
-        # Get values present in RE for above same organisation
-        for each_re_org in re_api_response_org['value']:
-            if fuzz.token_set_ratio(ab_org_name.lower(),each_re_org['name'].lower()) >= 90:
+    # Create missing address in RE
+    if missing_in_re != []:
+        for address in missing_in_re:
+            try:
+                # Get city, state and country from Address
+                get_address(address)
                 
-                try:
-                    re_org_position = each_re_org['position']
-                except:
-                    re_org_position = ""
+                url = "https://api.sky.blackbaud.com/constituent/v1/addresses"
                 
-                try:
-                    re_org_start_month = each_re_org['start']['m']
-                except:
-                    re_org_start_month = ""
-                
-                try:
-                    re_org_start_year = each_re_org['start']['y']
-                except:
-                    re_org_start_year = ""
-                
-                try:
-                    re_org_end_month = each_re_org['end']['m']
-                except:
-                    re_org_end_month = ""
-                
-                try:
-                    re_org_end_year = each_re_org['end']['y']
-                except:
-                    re_org_end_year = ""
-                
-                if re_org_position == "" and re_org_start_month == "" and re_org_start_year == "" and re_org_end_month == "" and re_org_end_year == "":
-                    break
-                else:
-                    url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments/%s" % (ab_system_id, ab_org_relationship_id)
-                    
-                    # Check if position needs an update
-                    if re_org_position == "" or ab_org_position != "":
-                        re_org_position = ""
-                        
-                    # Check if joining year needs an update
-                    if re_org_start_year == "" or ab_org_start_year != "":
-                        re_org_start_month = ""
-                        re_org_start_year = ""
-                        
-                    # Check if leaving year needs an update
-                    if re_org_end_year == "" or ab_org_end_year != "":
-                        re_org_end_month = ""
-                        re_org_end_year = ""
-
-                    params_ab = {
-                            'designation': {
-                                'name': re_org_position
-                            },
-                            'start_month': re_org_start_month,
-                            'start_year': re_org_start_year,
-                            'end_month': re_org_end_month,
-                            'end_year': re_org_end_year
-                        }
-                    
-                    # Delete blank values from JSON
-                    for i in range(10):
-                        params = del_blank_values_in_json(params_ab.copy())
-                        
-                    if params != {}:           
-                        patch_request_ab()
-    except:
-        pass
-    
-# Retrieve addresses from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/addresses?include_inactive=true" % re_system_id
-params = {}
-get_request_re()
-
-re_api_response_address = re_api_response
-
-# Retrieve addresses from Almabase - 1
-url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=addresses" % ab_system_id
-
-get_request_almabase()
-ab_api_response_address = ab_api_response
-
-# Retrieve addresses from Almabase - 2
-url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=custom_fields" % ab_system_id
-
-get_request_almabase()
-ab_api_response_address_custom_fields = ab_api_response
-
-# Retrive details from Permanent address in AlmaBase
-try:
-    ab_permanent_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['permanent_address']['values'][0]['value']['content']
-except:
-    ab_permanent_address_line_1 = ""
-
-try:
-    ab_permanent_address_line_2 = ab_api_response_address_custom_fields['custom_fields']['permanent_address_line_2']['values'][0]['value']['content']
-except:
-    ab_permanent_address_line_2 = ""
-
-try:
-    ab_permanent_address_city = ab_api_response_address_custom_fields['custom_fields']['permanent_city']['values'][0]['value']['content']
-except:
-    ab_permanent_address_city = ""
-
-try:
-    ab_permanent_address_state = ab_api_response_address_custom_fields['custom_fields']['permanent_state']['values'][0]['value']['content']
-except:
-    ab_permanent_address_state = ""
-
-try:
-    ab_permanent_address_country = ab_api_response_address_custom_fields['custom_fields']['permanent_country']['values'][0]['value']['content']
-except:
-    ab_permanent_address_country = ""
-
-try:
-    ab_permanent_address_zip = ab_api_response_address_custom_fields['custom_fields']['permanent_postal_code']['values'][0]['value']['content']
-except:
-    ab_permanent_address_zip = ""
-
-# Retrive details from Work address in AlmaBase
-try:
-    ab_work_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_1']['values'][0]['value']['content']
-except:
-    ab_work_address_line_1 = ""
-
-try:
-    ab_work_address_line_2 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_2']['values'][0]['value']['content']
-except:
-    ab_work_address_line_2 = ""
-
-try:
-    ab_work_address_city = ab_api_response_address_custom_fields['custom_fields']['work_city']['values'][0]['value']['content']
-except:
-    ab_work_address_city = ""
-
-try:
-    ab_work_address_state = ab_api_response_address_custom_fields['custom_fields']['work_state']['values'][0]['value']['content']
-except:
-    ab_work_address_state = ""
-
-try:
-    ab_work_address_country = ab_api_response_address_custom_fields['custom_fields']['work_country']['values'][0]['value']['content']
-except:
-    ab_work_address_country = ""
-
-try:
-    ab_work_address_zip = ab_api_response_address_custom_fields['custom_fields']['work_postal_code']['values'][0]['value']['content']
-except:
-    ab_work_address_zip = ""
-    
-ab_api_response_address_custom_fields_json = {
-    'addresses': [
-        {
-            'line1': ab_permanent_address_line_1,
-            'line2': ab_permanent_address_line_2,
-            'zip_code': ab_permanent_address_zip,
-            'location': {
-                'city': ab_permanent_address_city,
-                'state': ab_permanent_address_state,
-                'country': ab_permanent_address_country
+                params = {
+                    'constituent_id': re_system_id,
+                    'type': 'Business',
+                    'address_lines': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
+                    'city': city,
+                    'county': state,
+                    'country': country,
+                    'postal_code': zip
                 }
-        },
-        {
-            'line1': ab_work_address_line_1,
-            'line2': ab_work_address_line_2,
-            'zip_code': ab_work_address_zip,
-            'location': {
-                'city': ab_work_address_city,
-                'state': ab_work_address_state,
-                'country': ab_work_address_country
-                }
-        }
-    ]
-}
+                
+                post_request_re()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_address_added (re_system_id, address, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [re_system_id, address])
+                conn.commit()
+            except:
+                pass
 
-# Merge JSON strings into one
-for each_address in ab_api_response_address_custom_fields_json['addresses']:
-    ab_api_response_address['addresses'].append(each_address)
-
-# Compare the ones in RE with AB and find delta
-re_address_list = []
-for each_value in re_api_response_address['value']:
-    re_address = each_value['formatted_address'].replace("\r\n",", ")
-    re_address_list.append(re_address)
-
-# Finding missing addresses to be added in RE
-missing_in_re = []
-for each_value in ab_api_response_address['addresses']:
-    try:
+    # Compare the ones in AB with RE and find delta
+    ab_address_list = []
+    for each_value in ab_api_response_address['addresses']:
         try:
             line1 = each_value['line1']
             if line1 is None:
@@ -1705,861 +1813,598 @@ for each_value in ab_api_response_address['addresses']:
                 zip_code = ""
         except:
             zip_code = ""
-        
-        if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
-            ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
             
-            try:
-                likely_address, score = process.extractOne(ab_address, re_address_list)
-                if score < 80:
-                    missing_in_re.append(ab_address)
-            except:
-                missing_in_re.append(ab_address)
-    except:
-        pass
+        ab_address = (line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code).replace("  ", " ")
+        ab_address_list.append(ab_address)
 
-# Making sure that there are no duplicates in the missing list
-if missing_in_re != []:
-    missing = list(process.dedupe(missing_in_re, threshold=80))
-    missing_in_re = missing
-
-# Create missing address in RE
-if missing_in_re != []:
-    for address in missing_in_re:
+    # Finding missing addresses to be added in AlmaBase
+    missing_in_ab = []
+    for each_value in re_api_response_address['value']:
+        re_address = each_value['formatted_address'].replace("\r\n",", ")
+        
         try:
-            # Get city, state and country from Address
-            get_address(address)
-            
-            url = "https://api.sky.blackbaud.com/constituent/v1/addresses"
-            
-            params = {
-                'constituent_id': re_system_id,
-                'type': 'Business',
-                'address_lines': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
-                'city': city,
-                'county': state,
-                'country': country,
-                'postal_code': zip
-            }
-            
-            post_request_re()
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO re_address_added (re_system_id, address, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [re_system_id, address])
-            conn.commit()
+            likely_address, score = process.extractOne(re_address, ab_address_list)
+            if score < 80:
+                missing_in_ab.append(re_address)
         except:
-            pass
-
-# Compare the ones in AB with RE and find delta
-ab_address_list = []
-for each_value in ab_api_response_address['addresses']:
-    try:
-        line1 = each_value['line1']
-        if line1 is None:
-            line1 = ""
-    except:
-        line1 = ""
-        
-    try:
-        line2 = each_value['line2']
-        if line2 is None:
-            line2 = ""
-    except:
-        line2 = ""
-    
-    try:
-        city = each_value['location']['city']
-        if city is None:
-            city = ""
-    except:
-        city = ""
-    
-    try:
-        state = each_value['location']['state']
-        if state is None:
-            state = ""
-    except:
-        try:
-            state = each_value['location']['county']
-            if state is None:
-                state = ""
-        except:
-            state = ""
-            
-    try:
-        country = each_value['location']['country']
-        if country is None:
-            country = ""
-    except:
-        country = ""
-        
-    try:
-        zip_code = each_value['zip_code']
-        if zip_code is None:
-            zip_code = ""
-    except:
-        zip_code = ""
-        
-    ab_address = (line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code).replace("  ", " ")
-    ab_address_list.append(ab_address)
-
-# Finding missing addresses to be added in AlmaBase
-missing_in_ab = []
-for each_value in re_api_response_address['value']:
-    re_address = each_value['formatted_address'].replace("\r\n",", ")
-    
-    try:
-        likely_address, score = process.extractOne(re_address, ab_address_list)
-        if score < 80:
             missing_in_ab.append(re_address)
-    except:
-        missing_in_ab.append(re_address)
 
-# Making sure that there are no duplicates in the missing list
-if missing_in_ab != []:
-    missing = list(process.dedupe(missing_in_ab, threshold=80))
-    missing_in_ab = missing
+    # Making sure that there are no duplicates in the missing list
+    if missing_in_ab != []:
+        missing = list(process.dedupe(missing_in_ab, threshold=80))
+        missing_in_ab = missing
 
-# Create missing address in AB
-if missing_in_ab != []:
-    i = 0
-    for address in missing_in_ab:
-        try:
-            # Check where the new address can be added
-            while i == 0:
-                for each_value in ab_api_response_address['addresses']:
-                    try:
-                        line1 = each_value['line1']
-                        if line1 is None:
-                            line1 = ""
-                    except:
-                        line1 = ""
-                        
-                    try:
-                        line2 = each_value['line2']
-                        if line2 is None:
-                            line2 = ""
-                    except:
-                        line2 = ""
-                    
-                    try:
-                        city = each_value['location']['city']
-                        if city is None:
-                            city = ""
-                    except:
-                        city = ""
-                    
-                    try:
-                        state = each_value['location']['state']
-                        if state is None:
-                            state = ""
-                    except:
+    # Create missing address in AB
+    if missing_in_ab != []:
+        i = 0
+        for address in missing_in_ab:
+            try:
+                # Check where the new address can be added
+                while i == 0:
+                    for each_value in ab_api_response_address['addresses']:
                         try:
-                            state = each_value['location']['county']
+                            line1 = each_value['line1']
+                            if line1 is None:
+                                line1 = ""
+                        except:
+                            line1 = ""
+                            
+                        try:
+                            line2 = each_value['line2']
+                            if line2 is None:
+                                line2 = ""
+                        except:
+                            line2 = ""
+                        
+                        try:
+                            city = each_value['location']['city']
+                            if city is None:
+                                city = ""
+                        except:
+                            city = ""
+                        
+                        try:
+                            state = each_value['location']['state']
                             if state is None:
                                 state = ""
                         except:
-                            state = ""
-                            
-                    try:
-                        country = each_value['location']['country']
-                        if country is None:
+                            try:
+                                state = each_value['location']['county']
+                                if state is None:
+                                    state = ""
+                            except:
+                                state = ""
+                                
+                        try:
+                            country = each_value['location']['country']
+                            if country is None:
+                                country = ""
+                        except:
                             country = ""
-                    except:
-                        country = ""
-                        
-                    try:
-                        zip_code = each_value['zip_code']
-                        if zip_code is None:
+                            
+                        try:
+                            zip_code = each_value['zip_code']
+                            if zip_code is None:
+                                zip_code = ""
+                        except:
                             zip_code = ""
-                    except:
-                        zip_code = ""
-                    
-                    if line1 != "" or line2 != "" or city != "" or state != "" or country != country or zip_code != "":
-                        i += 1
                         
-                        # Stop after 4 addresses
-                        if i == 4:
-                            break
-                else:
-                    break
-            
-            ab_address_number = i + 1
-            
-            # Get city, state and country from Address
-            get_address(address)
-            
-            # Patch Profile
-            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-            
-            # Will add as address    
-            if ab_address_number <= 2:
+                        if line1 != "" or line2 != "" or city != "" or state != "" or country != country or zip_code != "":
+                            i += 1
+                            
+                            # Stop after 4 addresses
+                            if i == 4:
+                                break
+                    else:
+                        break
                 
-                params = {
-                    'addresses': [
-                        {
-                            'line1': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
-                            'zip_code': zip,
-                            'location': {
-                                'name': city + ", " + state + ", " + country,
+                ab_address_number = i + 1
+                
+                # Get city, state and country from Address
+                get_address(address)
+                
+                # Patch Profile
+                url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                
+                # Will add as address    
+                if ab_address_number <= 2:
+                    
+                    params = {
+                        'addresses': [
+                            {
+                                'line1': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
+                                'zip_code': zip,
+                                'location': {
+                                    'name': city + ", " + state + ", " + country,
+                                    "type": ab_address_number
+                                },
                                 "type": ab_address_number
+                            }
+                        ]
+                    }
+                
+                # Will add as custom field - permanent address   
+                elif ab_address_number == 3:
+                    
+                    params = {
+                        'custom_fields': {
+                            'permanent_address': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
                             },
-                            "type": ab_address_number
-                        }
-                    ]
-                }
-            
-            # Will add as custom field - permanent address   
-            elif ab_address_number == 3:
-                
-                params = {
-                    'custom_fields': {
-                        'permanent_address': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'permanent_city': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': city
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'permanent_state': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': state
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'permanent_country': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': country
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'permanent_postal_code': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': zip
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
+                            'permanent_city': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': city
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'permanent_state': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': state
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'permanent_country': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': country
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'permanent_postal_code': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': zip
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            }
                         }
                     }
-                }
-            
-            else:
                 
-                params = {
-                    'custom_fields': {
-                        'work_address_line_1': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'work_city': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': city
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'work_state': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': state
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'work_country': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': country
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
-                        },
-                        'work_postal_code': {
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': zip
-                                    },
-                                    'display_order': 0
-                                }
-                            ]
+                else:
+                    
+                    params = {
+                        'custom_fields': {
+                            'work_address_line_1': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'work_city': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': city
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'work_state': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': state
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'work_country': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': country
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            },
+                            'work_postal_code': {
+                                'values': [
+                                    {
+                                        'value': {
+                                            'content': zip
+                                        },
+                                        'display_order': 0
+                                    }
+                                ]
+                            }
                         }
                     }
-                }
-            
-            patch_request_ab()
-            i += 1
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO ab_address_added (ab_system_id, address, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [ab_system_id, address])
-            conn.commit()
-        except:
-            pass
-        
-# Retrieve IITB education from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
-params = {}
-get_request_re()
-
-re_api_response_education_all = re_api_response
-
-i = 0
-re_api_response_education = {
-    'value': [
-        
-    ]
-}
-
-for each_education in re_api_response['value']:
-    if each_education['school'] == "Indian Institute of Technology Bombay":
-        re_api_response_education['value'].append(each_education)
-
-# Retrieve IITB education from AlmaBase
-url = "https://api.almabaseapp.com/api/v1/profiles/%s/educations" % ab_system_id
-
-get_request_almabase()
-ab_api_response_education = ab_api_response
-
-# Compare the ones present in RE with AlmaBase and find delta
-# When only one education exists in both
-if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
-    
-    # Get data from RE
-    try:
-        re_class_of = re_api_response_education['value'][0]['class_of']
-        
-        if int(re_class_of) < 1962:
-            re_class_of = ""
-    except:
-        re_class_of = ""
-        
-    try:
-        re_department = re_api_response_education['value'][0]['majors'][0]
-    except:
-        re_department = ""
-        
-    try:
-        re_degree = re_api_response_education['value'][0]['degree']
-    except:
-        re_degree = ""
-        
-    try:
-        re_hostel = re_api_response_education['value'][0]['social_organization']
-    except:
-        re_hostel = ""
-        
-    try:
-        re_joining_year = re_api_response_education['value'][0]['date_entered']['y']
-    except:
-        re_joining_year = ""
-        
-    try:
-        re_roll_number = re_api_response_education['value'][0]['known_name']
-    except:
-        re_roll_number = ""
-        
-    re_education_id = re_api_response_education['value'][0]['id']
-        
-    # Get data from AlmaBase
-    try:
-        ab_class_of = ab_api_response_education['results'][0]['class_year']
-        
-        if int(ab_class_of) < 1962 or ab_class_of == "null" or ab_class_of is None:
-            ab_class_of = ""
-    except:
-        ab_class_of = ""
-        
-    try:
-        ab_department = ab_api_response_education['results'][0]['course']['name']
-        
-        if ab_department == "null" or ab_department is None:
-            ab_department = ""
-    except:
-        ab_department = ""
-        
-    try:
-        ab_department = ab_api_response_education['results'][0]['branch']['name']
-        
-        if ab_department == "null" or ab_department is None:
-            ab_department = ""
-    except:
-        ab_department = ""
-        
-    try:
-        ab_degree = ab_api_response_education['results'][0]['course']['name']
-        
-        if ab_degree == "null" or ab_degree is None:
-            ab_degree = ""
-    except:
-        ab_degree = ""
-        
-    try:
-        ab_hostel = ab_api_response_education['results'][0]['custom_fields']['hostel']['values'][0]['value']['label']
-        
-        if ab_hostel == "null" or ab_hostel is None:
-            ab_hostel = ""
-    except:
-        ab_hostel = ""
-    
-    try:
-        ab_joining_year = ab_api_response_education['results'][0]['year_of_joining']
-        
-        if ab_joining_year == "null" or ab_joining_year is None:
-            ab_joining_year = ""
-    except:
-        ab_joining_year = ""
-        
-    try:
-        ab_roll_number = ab_api_response_education['results'][0]['roll_number']
-         
-        if ab_roll_number == "null" or ab_roll_number is None:
-            ab_roll_number = ""
-    except:
-        ab_roll_number = ""
-        
-    ab_education_id = ab_api_response_education['results'][0]['id']
-    
-    # Upload the delta to RE
-    if re_class_of == "" or re_department == "" or re_degree == "" or re_hostel == "" or re_joining_year == "" or re_roll_number == "":
-        if re_class_of == "" and ab_class_of != "":
-            re_class_of = ab_class_of
-            re_graduation_status = "Graduated"
-        else:
-            re_class_of = ""
-            re_graduation_status = ""
-            
-        if re_department == "" or re_department == "Other" and ab_department != "":
-            extract_department = """
-            SELECT re_department FROM department_mapping WHERE ab_department = '%s' FETCH FIRST 1 ROW ONLY;
-            """
-            cur.execute(extract_sql, [ab_department])
-            result = cur.fetchone()
-            
-            # Ensure no comma or brackets in output
-            re_department = result[0]
-        else:
-            re_department = ""
-            
-        if re_degree == "" or re_degree == "Other" and ab_degree != "":
-            extract_degree = """
-            SELECT re_degree FROM degree_mapping WHERE ab_degree = '%s' FETCH FIRST 1 ROW ONLY;
-            """
-            cur.execute(extract_degree, [ab_degree])
-            result = cur.fetchone()
-            
-            # Ensure no comma or brackets in output
-            re_degree = result[0]
-        else:
-            re_degree = ""
-            
-        if re_hostel == "" or re_hostel == "Other" and ab_hostel != "":
-            re_hostel = ab_hostel
-        else:
-            re_hostel = ""
-        
-        if re_joining_year == "" and ab_joining_year != "":
-            re_joining_year = ab_joining_year
-        else:
-            re_joining_year = ""
-            
-        if re_roll_number == "" and ab_roll_number != "":
-            re_roll_number = ab_roll_number
-        else:
-            re_roll_number = ""
-        
-        params_re = {
-            'known_name': re_roll_number,
-            'class_of': re_class_of,
-            'date_entered': {
-                'y': re_joining_year
-            },
-            'date_graduated': {
-                'y': re_class_of
-            },
-            'date_left': {
-                'y': re_class_of
-            },
-            'degree': re_degree,
-            'majors': [
-                re_department
-            ],
-            'social_organization': re_hostel,
-            'status': re_graduation_status,
-        }
-        
-        # Delete blank values from JSON
-        for i in range(10):
-            params = del_blank_values_in_json(params_re.copy())
-            
-        if params != {}:
-            url = "https://api.sky.blackbaud.com/constituent/v1/educations/%s" % re_education_id
-            patch_request_re()
-            
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO re_iitb_education_added (re_system_id, roll_number, department, joining_year, class_of, degree, hostel, date)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, now())
-                        """
-        cur.execute(insert_updates, [re_system_id, re_roll_number, re_department, re_joining_year, re_class_of, re_degree, re_hostel])
-        conn.commit()
-    
-    # # Compare the ones present in AlmaBase with RE and find delta
-    # if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
-    #     if re_class_of != "" and ab_class_of == "":
-    #         ab_class_of = re_class_of
-            
-    #     if re_department != "" and ab_department == "":
-    #         extract_department = """
-    #         SELECT ab_department FROM department_mapping WHERE re_department = '%s' FETCH FIRST 1 ROW ONLY;
-    #         """
-    #         cur.execute(extract_sql, [re_department])
-    #         result = cur.fetchone()
-            
-    #         # Ensure no comma or brackets in output
-    #         ab_department = result[0]
-            
-    #     if re_degree != "" and ab_degree == "":
-    #         extract_degree = """
-    #         SELECT ab_degree FROM degree_mapping WHERE re_degree = '%s' FETCH FIRST 1 ROW ONLY;
-    #         """
-    #         cur.execute(extract_degree, [re_degree])
-    #         result = cur.fetchone()
-            
-    #         # Ensure no comma or brackets in output
-    #         ab_degree = result[0]
-            
-    #     if re_hostel != "" and ab_hostel == "":
-    #         # Taking the last Hostel after comma
-    #         ab_hostel = re_hostel[re_hostel.rfind(",") +1:].lower().replace(" ","_")
-    #     else:
-    #         ab_hostel_content = ab_hostel.lower().replace(" ","_")
-    #         ab_hostel = ab_hostel_content
-            
-    #     if re_joining_year != "" and ab_joining_year == "":
-    #         ab_joining_year = re_joining_year
-            
-    #     if re_roll_number != "" and ab_roll_number == "":
-    #             ab_roll_number = re_roll_number
-            
-    #     params_ab = {
-    #         'course': {
-    #             'name': ab_degree
-    #             },
-    #         'branch': {
-    #             'name': ab_department
-    #             },
-    #         'custom_fields': {
-    #             'hostel': {
-    #                 'values': [
-    #                     {
-    #                         'value': {
-    #                             'content': ab_hostel
-    #                         },
-    #                         'display_order': 0
-    #                     }
-    #                 ]
-    #             }
-    #         },
-    #         'year_of_graduation': ab_class_of,
-    #         'year_of_joining': ab_joining_year,
-    #         'year_of_leaving': ab_class_of,
-    #         'roll_number': ab_roll_number,
-    #         'college': {
-    #             'name': "IIT Bombay"
-    #         }
-    #     }
-        
-    #     # Delete blank values from JSON
-    #     for i in range(10):
-    #         params = del_blank_values_in_json(params_ab.copy())
-            
-    #     print_json(params)
-        
-    #     if params != {} and ab_class_of != "":
-    #         url = "https://api.almabaseapp.com/api/profiles/%s/educations" % (ab_system_id, ab_education_id)
-    #         print(url)
-    #         patch_request_ab()
-    #         print(ab_api_response)
-    
-# When more than one exists
-else:
-    subject = "Multiple IITB Education details exists in either Raisers Edge or AlmaBase for syncing"
-    constituent_not_found_email()
-
-# Get other education details from RE
-re_other_school_name_list = []
-
-for each_education in re_api_response_org['value']:
-    try:
-        if each_education['reciprocal_type'] == 'Student':
-            # Retrieve the University name
-            re_other_school_name_list.append(each_education['name'])
-    except:
-        pass
-
-for each_education in re_api_response_education_all['value']:
-    try:
-        if each_education['school'] != 'Indian Institute of Technology Bombay':
-            # Retrieve the University name
-            re_other_school_name_list.append(each_education['school'])
-    except:
-        pass
-
-# Get other education details from AlmaBase
-ab_other_school_name_list = []
-
-url  = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
-get_request_almabase()
-
-try:
-    for each_education in ab_api_response['results']:
-        try:
-            ab_other_school_name_list.append(each_education['college']['name'])
-        except:
-            pass
-except:
-    pass
-
-# Finding missing other schools to be added in Raisers Edge
-missing_in_re = []
-for each_school in ab_other_school_name_list:
-    try:
-        likely_school, score = process.extractOne(each_school, re_other_school_name_list)
-        if score < 80:
-            missing_in_re.append(each_school)
-    except:
-        missing_in_re.append(each_school)
-        
-# Add missing records in RE
-if missing_in_re != []:
-    # Get from PostgreSQL
-    extract_sql = """
-            SELECT long_description FROM re_schools;
-            """
-    cur.execute(extract_sql)
-    
-    re_school_name_list = []
-    for i in cur.fetchall():
-        re_school_name_list.extend(i)
-    
-    for each_school in missing_in_re:
-        try:
-            try:
-                likely_school, score = process.extractOne(each_school, re_school_name_list, score_cutoff = 85)
-            except:
-                likely_school = ""
-            
-            if likely_school != "":
-                # Will add a new education in RE
-                for ab_school in ab_api_response['results']:
-                    try:
-                        if each_school == ab_school['college']['name']:
-                            
-                            try:
-                                class_of = ab_school['year_of_graduation']
-                                if class_of == "" or class_of is None or class_of == "Null":
-                                    class_of = ""
-                            except:
-                                class_of = ""
-                                
-                            try:
-                                date_entered = ab_school['date_entered']
-                                if date_entered == "" or date_entered is None or date_entered == "Null":
-                                    date_entered = ""
-                            except:
-                                date_entered = ""
-                            
-                            try:
-                                degree = ab_school['degree']['name']
-                                if degree == "" or degree is None or degree == "Null":
-                                    degree = ""
-                            except:
-                                degree = ""
-                            
-                            if degree != "":
-                                extract_sql = """
-                                            SELECT long_description FROM re_degrees;
-                                            """
-                                cur.execute(extract_sql)
-                                
-                                re_degree_name_list = []
-                                
-                                for i in cur.fetchall():
-                                    re_degree_name_list.extend(i)
-                                
-                                try:
-                                    likely_degree, score = process.extractOne(degree, re_degree_name_list, score_cutoff = 90)
-                                except:
-                                    likely_degree = ""
-
-                                if likely_degree != "":
-                                    degree = likely_degree.replace(",", ";")
-                                else:
-                                    try:
-                                        params = {
-                                            'long_description': degree
-                                        }
-                                        
-                                        url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/6/tableentries"
-                                        
-                                        post_request_re()
-                                        
-                                        # Will update in PostgreSQL
-                                        insert_updates = """
-                                                        INSERT INTO re_degrees (long_description)
-                                                        VALUES (%s)
-                                                        """
-                                        cur.execute(insert_updates, [degree.replace(";", ",")])
-                                        conn.commit()
-                                    except:
-                                        degree = ""
-                            
-                            try:
-                                department = ab_school['field_of_study']['name']
-                                if department == "" or department is None or department == "Null":
-                                    department = ""
-                            except:
-                                department = ""
-                                
-                            if department != "":
-                                extract_sql = """
-                                            SELECT long_description FROM re_departments;
-                                            """
-                                cur.execute(extract_sql)
-                                
-                                re_department_name_list = []
-                                
-                                for i in cur.fetchall():
-                                    re_department_name_list.extend(i)
-                                
-                                try:
-                                    likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
-                                except:
-                                    likely_department = ""
-
-                                if likely_department != "":
-                                    department = likely_department.replace(",", ";")
-                                else:
-                                    try:
-                                        params = {
-                                            'long_description': department
-                                        }
-                                        
-                                        url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
-                                        
-                                        post_request_re()
-                                        
-                                        # Will update in PostgreSQL
-                                        insert_updates = """
-                                                        INSERT INTO re_departments (long_description)
-                                                        VALUES (%s)
-                                                        """
-                                        cur.execute(insert_updates, [department.replace(";", ",")])
-                                        conn.commit()
-                                    except:
-                                        degree = ""
-                                
-                            break
-                    except:
-                        each_school = ""
-                        class_of = ""
-                        date_entered = ""
-                        degree = ""
-                        department = ""
                 
-                params_re = {
-                    'constituent_id': re_system_id,
-                    'school': likely_school,
-                    'class_of': class_of,
-                    'date_graduated': {
-                        'y': class_of
-                    },
-                    'date_left': {
-                        'y': class_of
-                    },
-                    'date_entered': date_entered,
-                    'degree': degree,
-                    'campus': department[:50]
-                }
-                
-                # Delete blank values from JSON
-                for i in range(10):
-                    params = del_blank_values_in_json(params_re.copy())
-                
-                url = "https://api.sky.blackbaud.com/constituent/v1/educations"
-                post_request_re()
+                patch_request_ab()
+                i += 1
                 
                 # Will update in PostgreSQL
                 insert_updates = """
-                                INSERT INTO re_other_education_added (re_system_id, school_name, date)
+                                INSERT INTO ab_address_added (ab_system_id, address, date)
                                 VALUES (%s, %s, now())
                                 """
-                cur.execute(insert_updates, [re_system_id, likely_school])
+                cur.execute(insert_updates, [ab_system_id, address])
                 conn.commit()
+            except:
+                pass
+            
+    # Retrieve IITB education from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
+    params = {}
+    get_request_re()
+
+    re_api_response_education_all = re_api_response
+
+    i = 0
+    re_api_response_education = {
+        'value': [
+            
+        ]
+    }
+
+    for each_education in re_api_response['value']:
+        if each_education['school'] == "Indian Institute of Technology Bombay":
+            re_api_response_education['value'].append(each_education)
+
+    # Retrieve IITB education from AlmaBase
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s/educations" % ab_system_id
+
+    get_request_almabase()
+    ab_api_response_education = ab_api_response
+
+    # Compare the ones present in RE with AlmaBase and find delta
+    # When only one education exists in both
+    if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
+        
+        # Get data from RE
+        try:
+            re_class_of = re_api_response_education['value'][0]['class_of']
+            
+            if int(re_class_of) < 1962:
+                re_class_of = ""
+        except:
+            re_class_of = ""
+            
+        try:
+            re_department = re_api_response_education['value'][0]['majors'][0]
+        except:
+            re_department = ""
+            
+        try:
+            re_degree = re_api_response_education['value'][0]['degree']
+        except:
+            re_degree = ""
+            
+        try:
+            re_hostel = re_api_response_education['value'][0]['social_organization']
+        except:
+            re_hostel = ""
+            
+        try:
+            re_joining_year = re_api_response_education['value'][0]['date_entered']['y']
+        except:
+            re_joining_year = ""
+            
+        try:
+            re_roll_number = re_api_response_education['value'][0]['known_name']
+        except:
+            re_roll_number = ""
+            
+        re_education_id = re_api_response_education['value'][0]['id']
+            
+        # Get data from AlmaBase
+        try:
+            ab_class_of = ab_api_response_education['results'][0]['class_year']
+            
+            if int(ab_class_of) < 1962 or ab_class_of == "null" or ab_class_of is None:
+                ab_class_of = ""
+        except:
+            ab_class_of = ""
+            
+        try:
+            ab_department = ab_api_response_education['results'][0]['course']['name']
+            
+            if ab_department == "null" or ab_department is None:
+                ab_department = ""
+        except:
+            ab_department = ""
+            
+        try:
+            ab_department = ab_api_response_education['results'][0]['branch']['name']
+            
+            if ab_department == "null" or ab_department is None:
+                ab_department = ""
+        except:
+            ab_department = ""
+            
+        try:
+            ab_degree = ab_api_response_education['results'][0]['course']['name']
+            
+            if ab_degree == "null" or ab_degree is None:
+                ab_degree = ""
+        except:
+            ab_degree = ""
+            
+        try:
+            ab_hostel = ab_api_response_education['results'][0]['custom_fields']['hostel']['values'][0]['value']['label']
+            
+            if ab_hostel == "null" or ab_hostel is None:
+                ab_hostel = ""
+        except:
+            ab_hostel = ""
+        
+        try:
+            ab_joining_year = ab_api_response_education['results'][0]['year_of_joining']
+            
+            if ab_joining_year == "null" or ab_joining_year is None:
+                ab_joining_year = ""
+        except:
+            ab_joining_year = ""
+            
+        try:
+            ab_roll_number = ab_api_response_education['results'][0]['roll_number']
+            
+            if ab_roll_number == "null" or ab_roll_number is None:
+                ab_roll_number = ""
+        except:
+            ab_roll_number = ""
+            
+        ab_education_id = ab_api_response_education['results'][0]['id']
+        
+        # Upload the delta to RE
+        if re_class_of == "" or re_department == "" or re_degree == "" or re_hostel == "" or re_joining_year == "" or re_roll_number == "":
+            if re_class_of == "" and ab_class_of != "":
+                re_class_of = ab_class_of
+                re_graduation_status = "Graduated"
             else:
-                # Will add a new school in RE
+                re_class_of = ""
+                re_graduation_status = ""
+                
+            if re_department == "" or re_department == "Other" and ab_department != "":
+                extract_department = """
+                SELECT re_department FROM department_mapping WHERE ab_department = '%s' FETCH FIRST 1 ROW ONLY;
+                """
+                cur.execute(extract_sql, [ab_department])
+                result = cur.fetchone()
+                
+                # Ensure no comma or brackets in output
+                re_department = result[0]
+            else:
+                re_department = ""
+                
+            if re_degree == "" or re_degree == "Other" and ab_degree != "":
+                extract_degree = """
+                SELECT re_degree FROM degree_mapping WHERE ab_degree = '%s' FETCH FIRST 1 ROW ONLY;
+                """
+                cur.execute(extract_degree, [ab_degree])
+                result = cur.fetchone()
+                
+                # Ensure no comma or brackets in output
+                re_degree = result[0]
+            else:
+                re_degree = ""
+                
+            if re_hostel == "" or re_hostel == "Other" and ab_hostel != "":
+                re_hostel = ab_hostel
+            else:
+                re_hostel = ""
+            
+            if re_joining_year == "" and ab_joining_year != "":
+                re_joining_year = ab_joining_year
+            else:
+                re_joining_year = ""
+                
+            if re_roll_number == "" and ab_roll_number != "":
+                re_roll_number = ab_roll_number
+            else:
+                re_roll_number = ""
+            
+            params_re = {
+                'known_name': re_roll_number,
+                'class_of': re_class_of,
+                'date_entered': {
+                    'y': re_joining_year
+                },
+                'date_graduated': {
+                    'y': re_class_of
+                },
+                'date_left': {
+                    'y': re_class_of
+                },
+                'degree': re_degree,
+                'majors': [
+                    re_department
+                ],
+                'social_organization': re_hostel,
+                'status': re_graduation_status,
+            }
+            
+            # Delete blank values from JSON
+            for i in range(10):
+                params = del_blank_values_in_json(params_re.copy())
+                
+            if params != {}:
+                url = "https://api.sky.blackbaud.com/constituent/v1/educations/%s" % re_education_id
+                patch_request_re()
+                
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_iitb_education_added (re_system_id, roll_number, department, joining_year, class_of, degree, hostel, date)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                            """
+            cur.execute(insert_updates, [re_system_id, re_roll_number, re_department, re_joining_year, re_class_of, re_degree, re_hostel])
+            conn.commit()
+        
+        # # Compare the ones present in AlmaBase with RE and find delta
+        # if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
+        #     if re_class_of != "" and ab_class_of == "":
+        #         ab_class_of = re_class_of
+                
+        #     if re_department != "" and ab_department == "":
+        #         extract_department = """
+        #         SELECT ab_department FROM department_mapping WHERE re_department = '%s' FETCH FIRST 1 ROW ONLY;
+        #         """
+        #         cur.execute(extract_sql, [re_department])
+        #         result = cur.fetchone()
+                
+        #         # Ensure no comma or brackets in output
+        #         ab_department = result[0]
+                
+        #     if re_degree != "" and ab_degree == "":
+        #         extract_degree = """
+        #         SELECT ab_degree FROM degree_mapping WHERE re_degree = '%s' FETCH FIRST 1 ROW ONLY;
+        #         """
+        #         cur.execute(extract_degree, [re_degree])
+        #         result = cur.fetchone()
+                
+        #         # Ensure no comma or brackets in output
+        #         ab_degree = result[0]
+                
+        #     if re_hostel != "" and ab_hostel == "":
+        #         # Taking the last Hostel after comma
+        #         ab_hostel = re_hostel[re_hostel.rfind(",") +1:].lower().replace(" ","_")
+        #     else:
+        #         ab_hostel_content = ab_hostel.lower().replace(" ","_")
+        #         ab_hostel = ab_hostel_content
+                
+        #     if re_joining_year != "" and ab_joining_year == "":
+        #         ab_joining_year = re_joining_year
+                
+        #     if re_roll_number != "" and ab_roll_number == "":
+        #             ab_roll_number = re_roll_number
+                
+        #     params_ab = {
+        #         'course': {
+        #             'name': ab_degree
+        #             },
+        #         'branch': {
+        #             'name': ab_department
+        #             },
+        #         'custom_fields': {
+        #             'hostel': {
+        #                 'values': [
+        #                     {
+        #                         'value': {
+        #                             'content': ab_hostel
+        #                         },
+        #                         'display_order': 0
+        #                     }
+        #                 ]
+        #             }
+        #         },
+        #         'year_of_graduation': ab_class_of,
+        #         'year_of_joining': ab_joining_year,
+        #         'year_of_leaving': ab_class_of,
+        #         'roll_number': ab_roll_number,
+        #         'college': {
+        #             'name': "IIT Bombay"
+        #         }
+        #     }
+            
+        #     # Delete blank values from JSON
+        #     for i in range(10):
+        #         params = del_blank_values_in_json(params_ab.copy())
+                
+        #     print_json(params)
+            
+        #     if params != {} and ab_class_of != "":
+        #         url = "https://api.almabaseapp.com/api/profiles/%s/educations" % (ab_system_id, ab_education_id)
+        #         print(url)
+        #         patch_request_ab()
+        #         print(ab_api_response)
+        
+    # When more than one exists
+    else:
+        subject = "Multiple IITB Education details exists in either Raisers Edge or AlmaBase for syncing"
+        constituent_not_found_email()
+
+    # Get other education details from RE
+    re_other_school_name_list = []
+
+    for each_education in re_api_response_org['value']:
+        try:
+            if each_education['reciprocal_type'] == 'Student':
+                # Retrieve the University name
+                re_other_school_name_list.append(each_education['name'])
+        except:
+            pass
+
+    for each_education in re_api_response_education_all['value']:
+        try:
+            if each_education['school'] != 'Indian Institute of Technology Bombay':
+                # Retrieve the University name
+                re_other_school_name_list.append(each_education['school'])
+        except:
+            pass
+
+    # Get other education details from AlmaBase
+    ab_other_school_name_list = []
+
+    url  = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
+    get_request_almabase()
+
+    try:
+        for each_education in ab_api_response['results']:
+            try:
+                ab_other_school_name_list.append(each_education['college']['name'])
+            except:
+                pass
+    except:
+        pass
+
+    # Finding missing other schools to be added in Raisers Edge
+    missing_in_re = []
+    for each_school in ab_other_school_name_list:
+        try:
+            likely_school, score = process.extractOne(each_school, re_other_school_name_list)
+            if score < 80:
+                missing_in_re.append(each_school)
+        except:
+            missing_in_re.append(each_school)
+            
+    # Add missing records in RE
+    if missing_in_re != []:
+        # Get from PostgreSQL
+        extract_sql = """
+                SELECT long_description FROM re_schools;
+                """
+        cur.execute(extract_sql)
+        
+        re_school_name_list = []
+        for i in cur.fetchall():
+            re_school_name_list.extend(i)
+        
+        for each_school in missing_in_re:
+            try:
                 try:
-                    params = {
-                        'long_description': each_school
-                    }
-                    
-                    url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
-                    
-                    post_request_re()
-                    
-                    # Will update in PostgreSQL
-                    insert_updates = """
-                                    INSERT INTO re_schools (long_description)
-                                    VALUES (%s)
-                                    """
-                    cur.execute(insert_updates, [each_school.replace(";", ",")])
-                    conn.commit()
-                    
+                    likely_school, score = process.extractOne(each_school, re_school_name_list, score_cutoff = 85)
+                except:
+                    likely_school = ""
+                
+                if likely_school != "":
                     # Will add a new education in RE
                     for ab_school in ab_api_response['results']:
                         try:
@@ -2676,7 +2521,7 @@ if missing_in_re != []:
                             date_entered = ""
                             degree = ""
                             department = ""
-                
+                    
                     params_re = {
                         'constituent_id': re_system_id,
                         'school': likely_school,
@@ -2706,1181 +2551,1356 @@ if missing_in_re != []:
                                     """
                     cur.execute(insert_updates, [re_system_id, likely_school])
                     conn.commit()
-                except:
-                    pass
-        except:
-            pass
-
-# Finding missing other schools to be added in AlmaBase
-missing_in_ab = []
-for each_school in re_other_school_name_list:
-    try:
-        likely_phone, score = process.extractOne(each_school, ab_other_school_name_list)
-        if score < 80:
-            missing_in_ab.append(each_school)
-    except:
-        missing_in_ab.append(each_school)
-
-if missing_in_ab != []:
-    for each_school in missing_in_ab:
-        try:
-            for each_education in re_api_response_org['value']:
-                try:
-                    i = 0
-                    if each_education['name'] == each_school:
-                        
-                        try:
-                            year_of_graduation = each_education['end']['y']
-                            if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
-                                year_of_graduation = ""
-                        except:
-                            year_of_graduation = ""
-                        
-                        try:
-                            year_of_joining = each_education['start']['y']
-                            if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
-                                year_of_joining = ""
-                        except:
-                            year_of_joining = ""
-                            
-                        try:
-                            course = each_education['position']
-                            if course == "" or course is None or course == "Null":
-                                course = ""
-                        except:
-                            course = ""
-                        i = 1
-                        
-                        department = ""
-                        
-                        break
-                except:
-                    pass
-                
-            if i == 0:
-                for each_education in re_api_response_education_all['value']:
+                else:
+                    # Will add a new school in RE
                     try:
-                        if each_education['school'] == each_school:
+                        params = {
+                            'long_description': each_school
+                        }
+                        
+                        url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
+                        
+                        post_request_re()
+                        
+                        # Will update in PostgreSQL
+                        insert_updates = """
+                                        INSERT INTO re_schools (long_description)
+                                        VALUES (%s)
+                                        """
+                        cur.execute(insert_updates, [each_school.replace(";", ",")])
+                        conn.commit()
+                        
+                        # Will add a new education in RE
+                        for ab_school in ab_api_response['results']:
+                            try:
+                                if each_school == ab_school['college']['name']:
+                                    
+                                    try:
+                                        class_of = ab_school['year_of_graduation']
+                                        if class_of == "" or class_of is None or class_of == "Null":
+                                            class_of = ""
+                                    except:
+                                        class_of = ""
+                                        
+                                    try:
+                                        date_entered = ab_school['date_entered']
+                                        if date_entered == "" or date_entered is None or date_entered == "Null":
+                                            date_entered = ""
+                                    except:
+                                        date_entered = ""
+                                    
+                                    try:
+                                        degree = ab_school['degree']['name']
+                                        if degree == "" or degree is None or degree == "Null":
+                                            degree = ""
+                                    except:
+                                        degree = ""
+                                    
+                                    if degree != "":
+                                        extract_sql = """
+                                                    SELECT long_description FROM re_degrees;
+                                                    """
+                                        cur.execute(extract_sql)
+                                        
+                                        re_degree_name_list = []
+                                        
+                                        for i in cur.fetchall():
+                                            re_degree_name_list.extend(i)
+                                        
+                                        try:
+                                            likely_degree, score = process.extractOne(degree, re_degree_name_list, score_cutoff = 90)
+                                        except:
+                                            likely_degree = ""
+
+                                        if likely_degree != "":
+                                            degree = likely_degree.replace(",", ";")
+                                        else:
+                                            try:
+                                                params = {
+                                                    'long_description': degree
+                                                }
+                                                
+                                                url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/6/tableentries"
+                                                
+                                                post_request_re()
+                                                
+                                                # Will update in PostgreSQL
+                                                insert_updates = """
+                                                                INSERT INTO re_degrees (long_description)
+                                                                VALUES (%s)
+                                                                """
+                                                cur.execute(insert_updates, [degree.replace(";", ",")])
+                                                conn.commit()
+                                            except:
+                                                degree = ""
+                                    
+                                    try:
+                                        department = ab_school['field_of_study']['name']
+                                        if department == "" or department is None or department == "Null":
+                                            department = ""
+                                    except:
+                                        department = ""
+                                        
+                                    if department != "":
+                                        extract_sql = """
+                                                    SELECT long_description FROM re_departments;
+                                                    """
+                                        cur.execute(extract_sql)
+                                        
+                                        re_department_name_list = []
+                                        
+                                        for i in cur.fetchall():
+                                            re_department_name_list.extend(i)
+                                        
+                                        try:
+                                            likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
+                                        except:
+                                            likely_department = ""
+
+                                        if likely_department != "":
+                                            department = likely_department.replace(",", ";")
+                                        else:
+                                            try:
+                                                params = {
+                                                    'long_description': department
+                                                }
+                                                
+                                                url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
+                                                
+                                                post_request_re()
+                                                
+                                                # Will update in PostgreSQL
+                                                insert_updates = """
+                                                                INSERT INTO re_departments (long_description)
+                                                                VALUES (%s)
+                                                                """
+                                                cur.execute(insert_updates, [department.replace(";", ",")])
+                                                conn.commit()
+                                            except:
+                                                degree = ""
+                                        
+                                    break
+                            except:
+                                each_school = ""
+                                class_of = ""
+                                date_entered = ""
+                                degree = ""
+                                department = ""
+                    
+                        params_re = {
+                            'constituent_id': re_system_id,
+                            'school': likely_school,
+                            'class_of': class_of,
+                            'date_graduated': {
+                                'y': class_of
+                            },
+                            'date_left': {
+                                'y': class_of
+                            },
+                            'date_entered': date_entered,
+                            'degree': degree,
+                            'campus': department[:50]
+                        }
+                        
+                        # Delete blank values from JSON
+                        for i in range(10):
+                            params = del_blank_values_in_json(params_re.copy())
+                        
+                        url = "https://api.sky.blackbaud.com/constituent/v1/educations"
+                        post_request_re()
+                        
+                        # Will update in PostgreSQL
+                        insert_updates = """
+                                        INSERT INTO re_other_education_added (re_system_id, school_name, date)
+                                        VALUES (%s, %s, now())
+                                        """
+                        cur.execute(insert_updates, [re_system_id, likely_school])
+                        conn.commit()
+                    except:
+                        pass
+            except:
+                pass
+
+    # Finding missing other schools to be added in AlmaBase
+    missing_in_ab = []
+    for each_school in re_other_school_name_list:
+        try:
+            likely_phone, score = process.extractOne(each_school, ab_other_school_name_list)
+            if score < 80:
+                missing_in_ab.append(each_school)
+        except:
+            missing_in_ab.append(each_school)
+
+    if missing_in_ab != []:
+        for each_school in missing_in_ab:
+            try:
+                for each_education in re_api_response_org['value']:
+                    try:
+                        i = 0
+                        if each_education['name'] == each_school:
                             
                             try:
-                                year_of_graduation = each_education['class_of']
+                                year_of_graduation = each_education['end']['y']
                                 if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
                                     year_of_graduation = ""
                             except:
                                 year_of_graduation = ""
-                                
+                            
                             try:
-                                year_of_joining = each_education['date_entered']['y']
+                                year_of_joining = each_education['start']['y']
                                 if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
                                     year_of_joining = ""
                             except:
                                 year_of_joining = ""
-                            
+                                
                             try:
-                                course = each_education['degree']
+                                course = each_education['position']
                                 if course == "" or course is None or course == "Null":
                                     course = ""
                             except:
                                 course = ""
-                                
-                            try:
-                                department = each_education['campus']
-                                if department == "" or department is None or department == "Null":
-                                    department = ""
-                            except:
-                                department = ""
-                                
+                            i = 1
+                            
+                            department = ""
+                            
                             break
                     except:
                         pass
+                    
+                if i == 0:
+                    for each_education in re_api_response_education_all['value']:
+                        try:
+                            if each_education['school'] == each_school:
+                                
+                                try:
+                                    year_of_graduation = each_education['class_of']
+                                    if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
+                                        year_of_graduation = ""
+                                except:
+                                    year_of_graduation = ""
+                                    
+                                try:
+                                    year_of_joining = each_education['date_entered']['y']
+                                    if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
+                                        year_of_joining = ""
+                                except:
+                                    year_of_joining = ""
+                                
+                                try:
+                                    course = each_education['degree']
+                                    if course == "" or course is None or course == "Null":
+                                        course = ""
+                                except:
+                                    course = ""
+                                    
+                                try:
+                                    department = each_education['campus']
+                                    if department == "" or department is None or department == "Null":
+                                        department = ""
+                                except:
+                                    department = ""
+                                    
+                                break
+                        except:
+                            pass
+                
+                params_ab = {
+                    'college': {
+                        'name': each_school
+                    },
+                    'course': {
+                        'name': course
+                    },
+                    'branch': {
+                        'name': department
+                    },
+                    'year_of_graduation': year_of_graduation,
+                    'year_of_joining': year_of_joining
+                }
+                
+                # Delete blank values from JSON
+                for i in range(10):
+                    params = del_blank_values_in_json(params_ab.copy())
+                
+                url = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
+                post_request_ab()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO ab_other_education_added (ab_system_id, school_name, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, each_school])
+                conn.commit()
+            except:
+                pass
+
+    # Sync Generic person Details
+    # Get personal details from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
+    params = {}
+    get_request_re()
+    re_api_response_generic_details = re_api_response
+
+    try:
+        re_gender = re_api_response_generic_details['gender']
+        if re_gender is None or re_gender =="Null" or re_gender == "null":
+            re_gender = ""
+    except:
+        re_gender = ""
+
+    try:
+        re_dob_day = re_api_response_generic_details['birthdate']['d']
+        if re_dob_day is None or re_dob_day =="Null" or re_dob_day == "null":
+            re_dob_day = ""
+    except:
+        re_dob_day = ""
+        
+    try:
+        re_dob_month = re_api_response_generic_details['birthdate']['m']
+        if re_dob_month is None or re_dob_month =="Null" or re_dob_month == "null":
+            re_dob_month = ""
+    except:
+        re_dob_month = ""
+        
+    try:
+        re_dob_year = re_api_response_generic_details['birthdate']['y']
+        if re_dob_year is None or re_dob_year =="Null" or re_dob_year == "null":
+            re_dob_year = ""
+    except:
+        re_dob_year = ""
+        
+    re_dob = str(re_dob_year) + "-" + str(re_dob_month) + "-" + str(re_dob_day)
+
+    try:
+        re_first_name = re_api_response_generic_details['first']
+        if re_first_name is None or re_first_name =="Null" or re_first_name == "null":
+            re_first_name = ""
+    except:
+        re_first_name = ""
+        
+    try:
+        re_middle_name = re_api_response_generic_details['middle']
+        if re_middle_name is None or re_middle_name =="Null" or re_middle_name == "null":
+            re_middle_name = ""
+    except:
+        re_middle_name = ""
+        
+    try:
+        re_last_name = re_api_response_generic_details['last']
+        if re_last_name is None or re_last_name =="Null" or re_last_name == "null":
+            re_last_name = ""
+    except:
+        re_last_name = ""
+
+    re_full_name = (re_first_name + " " + re_middle_name + " " + re_last_name).replace(".", " ").replace("  ", " ")
+
+    try:
+        re_deceased = re_api_response_generic_details['deceased']
+        if re_deceased is None or re_deceased =="Null" or re_deceased == "null":
+            re_deceased = ""
+    except:
+        re_deceased = ""
+
+    # Get personal details from Almabase
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+    get_request_almabase()
+
+    ab_api_response_generic_details = ab_api_response
+
+    try:
+        ab_gender = ab_api_response_generic_details['gender']
+        if ab_gender is None or ab_gender =="Null" or ab_gender == "null":
+            ab_gender = ""
+    except:
+        ab_gender = ""
+
+    try:
+        ab_dob = ab_api_response_generic_details['date_of_birth']
+        if ab_dob is None or ab_dob =="Null" or ab_dob == "null":
+            ab_dob = ""
+        else:
+            date_time_obj = datetime.strptime(ab_dob, '%Y-%m-%d')
+            ab_dob_day = date_time_obj.day
+            ab_dob_month = date_time_obj.month 
+            ab_dob_year = date_time_obj.year
+    except:
+        ab_dob = ""
+
+    try:
+        ab_first_name = ab_api_response_generic_details['first_name']
+        if ab_first_name is None or ab_first_name =="Null" or ab_first_name == "null":
+            ab_first_name = ""
+    except:
+        ab_first_name = ""
+
+    try:
+        ab_middle_name = ab_api_response_generic_details['middle_name']
+        if ab_middle_name is None or ab_middle_name =="Null" or ab_middle_name == "null":
+            ab_middle_name = ""
+    except:
+        ab_middle_name = ""
+
+    try:
+        ab_last_name = ab_api_response_generic_details['last_name']
+        if ab_last_name is None or ab_last_name =="Null" or ab_last_name == "null":
+            ab_last_name = ""
+    except:
+        ab_last_name = ""
+
+    ab_full_name = (ab_first_name + " " + ab_middle_name + " " + ab_last_name).replace("  ", " ")
+
+    try:
+        ab_deceased = ab_api_response_generic_details['deceased']
+        if ab_deceased is None or ab_deceased =="Null" or ab_deceased == "null":
+            ab_deceased = ""
+    except:
+        ab_deceased = ""
+        
+    try:
+        ab_nickname = ab_api_response_generic_details['nick_name']
+        if ab_nickname is None or ab_nickname =="Null" or ab_nickname == "null":
+            ab_nickname = ""
+    except:
+        ab_nickname = ""
+
+    # Compare RE with AB
+    re_gender_update = ""
+    if re_gender == "" or re_gender == "Unknown" and ab_gender != "":
+        re_gender_update = ab_gender
+    elif re_gender == "" or re_gender == "Unknown" and ab_gender == "":
+        if re_first_name != "" and len(re_first_name) <= 2:
+            url = "https://api.genderize.io?name=%s" % re_first_name
+            response = http.get(url)
+            json_response = response.json()
+            re_gender_update = json_response['gender'].title()
+        else:
+            re_gender_update = "Male"
+
+    if re_dob_day == "" and re_dob_month == "" and re_dob_year == "":
+        re_dob_day_update = ab_dob_day
+        re_dob_month_update = ab_dob_month 
+        re_dob_year_update = ab_dob_year
+    else:
+        re_dob_day_update = ""
+        re_dob_month_update = "" 
+        re_dob_year_update = ""
+
+    if len(re_first_name) < len(ab_first_name) or re_first_name == ".":
+        re_first_name_update = ab_first_name.title()
+    else:
+        re_first_name_update = ""
+
+    if len(re_middle_name) < len(ab_middle_name) or re_middle_name == ".":
+        re_middle_name_update = ab_middle_name.title()
+    else:
+        re_middle_name_update = ""
+
+    if len(re_last_name) < len(ab_last_name) or re_last_name == ".":
+        re_last_name_update = ab_last_name.title()
+    else:
+        re_last_name_update = ""
+
+    re_former_name_update = ""
+    if re_first_name_update != "" or re_middle_name_update != "" or re_last_name_update != "":
+        if len(re_full_name) > len(ab_full_name):
+            re_first_name_update = ""
+            re_middle_name_update = ""
+            re_last_name_update = ""
+            re_former_name_update = ""
+        else:
+            re_former_name_update = re_full_name
+
+    if re_deceased == "false" and ab_deceased == "true":
+        re_deceased_update = "true"
+    else:
+        re_deceased_update = ""
+
+    re_preferred_name_update = ab_nickname
+
+    # Find delta and upload
+    params_re = {
+        'birthdate': {
+            'd': re_dob_day_update,
+            'm': re_dob_month_update,
+            'y': re_dob_year_update
+        },
+        'deceased': re_deceased_update,
+        'first': re_first_name_update,
+        'former_name': re_former_name_update,
+        'gender': re_gender_update,
+        'last': re_last_name_update,
+        'middle': re_middle_name_update,
+        'preferred_name': re_preferred_name_update[:50],
+    }
+
+    # Delete blank values from JSON
+    for i in range(10):
+        params = del_blank_values_in_json(params_re.copy())
+        
+    if params != {}:
+        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
+        patch_request_re()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+                        """
+        cur.execute(insert_updates, [re_system_id, re_dob_day_update, re_dob_month_update, re_dob_year_update, re_deceased_update, re_first_name_update, re_former_name_update, re_gender_update, re_last_name_update, re_middle_name_update, re_preferred_name_update])
+        conn.commit()
+
+    # Compare AB with RE
+    ab_gender_update = ""
+    if re_gender != "" and ab_gender == "":
+        ab_gender_update = re_gender
+    elif re_gender == "" and ab_gender == "":
+        ab_gender_update = re_gender_update
+
+    if ab_dob_day == "" and ab_dob_month == "" and ab_dob_year == "":
+        if re_dob_day != "" and re_dob_month != "" and re_dob_year != "":
+            ab_dob_update = datetime(re_dob_year, re_dob_month, re_dob_day).date()
+        elif re_dob_day != "" and re_dob_month != "":
+            ab_dob_update = str(re_dob_month) + "-" + str(re_dob_day)
+    else:
+        ab_dob_update = ""
+        
+    if len(re_first_name) > len(ab_first_name) or ab_first_name == ".":
+        ab_first_name_update = re_first_name.title()
+    else:
+        ab_first_name_update = ""
+        
+    if len(re_middle_name) > len(ab_middle_name) or ab_middle_name == ".":
+        ab_middle_name_update = re_middle_name.title()
+    else:
+        ab_middle_name_update = ""
+        
+    if len(re_last_name) > len(ab_last_name) or ab_last_name == ".":
+        ab_last_name_update = re_last_name.title()
+    else:
+        ab_last_name_update = ""
+        
+    if re_deceased == "true" and ab_deceased == "false":
+        ab_deceased_update = "true"
+    else:
+        ab_deceased_update = ""
+
+    # Find delta and upload
+    params_ab = {
+        'first_name': ab_first_name_update,
+        'middle_name': ab_middle_name_update,
+        'last_name': ab_last_name_update,
+        'gender': ab_gender_update,
+        'date_of_birth': ab_dob_update,
+        'deceased': ab_deceased_update
+    }
+
+    # Delete blank values from JSON
+    for i in range(10):
+        params = del_blank_values_in_json(params_ab.copy())
+        
+    if params != {}:
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+        patch_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_personal_details_added (ab_system_id, first_name, middle_name, last_name, gender, dob, deceased, date)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, ab_first_name_update, ab_middle_name_update, ab_last_name_update, ab_gender_update, ab_dob_update, ab_deceased_update])
+        conn.commit()
+        
+    # Sync Social media details
+    # Get social media details from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/onlinepresences" % re_system_id
+    params = {}
+    get_request_re()
+    re_api_response_social = re_api_response
+
+    website_re = ""
+    linkedin_re = ""
+    facebook_re = ""
+    twitter_re = ""
+    google_re = ""
+
+    for each_social in re_api_response_social['value']:
+        try:
+            # Get Website
+            try:
+                if each_social['type'] == "Website":
+                    website_re = each_social['address']
+                    
+                    if website_re is None or website_re == "Null" or website_re == "null":
+                        website_re = ""
+            except:
+                website_re = ""
             
-            params_ab = {
-                'college': {
-                    'name': each_school
-                },
-                'course': {
-                    'name': course
-                },
-                'branch': {
-                    'name': department
-                },
-                'year_of_graduation': year_of_graduation,
-                'year_of_joining': year_of_joining
+            # Get LinkedIn
+            try:
+                if each_social['type'] == "LinkedIn":
+                    linkedin_re = each_social['address']
+                    
+                    if linkedin_re is None or linkedin_re == "Null" or linkedin_re == "null":
+                        linkedin_re = ""
+            except:
+                linkedin_re = ""
+
+            # Get Facebook
+            try:
+                if each_social['type'] == "Facebook":
+                    facebook_re = each_social['address']
+                    
+                    if facebook_re is None or facebook_re == "Null" or facebook_re == "null":
+                        facebook_re = ""
+            except:
+                facebook_re = ""
+            
+            # Get Twitter
+            try:
+                if each_social['type'] == "Twitter":
+                    twitter_re = each_social['address']
+                    
+                    if twitter_re is None or twitter_re == "Null" or twitter_re == "null":
+                        twitter_re = ""
+            except:
+                twitter_re = ""
+            
+            # Get Google
+            try:
+                if each_social['type'] == "Google":
+                    google_re = each_social['address']
+                    
+                    if google_re is None or google_re == "Null" or google_re == "null":
+                        google_re = ""
+            except:
+                google_re = ""
+        except:
+            website_re = ""
+            linkedin_re = ""
+            facebook_re = ""
+            twitter_re = ""
+            google_re = ""
+
+    if website_re != "":
+        re_website = "https://" + website_re.replace("https://", "").replace("http://", "")
+        website_re = re_website
+    else:
+        re_website = ""
+        website_re = ""
+
+    if linkedin_re != "":
+        re_linkedin = "https://www." + linkedin_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
+        linkedin_re = re_linkedin
+    else:
+        re_linkedin = ""
+        linkedin_re = ""
+
+    if facebook_re != "":
+        re_facebook = "https://www." + facebook_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
+        facebook_re = re_facebook
+    else:
+        re_facebook = ""
+        facebook_re = ""
+
+    if twitter_re != "":
+        re_twitter = "https://www." + twitter_re.replace("https://www.", "").replace("www.", "").replace("http://", "").replace("@", "twitter.com/")
+        twitter_re = re_twitter
+    else:
+        re_twitter = ""
+        twitter_re = ""
+
+    if google_re != "":
+        re_google = "https://www." + google_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
+        google_re = re_google
+    else:
+        re_google = ""
+        google_re = ""
+
+    # Get social media details from AB
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+    get_request_almabase()
+    ab_api_response_social = ab_api_response
+
+    website_ab = ""
+    linkedin_ab = ""
+    facebook_ab = ""
+    twitter_ab = ""
+    google_ab = ""
+
+    for each_social in ab_api_response_social['results']:
+        try:
+            # Get Website
+            try:
+                if each_social['type_display'] == "Website":
+                    website_ab = each_social['link']
+                    
+                    if website_ab is None or website_ab == "Null" or website_ab == "null":
+                        website_ab = ""
+            except:
+                website_ab = ""
+            
+            # Get LinkedIn
+            try:
+                if each_social['type_display'] == "LinkedIn":
+                    linkedin = each_social['link']
+                    
+                    if linkedin_ab is None or linkedin_ab == "Null" or linkedin_ab == "null":
+                        linkedin_ab = ""
+            except:
+                linkedin_ab = ""
+
+            # Get Facebook
+            try:
+                if each_social['type_display'] == "Facebook":
+                    facebook_ab = each_social['link']
+                    
+                    if facebook_ab is None or facebook_ab == "Null" or facebook_ab == "null":
+                        facebook_ab = ""
+            except:
+                facebook_ab = ""
+            
+            # Get Twitter
+            try:
+                if each_social['type_display'] == "Twitter":
+                    twitter_ab = each_social['link']
+
+                    if twitter_ab is None or twitter_ab == "Null" or twitter_ab == "null":
+                        twitter_ab = ""
+            except:
+                twitter_ab = ""
+            
+            # Get Google
+            try:
+                if each_social['type_display'] == "Google":
+                    google_ab = each_social['link']
+                    
+                    if google_ab is None or google_ab == "Null" or google_ab == "null":
+                        google_ab = ""
+            except:
+                google_ab = ""
+        except:
+            website_ab = ""
+            linkedin_ab = ""
+            facebook_ab = ""
+            twitter_ab = ""
+            google_ab = ""
+
+    if website_ab != "":
+        ab_website = website_ab.replace("https://", "").replace("http://", "")
+        website_ab = ab_website
+    else:
+        ab_website = ""
+        website_ab = ""
+
+    if linkedin_ab != "":
+        ab_linkedin = linkedin_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
+        linkedin_ab = ab_linkedin
+    else:
+        ab_linkedin = ""
+        linkedin_ab = ""
+
+    if facebook_ab != "":
+        ab_facebook = facebook_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
+        facebook_ab = ab_facebook
+    else:
+        ab_facebook = ""
+        facebook_ab = ""
+
+    if twitter_ab != "":
+        ab_twitter = "@" + twitter_ab.replace("https://www.", "").replace("www.", "").replace("http://", "").replace("twitter.com/", "")
+        twitter_ab = ab_twitter
+    else:
+        ab_twitter = ""
+        twitter_ab = ""
+
+    if google_ab != "":
+        ab_google = google_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
+        google_ab = ab_google
+    else:
+        ab_google = ""
+        google_ab = ""
+
+    # Compare RE with AB
+    if re_website == "" and ab_website != "":
+        re_website = ab_website
+    else:
+        re_website = ""
+
+    if re_linkedin == "" and ab_linkedin != "":
+        re_linkedin = ab_linkedin
+    else:
+        re_linkedin = ""
+
+    if re_facebook == "" and ab_facebook != "":
+        re_facebook = ab_facebook
+    else:
+        re_facebook = ""
+
+    if re_twitter == "" and ab_twitter != "":
+        re_twitter = ab_twitter
+    else:
+        re_twitter = ""
+
+    if re_google == "" and ab_google != "":
+        re_google = ab_google
+    else:
+        re_google = ""
+
+    # Upload the delta to RE
+    if re_website != "" or re_linkedin != "" or re_facebook != "" or re_twitter != "" or re_google != "":
+        if re_website != "":
+            params = {
+                'address': re_website,
+                'constituent_id': re_system_id,
+                'type': 'Website'
             }
             
-            # Delete blank values from JSON
-            for i in range(10):
-                params = del_blank_values_in_json(params_ab.copy())
+            url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+            post_request_re()
             
-            url = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                            VALUES (%s, %s, 'Website', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, re_website])
+            conn.commit()
+            
+        if re_linkedin != "":
+            params = {
+                'address': re_linkedin,
+                'constituent_id': re_system_id,
+                'type': 'LinkedIn',
+                'primary': 'true'
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                            VALUES (%s, %s, 'LinkedIn', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, re_linkedin])
+            conn.commit()
+            
+        if re_facebook != "":
+            params = {
+                'address': re_facebook,
+                'constituent_id': re_system_id,
+                'type': 'Facebook'
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                            VALUES (%s, %s, 'Facebook', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, re_facebook])
+            conn.commit()
+            
+        if re_twitter != "":
+            params = {
+                'address': re_twitter,
+                'constituent_id': re_system_id,
+                'type': 'Twitter'
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                            VALUES (%s, %s, 'Twitter', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, re_twitter])
+            conn.commit()
+        
+        if re_google != "":
+            params = {
+                'address': re_google,
+                'constituent_id': re_system_id,
+                'type': 'Google'
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_social_media_added (re_system_id, address, type, date)
+                            VALUES (%s, %s, 'Google', now())
+                            """
+            cur.execute(insert_updates, [re_system_id, re_google])
+            conn.commit()
+            
+    # Compare AB with RE
+    if ab_website == "" and website_re != "":
+        ab_website = website_re
+    else:
+        ab_website = ""
+
+    if ab_linkedin == "" and linkedin_re != "":
+        ab_linkedin = linkedin_re
+    else:
+        ab_linkedin = ""
+
+    if ab_facebook == "" and facebook_re != "":
+        ab_facebook = facebook_re
+    else:
+        ab_facebook = ""
+
+    if ab_twitter == "" and twitter_re != "":
+        ab_twitter = twitter_re
+    else:
+        ab_twitter = ""
+
+    if ab_google == "" and google_re != "":
+        ab_google = google_re
+    else:
+        ab_google = ""
+
+    # Upload the delta to AB
+    if ab_website != "" or ab_linkedin != "" or ab_facebook != "" or ab_twitter != "" or ab_google != "":
+        if ab_website != "":
+            params = {
+                'link': ab_website,
+                'type': 0
+            }
+            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
             post_request_ab()
             
             # Will update in PostgreSQL
             insert_updates = """
-                            INSERT INTO ab_other_education_added (ab_system_id, school_name, date)
-                            VALUES (%s, %s, now())
+                            INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                            VALUES (%s, %s, 'Website', now())
                             """
-            cur.execute(insert_updates, [ab_system_id, each_school])
+            cur.execute(insert_updates, [ab_system_id, ab_website])
             conn.commit()
+            
+        if ab_linkedin != "":
+            params = {
+                'link': ab_linkedin,
+                'type': 1
+            }
+            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+            post_request_ab()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                            VALUES (%s, %s, 'LinkedIn', now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, ab_linkedin])
+            conn.commit()
+            
+        if ab_facebook != "":
+            params = {
+                'link': ab_facebook,
+                'type': 2
+            }
+            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+            post_request_ab()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                            VALUES (%s, %s, 'Facebook', now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, ab_facebook])
+            conn.commit()
+            
+        if ab_twitter != "":
+            params = {
+                'link': ab_twitter,
+                'type': 3
+            }
+            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+            post_request_ab()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                            VALUES (%s, %s, 'Twitter', now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, ab_twitter])
+            conn.commit()
+            
+        if ab_google != "":
+            params = {
+                'link': ab_google,
+                'type': 4
+            }
+            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
+            post_request_ab()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
+                            VALUES (%s, %s, 'Google', now())
+                            """
+            cur.execute(insert_updates, [ab_system_id, ab_google])
+            conn.commit()
+
+    # Sync interests
+    # Get interests from RE
+    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/customfields" % re_system_id
+    params = {}
+    get_request_re()
+
+    re_api_response_custom_fields = re_api_response
+
+    re_interest_list = []
+    for each_value in re_api_response['value']:
+        try:
+            if each_value['category'] == "Interests":
+                re_interest_list.append(each_value['value'])
         except:
             pass
 
-# Sync Generic person Details
-# Get personal details from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
-params = {}
-get_request_re()
-re_api_response_generic_details = re_api_response
+    # Get interests from AB
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=interests" % ab_system_id
+    get_request_almabase()
 
-try:
-    re_gender = re_api_response_generic_details['gender']
-    if re_gender is None or re_gender =="Null" or re_gender == "null":
-        re_gender = ""
-except:
-    re_gender = ""
-
-try:
-    re_dob_day = re_api_response_generic_details['birthdate']['d']
-    if re_dob_day is None or re_dob_day =="Null" or re_dob_day == "null":
-        re_dob_day = ""
-except:
-    re_dob_day = ""
-    
-try:
-    re_dob_month = re_api_response_generic_details['birthdate']['m']
-    if re_dob_month is None or re_dob_month =="Null" or re_dob_month == "null":
-        re_dob_month = ""
-except:
-    re_dob_month = ""
-    
-try:
-    re_dob_year = re_api_response_generic_details['birthdate']['y']
-    if re_dob_year is None or re_dob_year =="Null" or re_dob_year == "null":
-        re_dob_year = ""
-except:
-    re_dob_year = ""
-    
-re_dob = str(re_dob_year) + "-" + str(re_dob_month) + "-" + str(re_dob_day)
-
-try:
-    re_first_name = re_api_response_generic_details['first']
-    if re_first_name is None or re_first_name =="Null" or re_first_name == "null":
-        re_first_name = ""
-except:
-    re_first_name = ""
-    
-try:
-    re_middle_name = re_api_response_generic_details['middle']
-    if re_middle_name is None or re_middle_name =="Null" or re_middle_name == "null":
-        re_middle_name = ""
-except:
-    re_middle_name = ""
-    
-try:
-    re_last_name = re_api_response_generic_details['last']
-    if re_last_name is None or re_last_name =="Null" or re_last_name == "null":
-        re_last_name = ""
-except:
-    re_last_name = ""
-
-re_full_name = (re_first_name + " " + re_middle_name + " " + re_last_name).replace(".", " ").replace("  ", " ")
-
-try:
-    re_deceased = re_api_response_generic_details['deceased']
-    if re_deceased is None or re_deceased =="Null" or re_deceased == "null":
-        re_deceased = ""
-except:
-    re_deceased = ""
-
-# Get personal details from Almabase
-url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-get_request_almabase()
-
-ab_api_response_generic_details = ab_api_response
-
-try:
-    ab_gender = ab_api_response_generic_details['gender']
-    if ab_gender is None or ab_gender =="Null" or ab_gender == "null":
-        ab_gender = ""
-except:
-    ab_gender = ""
-
-try:
-    ab_dob = ab_api_response_generic_details['date_of_birth']
-    if ab_dob is None or ab_dob =="Null" or ab_dob == "null":
-        ab_dob = ""
-    else:
-        date_time_obj = datetime.strptime(ab_dob, '%Y-%m-%d')
-        ab_dob_day = date_time_obj.day
-        ab_dob_month = date_time_obj.month 
-        ab_dob_year = date_time_obj.year
-except:
-    ab_dob = ""
-
-try:
-    ab_first_name = ab_api_response_generic_details['first_name']
-    if ab_first_name is None or ab_first_name =="Null" or ab_first_name == "null":
-        ab_first_name = ""
-except:
-    ab_first_name = ""
-
-try:
-    ab_middle_name = ab_api_response_generic_details['middle_name']
-    if ab_middle_name is None or ab_middle_name =="Null" or ab_middle_name == "null":
-        ab_middle_name = ""
-except:
-    ab_middle_name = ""
-
-try:
-    ab_last_name = ab_api_response_generic_details['last_name']
-    if ab_last_name is None or ab_last_name =="Null" or ab_last_name == "null":
-        ab_last_name = ""
-except:
-    ab_last_name = ""
-
-ab_full_name = (ab_first_name + " " + ab_middle_name + " " + ab_last_name).replace("  ", " ")
-
-try:
-    ab_deceased = ab_api_response_generic_details['deceased']
-    if ab_deceased is None or ab_deceased =="Null" or ab_deceased == "null":
-        ab_deceased = ""
-except:
-    ab_deceased = ""
-    
-try:
-    ab_nickname = ab_api_response_generic_details['nick_name']
-    if ab_nickname is None or ab_nickname =="Null" or ab_nickname == "null":
-        ab_nickname = ""
-except:
-    ab_nickname = ""
-
-# Compare RE with AB
-re_gender_update = ""
-if re_gender == "" or re_gender == "Unknown" and ab_gender != "":
-    re_gender_update = ab_gender
-elif re_gender == "" or re_gender == "Unknown" and ab_gender == "":
-    if re_first_name != "" and len(re_first_name) <= 2:
-        url = "https://api.genderize.io?name=%s" % re_first_name
-        response = http.get(url)
-        json_response = response.json()
-        re_gender_update = json_response['gender'].title()
-    else:
-        re_gender_update = "Male"
-
-if re_dob_day == "" and re_dob_month == "" and re_dob_year == "":
-    re_dob_day_update = ab_dob_day
-    re_dob_month_update = ab_dob_month 
-    re_dob_year_update = ab_dob_year
-else:
-    re_dob_day_update = ""
-    re_dob_month_update = "" 
-    re_dob_year_update = ""
-
-if len(re_first_name) < len(ab_first_name) or re_first_name == ".":
-    re_first_name_update = ab_first_name.title()
-else:
-    re_first_name_update = ""
-
-if len(re_middle_name) < len(ab_middle_name) or re_middle_name == ".":
-    re_middle_name_update = ab_middle_name.title()
-else:
-    re_middle_name_update = ""
-
-if len(re_last_name) < len(ab_last_name) or re_last_name == ".":
-    re_last_name_update = ab_last_name.title()
-else:
-    re_last_name_update = ""
-
-re_former_name_update = ""
-if re_first_name_update != "" or re_middle_name_update != "" or re_last_name_update != "":
-    if len(re_full_name) > len(ab_full_name):
-        re_first_name_update = ""
-        re_middle_name_update = ""
-        re_last_name_update = ""
-        re_former_name_update = ""
-    else:
-        re_former_name_update = re_full_name
-
-if re_deceased == "false" and ab_deceased == "true":
-    re_deceased_update = "true"
-else:
-    re_deceased_update = ""
-
-re_preferred_name_update = ab_nickname
-
-# Find delta and upload
-params_re = {
-    'birthdate': {
-        'd': re_dob_day_update,
-        'm': re_dob_month_update,
-        'y': re_dob_year_update
-    },
-    'deceased': re_deceased_update,
-    'first': re_first_name_update,
-    'former_name': re_former_name_update,
-    'gender': re_gender_update,
-    'last': re_last_name_update,
-    'middle': re_middle_name_update,
-    'preferred_name': re_preferred_name_update[:50],
-}
-
-# Delete blank values from JSON
-for i in range(10):
-    params = del_blank_values_in_json(params_re.copy())
-    
-if params != {}:
-    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
-    patch_request_re()
-    
-    # Will update in PostgreSQL
-    insert_updates = """
-                    INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
-                    """
-    cur.execute(insert_updates, [re_system_id, re_dob_day_update, re_dob_month_update, re_dob_year_update, re_deceased_update, re_first_name_update, re_former_name_update, re_gender_update, re_last_name_update, re_middle_name_update, re_preferred_name_update])
-    conn.commit()
-
-# Compare AB with RE
-ab_gender_update = ""
-if re_gender != "" and ab_gender == "":
-    ab_gender_update = re_gender
-elif re_gender == "" and ab_gender == "":
-    ab_gender_update = re_gender_update
-
-if ab_dob_day == "" and ab_dob_month == "" and ab_dob_year == "":
-    if re_dob_day != "" and re_dob_month != "" and re_dob_year != "":
-        ab_dob_update = datetime(re_dob_year, re_dob_month, re_dob_day).date()
-    elif re_dob_day != "" and re_dob_month != "":
-        ab_dob_update = str(re_dob_month) + "-" + str(re_dob_day)
-else:
-    ab_dob_update = ""
-    
-if len(re_first_name) > len(ab_first_name) or ab_first_name == ".":
-    ab_first_name_update = re_first_name.title()
-else:
-    ab_first_name_update = ""
-    
-if len(re_middle_name) > len(ab_middle_name) or ab_middle_name == ".":
-    ab_middle_name_update = re_middle_name.title()
-else:
-    ab_middle_name_update = ""
-    
-if len(re_last_name) > len(ab_last_name) or ab_last_name == ".":
-    ab_last_name_update = re_last_name.title()
-else:
-    ab_last_name_update = ""
-    
-if re_deceased == "true" and ab_deceased == "false":
-    ab_deceased_update = "true"
-else:
-    ab_deceased_update = ""
-
-# Find delta and upload
-params_ab = {
-    'first_name': ab_first_name_update,
-    'middle_name': ab_middle_name_update,
-    'last_name': ab_last_name_update,
-    'gender': ab_gender_update,
-    'date_of_birth': ab_dob_update,
-    'deceased': ab_deceased_update
-}
-
-# Delete blank values from JSON
-for i in range(10):
-    params = del_blank_values_in_json(params_ab.copy())
-    
-if params != {}:
-    url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-    patch_request_ab()
-    
-    # Will update in PostgreSQL
-    insert_updates = """
-                    INSERT INTO ab_personal_details_added (ab_system_id, first_name, middle_name, last_name, gender, dob, deceased, date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, now())
-                    """
-    cur.execute(insert_updates, [ab_system_id, ab_first_name_update, ab_middle_name_update, ab_last_name_update, ab_gender_update, ab_dob_update, ab_deceased_update])
-    conn.commit()
-    
-# Sync Social media details
-# Get social media details from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/onlinepresences" % re_system_id
-params = {}
-get_request_re()
-re_api_response_social = re_api_response
-
-website_re = ""
-linkedin_re = ""
-facebook_re = ""
-twitter_re = ""
-google_re = ""
-
-for each_social in re_api_response_social['value']:
-    try:
-        # Get Website
+    ab_interest_list = []
+    for each_value in ab_api_response['interests']:
         try:
-            if each_social['type'] == "Website":
-                website_re = each_social['address']
-                
-                if website_re is None or website_re == "Null" or website_re == "null":
-                    website_re = ""
+            ab_interest_list.append(each_value['name'])
         except:
-            website_re = ""
-        
-        # Get LinkedIn
+            pass
+
+    # Compare interests between RE & AB
+    missing_in_re = []
+    for each_interest in ab_interest_list:
         try:
-            if each_social['type'] == "LinkedIn":
-                linkedin_re = each_social['address']
-                
-                if linkedin_re is None or linkedin_re == "Null" or linkedin_re == "null":
-                    linkedin_re = ""
+            likely_interest, score = process.extractOne(each_interest, re_interest_list)
+            if score < 80:
+                missing_in_re.append(each_interest)
         except:
-            linkedin_re = ""
-
-        # Get Facebook
-        try:
-            if each_social['type'] == "Facebook":
-                facebook_re = each_social['address']
-                
-                if facebook_re is None or facebook_re == "Null" or facebook_re == "null":
-                    facebook_re = ""
-        except:
-            facebook_re = ""
-        
-        # Get Twitter
-        try:
-            if each_social['type'] == "Twitter":
-                twitter_re = each_social['address']
-                
-                if twitter_re is None or twitter_re == "Null" or twitter_re == "null":
-                    twitter_re = ""
-        except:
-            twitter_re = ""
-        
-        # Get Google
-        try:
-            if each_social['type'] == "Google":
-                google_re = each_social['address']
-                
-                if google_re is None or google_re == "Null" or google_re == "null":
-                    google_re = ""
-        except:
-            google_re = ""
-    except:
-        website_re = ""
-        linkedin_re = ""
-        facebook_re = ""
-        twitter_re = ""
-        google_re = ""
-
-if website_re != "":
-    re_website = "https://" + website_re.replace("https://", "").replace("http://", "")
-    website_re = re_website
-else:
-    re_website = ""
-    website_re = ""
-
-if linkedin_re != "":
-    re_linkedin = "https://www." + linkedin_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
-    linkedin_re = re_linkedin
-else:
-    re_linkedin = ""
-    linkedin_re = ""
-
-if facebook_re != "":
-    re_facebook = "https://www." + facebook_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
-    facebook_re = re_facebook
-else:
-    re_facebook = ""
-    facebook_re = ""
-
-if twitter_re != "":
-    re_twitter = "https://www." + twitter_re.replace("https://www.", "").replace("www.", "").replace("http://", "").replace("@", "twitter.com/")
-    twitter_re = re_twitter
-else:
-    re_twitter = ""
-    twitter_re = ""
-
-if google_re != "":
-    re_google = "https://www." + google_re.replace("https://www.", "").replace("www.", "").replace("http://", "")
-    google_re = re_google
-else:
-    re_google = ""
-    google_re = ""
-
-# Get social media details from AB
-url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
-get_request_almabase()
-ab_api_response_social = ab_api_response
-
-website_ab = ""
-linkedin_ab = ""
-facebook_ab = ""
-twitter_ab = ""
-google_ab = ""
-
-for each_social in ab_api_response_social['results']:
-    try:
-        # Get Website
-        try:
-            if each_social['type_display'] == "Website":
-                website_ab = each_social['link']
-                
-                if website_ab is None or website_ab == "Null" or website_ab == "null":
-                    website_ab = ""
-        except:
-            website_ab = ""
-        
-        # Get LinkedIn
-        try:
-            if each_social['type_display'] == "LinkedIn":
-                linkedin = each_social['link']
-                
-                if linkedin_ab is None or linkedin_ab == "Null" or linkedin_ab == "null":
-                    linkedin_ab = ""
-        except:
-            linkedin_ab = ""
-
-        # Get Facebook
-        try:
-            if each_social['type_display'] == "Facebook":
-                facebook_ab = each_social['link']
-                
-                if facebook_ab is None or facebook_ab == "Null" or facebook_ab == "null":
-                    facebook_ab = ""
-        except:
-            facebook_ab = ""
-        
-        # Get Twitter
-        try:
-            if each_social['type_display'] == "Twitter":
-                twitter_ab = each_social['link']
-
-                if twitter_ab is None or twitter_ab == "Null" or twitter_ab == "null":
-                    twitter_ab = ""
-        except:
-            twitter_ab = ""
-        
-        # Get Google
-        try:
-            if each_social['type_display'] == "Google":
-                google_ab = each_social['link']
-                
-                if google_ab is None or google_ab == "Null" or google_ab == "null":
-                    google_ab = ""
-        except:
-            google_ab = ""
-    except:
-        website_ab = ""
-        linkedin_ab = ""
-        facebook_ab = ""
-        twitter_ab = ""
-        google_ab = ""
-
-if website_ab != "":
-    ab_website = website_ab.replace("https://", "").replace("http://", "")
-    website_ab = ab_website
-else:
-    ab_website = ""
-    website_ab = ""
-
-if linkedin_ab != "":
-    ab_linkedin = linkedin_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
-    linkedin_ab = ab_linkedin
-else:
-    ab_linkedin = ""
-    linkedin_ab = ""
-
-if facebook_ab != "":
-    ab_facebook = facebook_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
-    facebook_ab = ab_facebook
-else:
-    ab_facebook = ""
-    facebook_ab = ""
-
-if twitter_ab != "":
-    ab_twitter = "@" + twitter_ab.replace("https://www.", "").replace("www.", "").replace("http://", "").replace("twitter.com/", "")
-    twitter_ab = ab_twitter
-else:
-    ab_twitter = ""
-    twitter_ab = ""
-
-if google_ab != "":
-    ab_google = google_ab.replace("https://www.", "").replace("www.", "").replace("http://", "")
-    google_ab = ab_google
-else:
-    ab_google = ""
-    google_ab = ""
-
-# Compare RE with AB
-if re_website == "" and ab_website != "":
-    re_website = ab_website
-else:
-    re_website = ""
-
-if re_linkedin == "" and ab_linkedin != "":
-    re_linkedin = ab_linkedin
-else:
-    re_linkedin = ""
-
-if re_facebook == "" and ab_facebook != "":
-    re_facebook = ab_facebook
-else:
-    re_facebook = ""
-
-if re_twitter == "" and ab_twitter != "":
-    re_twitter = ab_twitter
-else:
-    re_twitter = ""
-
-if re_google == "" and ab_google != "":
-    re_google = ab_google
-else:
-    re_google = ""
-
-# Upload the delta to RE
-if re_website != "" or re_linkedin != "" or re_facebook != "" or re_twitter != "" or re_google != "":
-    if re_website != "":
-        params = {
-            'address': re_website,
-            'constituent_id': re_system_id,
-            'type': 'Website'
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
-        post_request_re()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
-                        VALUES (%s, %s, 'Website', now())
-                        """
-        cur.execute(insert_updates, [re_system_id, re_website])
-        conn.commit()
-        
-    if re_linkedin != "":
-        params = {
-            'address': re_linkedin,
-            'constituent_id': re_system_id,
-            'type': 'LinkedIn',
-            'primary': 'true'
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
-        post_request_re()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
-                        VALUES (%s, %s, 'LinkedIn', now())
-                        """
-        cur.execute(insert_updates, [re_system_id, re_linkedin])
-        conn.commit()
-        
-    if re_facebook != "":
-        params = {
-            'address': re_facebook,
-            'constituent_id': re_system_id,
-            'type': 'Facebook'
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
-        post_request_re()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
-                        VALUES (%s, %s, 'Facebook', now())
-                        """
-        cur.execute(insert_updates, [re_system_id, re_facebook])
-        conn.commit()
-        
-    if re_twitter != "":
-        params = {
-            'address': re_twitter,
-            'constituent_id': re_system_id,
-            'type': 'Twitter'
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
-        post_request_re()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
-                        VALUES (%s, %s, 'Twitter', now())
-                        """
-        cur.execute(insert_updates, [re_system_id, re_twitter])
-        conn.commit()
-    
-    if re_google != "":
-        params = {
-            'address': re_google,
-            'constituent_id': re_system_id,
-            'type': 'Google'
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
-        post_request_re()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO re_social_media_added (re_system_id, address, type, date)
-                        VALUES (%s, %s, 'Google', now())
-                        """
-        cur.execute(insert_updates, [re_system_id, re_google])
-        conn.commit()
-        
-# Compare AB with RE
-if ab_website == "" and website_re != "":
-    ab_website = website_re
-else:
-    ab_website = ""
-
-if ab_linkedin == "" and linkedin_re != "":
-    ab_linkedin = linkedin_re
-else:
-    ab_linkedin = ""
-
-if ab_facebook == "" and facebook_re != "":
-    ab_facebook = facebook_re
-else:
-    ab_facebook = ""
-
-if ab_twitter == "" and twitter_re != "":
-    ab_twitter = twitter_re
-else:
-    ab_twitter = ""
-
-if ab_google == "" and google_re != "":
-    ab_google = google_re
-else:
-    ab_google = ""
-
-# Upload the delta to AB
-if ab_website != "" or ab_linkedin != "" or ab_facebook != "" or ab_twitter != "" or ab_google != "":
-    if ab_website != "":
-        params = {
-            'link': ab_website,
-            'type': 0
-        }
-        
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
-        post_request_ab()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
-                        VALUES (%s, %s, 'Website', now())
-                        """
-        cur.execute(insert_updates, [ab_system_id, ab_website])
-        conn.commit()
-        
-    if ab_linkedin != "":
-        params = {
-            'link': ab_linkedin,
-            'type': 1
-        }
-        
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
-        post_request_ab()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
-                        VALUES (%s, %s, 'LinkedIn', now())
-                        """
-        cur.execute(insert_updates, [ab_system_id, ab_linkedin])
-        conn.commit()
-        
-    if ab_facebook != "":
-        params = {
-            'link': ab_facebook,
-            'type': 2
-        }
-        
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
-        post_request_ab()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
-                        VALUES (%s, %s, 'Facebook', now())
-                        """
-        cur.execute(insert_updates, [ab_system_id, ab_facebook])
-        conn.commit()
-        
-    if ab_twitter != "":
-        params = {
-            'link': ab_twitter,
-            'type': 3
-        }
-        
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
-        post_request_ab()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
-                        VALUES (%s, %s, 'Twitter', now())
-                        """
-        cur.execute(insert_updates, [ab_system_id, ab_twitter])
-        conn.commit()
-        
-    if ab_google != "":
-        params = {
-            'link': ab_google,
-            'type': 4
-        }
-        
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
-        post_request_ab()
-        
-        # Will update in PostgreSQL
-        insert_updates = """
-                        INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
-                        VALUES (%s, %s, 'Google', now())
-                        """
-        cur.execute(insert_updates, [ab_system_id, ab_google])
-        conn.commit()
-
-# Sync interests
-# Get interests from RE
-url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/customfields" % re_system_id
-params = {}
-get_request_re()
-
-re_api_response_custom_fields = re_api_response
-
-re_interest_list = []
-for each_value in re_api_response['value']:
-    try:
-        if each_value['category'] == "Interests":
-            re_interest_list.append(each_value['value'])
-    except:
-        pass
-
-# Get interests from AB
-url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=interests" % ab_system_id
-get_request_almabase()
-
-ab_interest_list = []
-for each_value in ab_api_response['interests']:
-    try:
-        ab_interest_list.append(each_value['name'])
-    except:
-        pass
-
-# Compare interests between RE & AB
-missing_in_re = []
-for each_interest in ab_interest_list:
-    try:
-        likely_interest, score = process.extractOne(each_interest, re_interest_list)
-        if score < 80:
             missing_in_re.append(each_interest)
-    except:
-        missing_in_re.append(each_interest)
 
-# Upload delta to RE
-if missing_in_re != []:
-    try:
-        for each_interest in missing_in_re:
-            params = {
-                'category': 'Interests',
-                'value': each_interest,
-                'comment': 'Added from AlmaBase',
-                'date': datetime.now().replace(microsecond=0).isoformat(),
-                'parent_id': re_system_id
-            }
-            
-            url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
-            post_request_re()
-            
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
-                            VALUES (%s, %s, 'Interests', now())
-                            """
-            cur.execute(insert_updates, [re_system_id, each_interest])
-            conn.commit()
-    except:
-        pass
+    # Upload delta to RE
+    if missing_in_re != []:
+        try:
+            for each_interest in missing_in_re:
+                params = {
+                    'category': 'Interests',
+                    'value': each_interest,
+                    'comment': 'Added from AlmaBase',
+                    'date': datetime.now().replace(microsecond=0).isoformat(),
+                    'parent_id': re_system_id
+                }
+                
+                url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
+                post_request_re()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                                VALUES (%s, %s, 'Interests', now())
+                                """
+                cur.execute(insert_updates, [re_system_id, each_interest])
+                conn.commit()
+        except:
+            pass
 
-# Compare interests between AB & RE
-missing_in_ab_db = []
-for each_interest in re_interest_list:
-    try:
-        likely_interest, score = process.extractOne(each_interest, ab_interest_list)
-        if score < 80:
+    # Compare interests between AB & RE
+    missing_in_ab_db = []
+    for each_interest in re_interest_list:
+        try:
+            likely_interest, score = process.extractOne(each_interest, ab_interest_list)
+            if score < 80:
+                missing_in_ab_db.append(each_interest)
+        except:
             missing_in_ab_db.append(each_interest)
-    except:
-        missing_in_ab_db.append(each_interest)
 
-missing_in_almabase = re_interest_list + ab_interest_list
-missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
+    missing_in_almabase = re_interest_list + ab_interest_list
+    missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
 
-# Upload delta to AB
-if missing_in_ab_db != []:
-    try:
-        names = []
-        for each_interest in missing_in_ab:
-            name = {
-                'name': each_interest
-            }
-            names.append(name)
-        
-        params = {
-            'interests': names
-        }
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-        patch_request_ab()
+    # Upload delta to AB
+    if missing_in_ab_db != []:
+        try:
+            names = []
+            for each_interest in missing_in_ab:
+                name = {
+                    'name': each_interest
+                }
+                names.append(name)
             
-        # Will update in PostgreSQL
-        for each_interest in missing_in_ab_db:
-            insert_updates = """
-                            INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
-                            VALUES (%s, %s, 'Interests', now())
-                            """
-            cur.execute(insert_updates, [ab_system_id, each_interest])
-            conn.commit()
-    except:
-        pass
-    
-# Sync skills
-# Get skills from RE
-re_skill_list = []
-for each_value in re_api_response_custom_fields['value']:
-    try:
-        if each_value['category'] == "Skills":
-            re_skill_list.append(each_value['value'])
-    except:
-        pass
-
-# Get interests from AB
-url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=skills" % ab_system_id
-get_request_almabase()
-
-ab_skill_list = []
-for each_value in ab_api_response['skills']:
-    try:
-        ab_skill_list.append(each_value['name'])
-    except:
-        pass
-
-# Compare interests between RE & AB
-missing_in_re = []
-for each_skill in ab_skill_list:
-    try:
-        likely_skill, score = process.extractOne(each_skill, re_skill_list)
-        if score < 80:
-            missing_in_re.append(each_skill)
-    except:
-        missing_in_re.append(each_skill)
-
-# Upload delta to RE
-if missing_in_re != []:
-    try:
-        for each_skill in missing_in_re:
             params = {
-                'category': 'Skills',
-                'value': each_skill,
-                'comment': 'Added from AlmaBase',
-                'date': datetime.now().replace(microsecond=0).isoformat(),
-                'parent_id': re_system_id
+                'interests': names
             }
-            
-            url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
-            post_request_re()
-            
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+            patch_request_ab()
+                
             # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
-                            VALUES (%s, %s, 'Skills', now())
-                            """
-            cur.execute(insert_updates, [re_system_id, each_skill])
-            conn.commit()
-    except:
-        pass
-
-# Compare interests between AB & RE
-missing_in_ab_db = []
-for each_skill in re_skill_list:
-    try:
-        likely_skill, score = process.extractOne(each_skill, ab_skill_list)
-        if score < 80:
-            missing_in_ab_db.append(each_skill)
-    except:
-        missing_in_ab_db.append(each_skill)
-
-missing_in_almabase = re_skill_list + ab_skill_list
-missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
-
-# Upload delta to AB
-if missing_in_ab_db != []:
-    try:
-        names = []
-        for each_skill in missing_in_ab:
-            name = {
-                'name': each_skill
-            }
-            names.append(name)
+            for each_interest in missing_in_ab_db:
+                insert_updates = """
+                                INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
+                                VALUES (%s, %s, 'Interests', now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, each_interest])
+                conn.commit()
+        except:
+            pass
         
-        params = {
-            'skills': names
-        }
-        url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-        patch_request_ab()
-            
-        # Will update in PostgreSQL
-        for each_skill in missing_in_ab_db:
-            insert_updates = """
-                            INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
-                            VALUES (%s, %s, 'Skills', now())
-                            """
-            cur.execute(insert_updates, [ab_system_id, each_skill])
-            conn.commit()
-    except:
-        pass
-
-# Get Chapter from RE
-re_chapter = ""
-try:
+    # Sync skills
+    # Get skills from RE
+    re_skill_list = []
     for each_value in re_api_response_custom_fields['value']:
-        if each_value['category'] == "Chapter":
-            custom_field_id = each_value['id']
-            re_chapter = each_value['value']
-            break
-except:
+        try:
+            if each_value['category'] == "Skills":
+                re_skill_list.append(each_value['value'])
+        except:
+            pass
+
+    # Get interests from AB
+    url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=skills" % ab_system_id
+    get_request_almabase()
+
+    ab_skill_list = []
+    for each_value in ab_api_response['skills']:
+        try:
+            ab_skill_list.append(each_value['name'])
+        except:
+            pass
+
+    # Compare interests between RE & AB
+    missing_in_re = []
+    for each_skill in ab_skill_list:
+        try:
+            likely_skill, score = process.extractOne(each_skill, re_skill_list)
+            if score < 80:
+                missing_in_re.append(each_skill)
+        except:
+            missing_in_re.append(each_skill)
+
+    # Upload delta to RE
+    if missing_in_re != []:
+        try:
+            for each_skill in missing_in_re:
+                params = {
+                    'category': 'Skills',
+                    'value': each_skill,
+                    'comment': 'Added from AlmaBase',
+                    'date': datetime.now().replace(microsecond=0).isoformat(),
+                    'parent_id': re_system_id
+                }
+                
+                url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
+                post_request_re()
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                                VALUES (%s, %s, 'Skills', now())
+                                """
+                cur.execute(insert_updates, [re_system_id, each_skill])
+                conn.commit()
+        except:
+            pass
+
+    # Compare interests between AB & RE
+    missing_in_ab_db = []
+    for each_skill in re_skill_list:
+        try:
+            likely_skill, score = process.extractOne(each_skill, ab_skill_list)
+            if score < 80:
+                missing_in_ab_db.append(each_skill)
+        except:
+            missing_in_ab_db.append(each_skill)
+
+    missing_in_almabase = re_skill_list + ab_skill_list
+    missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
+
+    # Upload delta to AB
+    if missing_in_ab_db != []:
+        try:
+            names = []
+            for each_skill in missing_in_ab:
+                name = {
+                    'name': each_skill
+                }
+                names.append(name)
+            
+            params = {
+                'skills': names
+            }
+            url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+            patch_request_ab()
+                
+            # Will update in PostgreSQL
+            for each_skill in missing_in_ab_db:
+                insert_updates = """
+                                INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
+                                VALUES (%s, %s, 'Skills', now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, each_skill])
+                conn.commit()
+        except:
+            pass
+
+    # Get Chapter from RE
     re_chapter = ""
-
-# Get Chapter from AlmaBase
-try:
-    ab_chapter = ab_profile['custom_fields']['chapter']['values'][0]['value']['content']
-except:
-    ab_chapter = ""
-    
-# Compare Chapters and update in RE
-if ab_chapter != "" and re_chapter != ab_chapter:
-    
-    if re_chapter == "":
-        # Will post in RE
-        params = {
-            'category': 'Chapter',
-            'value': ab_chapter,
-            'comment': 'Added from AlmaBase',
-            'date': datetime.now().replace(microsecond=0).isoformat(),
-            'parent_id': re_system_id
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
-        post_request_re()
-        
-    else:
-        # Will patch in RE
-        params = {
-            'value': ab_chapter,
-            'comment': 'Updated from AlmaBase',
-            'date': datetime.now().replace(microsecond=0).isoformat(),
-        }
-        
-        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields/%s" % custom_field_id
-        patch_request_re()
-    
-    # Will update in PostgreSQL
-    insert_updates = """
-                    INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
-                    VALUES (%s, %s, 'Chapter', now())
-                    """
-    cur.execute(insert_updates, [re_system_id, ab_chapter])
-    conn.commit()
-    
-# Life member update
-ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
-
-if ab_life_member == "yes":
-    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/constituentcodes" % re_system_id
-    params = {}
-    get_request_re()
-    
-    re_life_member = "no"
     try:
-        for each_value in re_api_response['value']:
-            if each_value['description'] == "Life Member":
-                re_life_member = "yes"
+        for each_value in re_api_response_custom_fields['value']:
+            if each_value['category'] == "Chapter":
+                custom_field_id = each_value['id']
+                re_chapter = each_value['value']
                 break
     except:
-        re_life_member = "no"
-    
-    if re_life_member == "no":
-        url = "https://api.sky.blackbaud.com/constituent/v1/constituentcodes"
+        re_chapter = ""
+
+    # Get Chapter from AlmaBase
+    try:
+        ab_chapter = ab_profile['custom_fields']['chapter']['values'][0]['value']['content']
+    except:
+        ab_chapter = ""
         
-        params = {
-            'constituent_id': re_system_id,
-            'description': 'Life Member'
-        }
+    # Compare Chapters and update in RE
+    if ab_chapter != "" and re_chapter != ab_chapter:
         
-        post_request_re()
+        if re_chapter == "":
+            # Will post in RE
+            params = {
+                'category': 'Chapter',
+                'value': ab_chapter,
+                'comment': 'Added from AlmaBase',
+                'date': datetime.now().replace(microsecond=0).isoformat(),
+                'parent_id': re_system_id
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
+            post_request_re()
+            
+        else:
+            # Will patch in RE
+            params = {
+                'value': ab_chapter,
+                'comment': 'Updated from AlmaBase',
+                'date': datetime.now().replace(microsecond=0).isoformat(),
+            }
+            
+            url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields/%s" % custom_field_id
+            patch_request_re()
         
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
-                        VALUES (%s, 'TRUE', 'Life Member', now())
+                        VALUES (%s, %s, 'Chapter', now())
                         """
-        cur.execute(insert_updates, [re_system_id])
+        cur.execute(insert_updates, [re_system_id, ab_chapter])
         conn.commit()
         
-# Add RE ID in AlmaBase (external_database_id)
-try:
-    external_database_id = ab_profile['external_database_id']
-except:
-    external_database_id = ""
-    
-if external_database_id == "":
-    url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-    
-    params = {
-        'external_database_id': ab_system_id
-    }
-    
-    patch_request_ab()
-    
-    # Will update in PostgreSQL
-    insert_updates = """
-                    INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
-                    VALUES (%s, %s, 'Externa Database ID', now())
-                    """
-    cur.execute(insert_updates, [ab_system_id, re_system_id])
-    conn.commit()
-    
-# Add AlmaBase ID in Raisers Edge (Alias - Almabase ID)
-try:
-    url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/aliases" % re_system_id
-    params = {}
-    get_request_re()
-    
-    alias_id = ""
-    for each_alias in re_api_response['value']:
-        if each_alias['type'] == "Almasbase ID":
-            alias_id = each_alias['id']
-except:
-    alias_id = ""
-    
-if alias_id == "":
-    # Post Alias
-    params = {
-        'constituent_id': re_system_id,
-        'name': ab_system_id,
-        'type': "Almabase ID"
-    }
-    
-    url = "https://api.sky.blackbaud.com/constituent/v1/aliases"
-    post_request_re()
-    
-else:
-    # Patch Alias
-    params = {
-        'name': ab_system_id,
-        'type': 'Almabase ID'
-    }
-    
-    url = "https://api.sky.blackbaud.com/constituent/v1/aliases/%s" % alias_id
-    patch_request_re()
+    # Life member update
+    ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
+
+    if ab_life_member == "yes":
+        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/constituentcodes" % re_system_id
+        params = {}
+        get_request_re()
+        
+        re_life_member = "no"
+        try:
+            for each_value in re_api_response['value']:
+                if each_value['description'] == "Life Member":
+                    re_life_member = "yes"
+                    break
+        except:
+            re_life_member = "no"
+        
+        if re_life_member == "no":
+            url = "https://api.sky.blackbaud.com/constituent/v1/constituentcodes"
+            
+            params = {
+                'constituent_id': re_system_id,
+                'description': 'Life Member'
+            }
+            
+            post_request_re()
+            
+            # Will update in PostgreSQL
+            insert_updates = """
+                            INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
+                            VALUES (%s, 'TRUE', 'Life Member', now())
+                            """
+            cur.execute(insert_updates, [re_system_id])
+            conn.commit()
+            
+    # Add RE ID in AlmaBase (external_database_id)
+    try:
+        external_database_id = ab_profile['external_database_id']
+    except:
+        external_database_id = ""
+        
+    if external_database_id == "":
+        url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+        
+        params = {
+            'external_database_id': ab_system_id
+        }
+        
+        patch_request_ab()
+        
+        # Will update in PostgreSQL
+        insert_updates = """
+                        INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
+                        VALUES (%s, %s, 'Externa Database ID', now())
+                        """
+        cur.execute(insert_updates, [ab_system_id, re_system_id])
+        conn.commit()
+        
+    # Add AlmaBase ID in Raisers Edge (Alias - Almabase ID)
+    try:
+        url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/aliases" % re_system_id
+        params = {}
+        get_request_re()
+        
+        alias_id = ""
+        for each_alias in re_api_response['value']:
+            if each_alias['type'] == "Almasbase ID":
+                alias_id = each_alias['id']
+    except:
+        alias_id = ""
+        
+    if alias_id == "":
+        # Post Alias
+        params = {
+            'constituent_id': re_system_id,
+            'name': ab_system_id,
+            'type': "Almabase ID"
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/aliases"
+        post_request_re()
+        
+    else:
+        # Patch Alias
+        params = {
+            'name': ab_system_id,
+            'type': 'Almabase ID'
+        }
+        
+        url = "https://api.sky.blackbaud.com/constituent/v1/aliases/%s" % alias_id
+        patch_request_re()
+        
+except Exception as Argument:
+    send_error_emails()
+    try:
+        # Close DB connection
+        cur.close()
+        conn.close()
+        sys.exit()
+    except:
+        sys.exit()
