@@ -235,23 +235,31 @@ def send_error_emails():
     message.attach(emailbody)
     emailcontent = message.as_string()
 
-    # Create a secure SSL context
-    context = ssl.create_default_context()
+    # # Create a secure SSL context
+    # context = ssl.create_default_context()
     
-    # Try to log in to server and send email
-    try:
-        server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-        server.ehlo() # Can be omitted
-        server.starttls(context=context) # Secure the connection
-        server.ehlo() # Can be omitted
+    # # Try to log in to server and send email
+    # try:
+    #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
+    #     server.ehlo() # Can be omitted
+    #     server.starttls(context=context) # Secure the connection
+    #     server.ehlo() # Can be omitted
+    #     server.login(MAIL_USERN, MAIL_PASSWORD)
+    #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
+    #     # TODO: Send email here
+    # except Exception as e:
+    #     # Print any error messages to stdout
+    #     print(e)
+    # # finally:
+    # #     server.quit()
+    
+    # Create secure connection with server and send email
+    context = ssl._create_unverified_context()
+    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
         server.login(MAIL_USERN, MAIL_PASSWORD)
-        server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-        # TODO: Send email here
-    except Exception as e:
-        # Print any error messages to stdout
-        print(e)
-    # finally:
-    #     server.quit() 
+        server.sendmail(
+            MAIL_USERN, SEND_TO, emailcontent
+        )
 
     # Save copy of the sent email to sent items folder
     with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
@@ -707,23 +715,31 @@ def constituent_not_found_email():
     #           MAIL_USERN, MAIL_USERN, emailcontent
     #       )
 
-    # Create a secure SSL context
-    context = ssl.create_default_context()
+    # # Create a secure SSL context
+    # context = ssl.create_default_context()
     
-    # Try to log in to server and send email
-    try:
-        server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-        server.ehlo() # Can be omitted
-        server.starttls(context=context) # Secure the connection
-        server.ehlo() # Can be omitted
+    # # Try to log in to server and send email
+    # try:
+    #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
+    #     server.ehlo() # Can be omitted
+    #     server.starttls(context=context) # Secure the connection
+    #     server.ehlo() # Can be omitted
+    #     server.login(MAIL_USERN, MAIL_PASSWORD)
+    #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
+    #     # TODO: Send email here
+    # except Exception as e:
+    #     # Print any error messages to stdout
+    #     print(e)
+    # # finally:
+    # #     server.quit()
+    
+    # Create secure connection with server and send email
+    context = ssl._create_unverified_context()
+    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
         server.login(MAIL_USERN, MAIL_PASSWORD)
-        server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-        # TODO: Send email here
-    except Exception as e:
-        # Print any error messages to stdout
-        print(e)
-    # finally:
-    #     server.quit() 
+        server.sendmail(
+            MAIL_USERN, SEND_TO, emailcontent
+        )
 
     # Save copy of the sent email to sent items folder
     with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
