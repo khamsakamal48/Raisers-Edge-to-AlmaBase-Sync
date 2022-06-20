@@ -1187,21 +1187,42 @@ try:
             try:
                 for each_ab_org in ab_api_response_org['results']:
                     if each_org == each_ab_org['employer']['name']:
-                        position = each_ab_org['designation']['name']
-                        if position is None:
+                        
+                        try:
+                            position = each_ab_org['designation']['name']
+                            if position is None or position == "null" or position == "Null":
+                                position = ""
+                        except:
                             position = ""
-                        start_month = each_ab_org['start_month']
-                        if start_month is None:
+                            
+                        try:
+                            start_month = each_ab_org['start_month']
+                            if start_month is None or start_month == "null" or start_month == "Null":
+                                start_month = ""
+                        except:
                             start_month = ""
-                        start_year = each_ab_org['start_year']
-                        if start_year is None:
+                        
+                        try:
+                            start_year = each_ab_org['start_year']
+                            if start_year is None or start_year == "null" or start_year == "Null":
+                                start_year = ""
+                        except:
                             start_year = ""
-                        end_month = each_ab_org['end_month']
-                        if end_month is None:
+                        
+                        try:
+                            end_month = each_ab_org['end_month']
+                            if end_month is None or end_month == "null" or end_month == "Null":
+                                end_month = ""
+                        except:
                             end_month = ""
-                        end_year = each_ab_org['end_year']
-                        if end_year is None:
+                        
+                        try:
+                            end_year = each_ab_org['end_year']
+                            if end_year is None or end_year == "null" or end_year == "Null":
+                                end_year = ""
+                        except:
                             end_year = ""
+                            
                         break
             except:
                 pass
