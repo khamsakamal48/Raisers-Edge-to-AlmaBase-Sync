@@ -3922,6 +3922,7 @@ try:
         for each_alias in re_api_response['value']:
             if each_alias['type'] == "Almasbase ID":
                 alias_id = each_alias['id']
+                break
     except:
         alias_id = ""
         
