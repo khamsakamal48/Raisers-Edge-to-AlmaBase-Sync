@@ -3107,6 +3107,7 @@ try:
     elif re_gender == "" and ab_gender == "":
         ab_gender_update = re_gender_update
 
+    ab_dob_update = ""
     if ab_dob_day == "" and ab_dob_month == "" and ab_dob_year == "":
         if re_dob_day != "" and re_dob_month != "" and re_dob_year != "":
             ab_dob_update = datetime(re_dob_year, re_dob_month, re_dob_day).date()
