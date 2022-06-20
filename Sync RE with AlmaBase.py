@@ -3953,14 +3953,19 @@ try:
                     """
     cur.execute(insert_updates, [re_system_id, ab_system_id])
     conn.commit()
-        
+    
+    # Close DB connection
+    cur.close()
+    conn.close()
+    # exit()
 except Exception as Argument:
     subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
     send_error_emails()
-    try:
-        # Close DB connection
-        cur.close()
-        conn.close()
-        sys.exit()
-    except:
-        sys.exit()
+    # try:
+    #     # Close DB connection
+    #     cur.close()
+    #     conn.close()
+    #     # sys.exit(Argument)
+    # except:
+    #     # sys.exit(Argument)
+    #     pass
