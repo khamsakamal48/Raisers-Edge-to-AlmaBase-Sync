@@ -1184,198 +1184,199 @@ try:
     # Upload missing employments in RE
     if missing_in_re != []:
         for each_org in missing_in_re:
-            try:
-                for each_ab_org in ab_api_response_org['results']:
-                    if each_org == each_ab_org['employer']['name']:
-                        
-                        try:
-                            position = each_ab_org['designation']['name']
-                            if position is None or position == "null" or position == "Null":
+            if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
+                try:
+                    for each_ab_org in ab_api_response_org['results']:
+                        if each_org == each_ab_org['employer']['name']:
+                            
+                            try:
+                                position = each_ab_org['designation']['name']
+                                if position is None or position == "null" or position == "Null":
+                                    position = ""
+                            except:
                                 position = ""
-                        except:
-                            position = ""
-                            
-                        try:
-                            start_month = each_ab_org['start_month']
-                            if start_month is None or start_month == "null" or start_month == "Null":
+                                
+                            try:
+                                start_month = each_ab_org['start_month']
+                                if start_month is None or start_month == "null" or start_month == "Null":
+                                    start_month = ""
+                            except:
                                 start_month = ""
-                        except:
-                            start_month = ""
-                        
-                        try:
-                            start_year = each_ab_org['start_year']
-                            if start_year is None or start_year == "null" or start_year == "Null":
-                                start_year = ""
-                        except:
-                            start_year = ""
-                        
-                        try:
-                            end_month = each_ab_org['end_month']
-                            if end_month is None or end_month == "null" or end_month == "Null":
-                                end_month = ""
-                        except:
-                            end_month = ""
-                        
-                        try:
-                            end_year = each_ab_org['end_year']
-                            if end_year is None or end_year == "null" or end_year == "Null":
-                                end_year = ""
-                        except:
-                            end_year = ""
                             
-                        break
-            except:
-                pass
-            
-            # Check if organisation is a University
-            school_matches = ["school", "college", "university", "institute", "iit", "iim"]
-            if any(x in each_org.lower() for x in school_matches):
-                relationship = "University"
-            else:
-                relationship = "Employer"
-            
-            params_re = {
-                'constituent_id': re_system_id,
-                'relation': {
-                    'name': each_org[:60],
-                    'type': 'Organization'},
-                'position': position[:50],
-                'start': {
-                    'm': start_month,
-                    'y': start_year
-                },
-                'end': {
-                    'm': end_month,
-                    'y': end_year
-                },
-                'type': relationship,
-                'reciprocal_type': 'Employee'
-            }
-            
-            # Delete blank values from JSON
-            for i in range(10):
-                params = del_blank_values_in_json(params_re.copy())
-            print(params)
-            
-            url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
-            
-            post_request_re()
+                            try:
+                                start_year = each_ab_org['start_year']
+                                if start_year is None or start_year == "null" or start_year == "Null":
+                                    start_year = ""
+                            except:
+                                start_year = ""
+                            
+                            try:
+                                end_month = each_ab_org['end_month']
+                                if end_month is None or end_month == "null" or end_month == "Null":
+                                    end_month = ""
+                            except:
+                                end_month = ""
+                            
+                            try:
+                                end_year = each_ab_org['end_year']
+                                if end_year is None or end_year == "null" or end_year == "Null":
+                                    end_year = ""
+                            except:
+                                end_year = ""
+                                
+                            break
+                except:
+                    pass
+                
+                # Check if organisation is a University
+                school_matches = ["school", "college", "university", "institute", "iit", "iim"]
+                if any(x in each_org.lower() for x in school_matches):
+                    relationship = "University"
+                else:
+                    relationship = "Employer"
+                
+                params_re = {
+                    'constituent_id': re_system_id,
+                    'relation': {
+                        'name': each_org[:60],
+                        'type': 'Organization'},
+                    'position': position[:50],
+                    'start': {
+                        'm': start_month,
+                        'y': start_year
+                    },
+                    'end': {
+                        'm': end_month,
+                        'y': end_year
+                    },
+                    'type': relationship,
+                    'reciprocal_type': 'Employee'
+                }
+                
+                # Delete blank values from JSON
+                for i in range(10):
+                    params = del_blank_values_in_json(params_re.copy())
+                
+                url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
+                
+                post_request_re()
         
     # Update missing details in RE
     for each_org in re_api_response_org['value']:
         try:
-            # Get values present in RE
-            re_org_name = each_org['name']
-            
-            if 'position' in each_org:
-                re_org_position = each_org['position']
-            else:
-                re_org_position = ""
+           if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
+                # Get values present in RE
+                re_org_name = each_org['name']
                 
-            try:
-                re_org_start_month = each_org['start']['m']
-            except:
-                re_org_start_month = ""
+                if 'position' in each_org:
+                    re_org_position = each_org['position']
+                else:
+                    re_org_position = ""
+                    
+                try:
+                    re_org_start_month = each_org['start']['m']
+                except:
+                    re_org_start_month = ""
+                    
+                try:
+                    re_org_start_year = each_org['start']['y']
+                except:
+                    re_org_start_year = ""
                 
-            try:
-                re_org_start_year = each_org['start']['y']
-            except:
-                re_org_start_year = ""
-            
-            try:
-                re_org_end_month = each_org['end']['m']
-            except:
-                re_org_end_month = ""
+                try:
+                    re_org_end_month = each_org['end']['m']
+                except:
+                    re_org_end_month = ""
+                    
+                try:
+                    re_org_end_year = each_org['end']['y']
+                except:
+                    re_org_end_year = ""
                 
-            try:
-                re_org_end_year = each_org['end']['y']
-            except:
-                re_org_end_year = ""
-            
-            relationship_id = each_org['id']
-            
-            # Get values present in AlmaBase for above same organisation
-            for each_ab_org in ab_api_response_org['results']:
-                if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
-                    
-                    try:
-                        if each_ab_org['designation']['name'] is not None:
-                            ab_org_position = each_ab_org['designation']['name']
-                        else:
-                            ab_org_position = ""
-                    except:
-                        ab_org_position = ""
-                    
-                    try:
-                        if each_ab_org['start_month'] is not None:
-                            ab_org_start_month = each_ab_org['start_month']
-                        else:
-                            ab_org_start_month = ""
-                    except:
-                        ab_org_start_month = ""
-                    
-                    try:
-                        if each_ab_org['start_year'] is not None:
-                            ab_org_start_year = each_ab_org['start_year']
-                        else:
-                            ab_org_start_year = ""
-                    except:
-                        ab_org_start_year = ""
-                    
-                    try:
-                        if each_ab_org['end_month'] is not None:
-                            ab_org_end_month = each_ab_org['end_month']
-                        else:
-                            ab_org_end_month = ""
-                    except:
-                        ab_org_end_month = ""
-                    
-                    try:
-                        if each_ab_org['end_year'] is not None:
-                            ab_org_end_year = each_ab_org['end_year']
-                        else:
-                            ab_org_end_year = ""
-                    except:
-                        pass
-                    
-                    if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
-                        break
-                    else:
-                        url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
+                relationship_id = each_org['id']
+                
+                # Get values present in AlmaBase for above same organisation
+                for each_ab_org in ab_api_response_org['results']:
+                    if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
                         
-                        # Check if position needs an update
-                        if re_org_position != "" or ab_org_position == "":
+                        try:
+                            if each_ab_org['designation']['name'] is not None:
+                                ab_org_position = each_ab_org['designation']['name']
+                            else:
+                                ab_org_position = ""
+                        except:
                             ab_org_position = ""
-                            
-                        # Check if joining year needs an update
-                        if re_org_start_year != "" or ab_org_start_year == "":
-                            ab_org_start_month = ""
-                            ab_org_start_year = ""
-                            
-                        # Check if leaving year needs an update
-                        if re_org_end_year != "" or ab_org_end_year == "":
-                            ab_org_end_month = ""
-                            ab_org_end_year = ""
                         
-                        params_re = {
-                                'position': ab_org_position[:50],
-                                'start': {
-                                    'm': ab_org_start_month,
-                                    'y': ab_org_start_year
-                                },
-                                'end': {
-                                    'm': ab_org_end_month,
-                                    'y': ab_org_end_year
+                        try:
+                            if each_ab_org['start_month'] is not None:
+                                ab_org_start_month = each_ab_org['start_month']
+                            else:
+                                ab_org_start_month = ""
+                        except:
+                            ab_org_start_month = ""
+                        
+                        try:
+                            if each_ab_org['start_year'] is not None:
+                                ab_org_start_year = each_ab_org['start_year']
+                            else:
+                                ab_org_start_year = ""
+                        except:
+                            ab_org_start_year = ""
+                        
+                        try:
+                            if each_ab_org['end_month'] is not None:
+                                ab_org_end_month = each_ab_org['end_month']
+                            else:
+                                ab_org_end_month = ""
+                        except:
+                            ab_org_end_month = ""
+                        
+                        try:
+                            if each_ab_org['end_year'] is not None:
+                                ab_org_end_year = each_ab_org['end_year']
+                            else:
+                                ab_org_end_year = ""
+                        except:
+                            pass
+                        
+                        if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
+                            break
+                        else:
+                            url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
+                            
+                            # Check if position needs an update
+                            if re_org_position != "" or ab_org_position == "":
+                                ab_org_position = ""
+                                
+                            # Check if joining year needs an update
+                            if re_org_start_year != "" or ab_org_start_year == "":
+                                ab_org_start_month = ""
+                                ab_org_start_year = ""
+                                
+                            # Check if leaving year needs an update
+                            if re_org_end_year != "" or ab_org_end_year == "":
+                                ab_org_end_month = ""
+                                ab_org_end_year = ""
+                            
+                            params_re = {
+                                    'position': ab_org_position[:50],
+                                    'start': {
+                                        'm': ab_org_start_month,
+                                        'y': ab_org_start_year
+                                    },
+                                    'end': {
+                                        'm': ab_org_end_month,
+                                        'y': ab_org_end_year
+                                    }
                                 }
-                            }
-                        
-                        # Delete blank values from JSON
-                        for i in range(10):
-                            params = del_blank_values_in_json(params_re.copy())
+                            
+                            # Delete blank values from JSON
+                            for i in range(10):
+                                params = del_blank_values_in_json(params_re.copy())
 
-                        if params != {}:
-                            # Update in RE
-                            patch_request_re()
+                            if params != {}:
+                                # Update in RE
+                                patch_request_re()
         except:
             pass
         
@@ -2940,6 +2941,9 @@ try:
         ab_dob = ab_api_response_generic_details['date_of_birth']
         if ab_dob is None or ab_dob =="Null" or ab_dob == "null":
             ab_dob = ""
+            ab_dob_day = ""
+            ab_dob_month = ""
+            ab_dob_year = ""
         else:
             date_time_obj = datetime.strptime(ab_dob, '%Y-%m-%d')
             ab_dob_day = date_time_obj.day
@@ -2947,6 +2951,9 @@ try:
             ab_dob_year = date_time_obj.year
     except:
         ab_dob = ""
+        ab_dob_day = ""
+        ab_dob_month = ""
+        ab_dob_year = ""
 
     try:
         ab_first_name = ab_api_response_generic_details['first_name']
