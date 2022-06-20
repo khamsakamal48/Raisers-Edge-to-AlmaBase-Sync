@@ -250,8 +250,8 @@ def send_error_emails():
     except Exception as e:
         # Print any error messages to stdout
         print(e)
-    finally:
-        server.quit() 
+    # finally:
+    #     server.quit() 
 
     # Save copy of the sent email to sent items folder
     with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
