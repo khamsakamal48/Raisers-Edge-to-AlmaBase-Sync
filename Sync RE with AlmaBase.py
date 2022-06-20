@@ -3904,6 +3904,7 @@ try:
     conn.commit()
         
 except Exception as Argument:
+    subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
     send_error_emails()
     try:
         # Close DB connection
