@@ -3844,11 +3844,11 @@ try:
     except:
         external_database_id = ""
         
-    if external_database_id == "":
+    if external_database_id == "" or external_database_id is None or external_database_id == "Null" or external_database_id == "null":
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
         
         params = {
-            'external_database_id': ab_system_id
+            'external_database_id': re_system_id
         }
         
         patch_request_ab()
@@ -3856,7 +3856,7 @@ try:
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
-                        VALUES (%s, %s, 'Externa Database ID', now())
+                        VALUES (%s, %s, 'External Database ID', now())
                         """
         cur.execute(insert_updates, [ab_system_id, re_system_id])
         conn.commit()
