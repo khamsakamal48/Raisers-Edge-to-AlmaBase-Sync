@@ -174,6 +174,7 @@ CREATE TABLE re_personal_details_added
     re_system_id character varying,
     birth_day character varying,
     birth_month character varying,
+    birth_year character varying,
     deceased character varying,
     first_name character varying,
     former_name character varying,
