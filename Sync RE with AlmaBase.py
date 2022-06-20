@@ -17,6 +17,7 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 # API Request strategy
+print("Setting API Request strategy")
 retry_strategy = Retry(
     total=3,
     status_forcelist=[429, 500, 502, 503, 504],
@@ -29,7 +30,7 @@ http.mount("https://", adapter)
 http.mount("http://", adapter)
 
 # Set current directory
-#os.chdir(os.path.dirname(sys.argv[0]))
+print("Setting current directory")
 os.chdir(os.getcwd())
 
 from dotenv import load_dotenv
@@ -56,9 +57,11 @@ ALMABASE_API_TOKEN = os.getenv("ALMABASE_API_TOKEN")
 conn = psycopg2.connect(host=DB_IP, dbname=DB_NAME, user=DB_USERNAME, password=DB_PASSWORD)
 
 # Open connection
+print("Creating connection with SQL database")
 cur = conn.cursor()
 
 # Retrieve access_token from file
+print("Retrieve token from API connections")
 with open('access_token_output.json') as access_token_output:
   data = json.load(access_token_output)
   access_token = data["access_token"]
