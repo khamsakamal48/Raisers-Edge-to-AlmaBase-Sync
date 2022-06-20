@@ -3044,8 +3044,8 @@ try:
         
         # Will update in PostgreSQL
         insert_updates = """
-                        INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+                        INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, birth_year, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
                         """
         cur.execute(insert_updates, [re_system_id, re_dob_day_update, re_dob_month_update, re_dob_year_update, re_deceased_update, re_first_name_update, re_former_name_update, re_gender_update, re_last_name_update, re_middle_name_update, re_preferred_name_update])
         conn.commit()
