@@ -2052,7 +2052,10 @@ try:
                     else:
                         break
                 
-                ab_address_number = i + 1
+                if i == 1:
+                    ab_address_number = i + 2
+                else:
+                    ab_address_number = i + 1
                 
                 # Get city, state and country from Address
                 get_address(address)
