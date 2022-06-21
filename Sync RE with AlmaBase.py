@@ -299,12 +299,6 @@ def send_error_emails():
         imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
         imap.logout()
 
-    # Close DB connection
-    cur.close()
-    conn.close()
-
-    sys.exit()
-
 def constituent_not_found_email():
     print("Sending an email that the constituent wasn't found")
     
@@ -1915,7 +1909,9 @@ try:
     # Compare the ones in AB with RE and find delta
     print("Comparing the addresses in AB with RE and finding delta")
     ab_address_list = []
+    
     for each_value in ab_api_response_address['addresses']:
+        
         try:
             line1 = each_value['line1']
             if line1 is None:
@@ -4159,26 +4155,18 @@ try:
     conn.commit()
     print("Added RE ID in AlmaBase as external_database_id")
     
-    # Close writing to Process.log
-    sys.stdout.close()
-    # exit()
 except Exception as Argument:
     print("Error while syncing Alumni data between Raisers Edge & Almabase")
     subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
     send_error_emails()
-    # try:
-    #     # Close DB connection
-    #     cur.close()
-    #     conn.close()
-    #     # sys.exit(Argument)
-    # except:
-    #     # sys.exit(Argument)
-    #     pass
+    
 finally:
     # Close DB connection
-    print("Closing DB connection")
-    cur.close()
-    conn.close()
+    if conn:
+        print("Closing DB connection")
+        cur.close()
+        conn.close()
     
     # Close writing to Process.log
     sys.stdout.close()
+    sys.exit()
