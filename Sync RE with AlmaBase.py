@@ -4123,7 +4123,7 @@ try:
         
         alias_id = ""
         for each_alias in re_api_response['value']:
-            if each_alias['type'] == "Almasbase ID":
+            if each_alias['type'] == "Almabase ID":
                 alias_id = each_alias['id']
                 break
     except:
