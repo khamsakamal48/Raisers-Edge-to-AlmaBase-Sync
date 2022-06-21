@@ -7,6 +7,8 @@ from click import echo
 import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy, datetime, logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.application import MIMEApplication
 from jinja2 import Environment
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
@@ -15,6 +17,9 @@ from geopy.extra.rate_limiter import RateLimiter
 from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+
+# Printing the output to file for debugging
+sys.stdout = open('Process.log', 'w')
 
 # API Request strategy
 print("Setting API Request strategy")
@@ -170,10 +175,25 @@ def check_for_errors():
         print ("Will send email now")
         send_error_emails()
 
+def attach_file_to_email(message, filename):
+    # Open the attachment file for reading in binary mode, and make it a MIMEApplication class
+    with open(filename, "rb") as f:
+        file_attachment = MIMEApplication(f.read())
+    # Add header/name to the attachments    
+    file_attachment.add_header(
+        "Content-Disposition",
+        f"attachment; filename= {filename}",
+    )
+    # Attach the file to the message
+    message.attach(file_attachment)
+
 def send_error_emails():
     print("Sending email for an error")
     
-    message = MIMEMultipart("alternative")
+    # Close writing to Process.log
+    sys.stdout.close()
+    
+    message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = MAIL_USERN
     message["To"] = SEND_TO
@@ -244,8 +264,9 @@ def send_error_emails():
     # Add HTML parts to MIMEMultipart message
     # The email client will try to render the last part first
     message.attach(emailbody)
+    attach_file_to_email(message, 'Process.log')
     emailcontent = message.as_string()
-
+    
     # # Create a secure SSL context
     # context = ssl.create_default_context()
     
@@ -719,7 +740,7 @@ def constituent_not_found_email():
     # The email client will try to render the last part first
     message.attach(emailbody)
     emailcontent = message.as_string()
-
+    
     #   # Create secure connection with server and send email
     #   context = ssl._create_unverified_context()
     #   with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -785,7 +806,6 @@ def update_email_in_re():
     check_for_errors()
 
 def del_blank_values_in_json(d):
-    print("Removing blank values from JSON")
     """
     Delete keys with the value ``None`` in a dictionary, recursively.
 
@@ -889,7 +909,7 @@ try:
 
     # Ensure no comma or brackets in output
     re_system_id = result[0]
-    print("Working on Alumni with RE ID: " + re_system_id)
+    print("Working on Alumni with RE ID: " + str(re_system_id))
 
     # Get email list from RE
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
@@ -925,7 +945,7 @@ try:
         ab_system_id = ab_api_response["results"][0]["id"]
 
     # Retrieve the AlmaBase Profile
-    print("Got the Almabase ID: " + ab_system_id)
+    print("Got the Almabase ID: " + str(ab_system_id))
     url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
 
     get_request_almabase()
@@ -956,7 +976,7 @@ try:
             # Email IDs that don't have any email addresses in AlmaBase
             blank_email_ids.append(each_id)
             pass
-    print("Email list in Almabase: " + ab_email_list)
+    print("Email list in Almabase: " + str(ab_email_list))
 
     print("Getting email list from RE")
     re_email_list = []
@@ -966,7 +986,7 @@ try:
             re_email_list.append(emails)
         except:
             pass
-    print("Email list in RE: " + re_email_list)
+    print("Email list in RE: " + str(re_email_list))
         
     # Finding missing email addresses to be added in RE
     print("Finding missing email addresses to be added in RE")
@@ -974,7 +994,7 @@ try:
     set2 = set(re_email_list)
 
     missing_in_re = list(sorted(set1 - set2))
-    print("Missing email addresses in RE: " + missing_in_re)
+    print("Missing email addresses in RE: " + str(missing_in_re))
 
     # Will update missing email IDs to RE
     if missing_in_re != []:
@@ -1019,11 +1039,11 @@ try:
     set2 = set(ab_email_list)
 
     missing_in_ab = list(sorted(set1 - set2))
-    print("Missing email addresses in RE: " + missing_in_ab)
+    print("Missing email addresses in Almabase: " + str(missing_in_ab))
 
     # Upload missing email addresses in AlmaBase
     if missing_in_ab != []:
-        print("Updating the missing email IDs to RE")
+        print("Updating the missing email IDs to Almabase")
         for each_record in zip(missing_in_ab, blank_email_ids):
             try:
                 each_email, each_id = each_record
@@ -1071,7 +1091,7 @@ try:
             re_phone_list.append(phones)
         except:
             pass
-    print("List of phone numbers in RE: " + re_phone_list)
+    print("List of phone numbers in RE: " + str(re_phone_list))
         
     # Get list of phone numbers in AlmaBase
     print("Get list of phone numbers in AlmaBase")
@@ -1100,7 +1120,7 @@ try:
             # Email IDs that don't have any email addresses in AlmaBase
             blank_phone_ids.append(each_id)
             pass
-    print("List of phone numbers in Almabase: " + ab_phone_list)
+    print("List of phone numbers in Almabase: " + str(ab_phone_list))
 
     # Finding missing phone numbers to be added in RE
     print("Finding missing phone numbers to be added in RE")
@@ -1118,7 +1138,7 @@ try:
     if missing_in_re != []:
         missing = list(process.dedupe(missing_in_re, threshold=80))
         missing_in_re = missing
-        print("Missing phone numbers in RE: " + missing_in_re)
+        print("Missing phone numbers in RE: " + str(missing_in_re))
 
     # Upload missing numbers in RE
     if missing_in_re != []:
@@ -1162,7 +1182,7 @@ try:
     if missing_in_ab != []:
         missing = list(process.dedupe(missing_in_ab, threshold=80))
         missing_in_ab = missing
-        print("Missing phone numbers in Almabase: " + missing_in_ab)
+        print("Missing phone numbers in Almabase: " + str(missing_in_ab))
 
     # Upload missing numbers in AlmaBase
     if missing_in_ab != []:
@@ -1228,7 +1248,8 @@ try:
     for each_org in ab_api_response['results']:
         try:
             # Retrieve the org name
-            ab_org_name_list.append(each_org['employer']['name'])
+            if each_org['employer']['name'] != "add-company" and each_org['employer']['name'] != "Unknown" and each_org['employer']['name'] != "x":
+                ab_org_name_list.append(each_org['employer']['name'])
         except:
             pass
 
@@ -1248,7 +1269,7 @@ try:
     if missing_in_re != []:
         missing = list(process.dedupe(missing_in_re, threshold=80))
         missing_in_re = missing
-    print("Missing employments in RE: " + missing_in_re)
+    print("Missing employments in RE: " + str(missing_in_re))
 
     # Upload missing employments in RE
     if missing_in_re != []:
@@ -1369,7 +1390,7 @@ try:
                 relationship_id = each_org['id']
                 
                 # Get values present in AlmaBase for above same organisation
-                print("... by comparsing the same organisation present in Almabase")
+                print("... by comparing the same organisation present in Almabase")
                 for each_ab_org in ab_api_response_org['results']:
                     try:
                         if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
@@ -1477,7 +1498,7 @@ try:
     if missing_in_ab != []:
         missing = list(process.dedupe(missing_in_ab, threshold=80))
         missing_in_ab = missing
-    print("Missing employments in Almabase: " + missing_in_ab)
+    print("Missing employments in Almabase: " + str(missing_in_ab))
 
     # Upload missing employments in Almabase
     if missing_in_ab != []:
@@ -1856,7 +1877,7 @@ try:
     if missing_in_re != []:
         missing = list(process.dedupe(missing_in_re, threshold=80))
         missing_in_re = missing
-        print("Addresses missing in RE: " + missing_in_re)
+        print("Addresses missing in RE: " + str(missing_in_re))
 
     # Create missing address in RE
     if missing_in_re != []:
@@ -1963,7 +1984,7 @@ try:
     if missing_in_ab != []:
         missing = list(process.dedupe(missing_in_ab, threshold=80))
         missing_in_ab = missing
-        print("Missing addresses in Almabase: " + missing_in_ab)
+        print("Missing addresses in Almabase: " + str(missing_in_ab))
 
     # Create missing address in AB
     if missing_in_ab != []:
@@ -2532,7 +2553,7 @@ try:
                 missing_in_re.append(each_school)
         except:
             missing_in_re.append(each_school)
-    print("Missing schools in RE: " + missing_in_re)
+    print("Missing schools in RE: " + str(missing_in_re))
             
     # Add missing records in RE
     if missing_in_re != []:
@@ -3792,7 +3813,7 @@ try:
                 missing_in_re.append(each_interest)
         except:
             missing_in_re.append(each_interest)
-    print("Interests missing in RE: " + missing_in_re)
+    print("Interests missing in RE: " + str(missing_in_re))
 
     # Upload delta to RE
     if missing_in_re != []:
@@ -3834,7 +3855,7 @@ try:
 
     missing_in_almabase = re_interest_list + ab_interest_list
     missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))
-    print("Missing interests in Almabase: " + missing_in_ab)
+    print("Missing interests in Almabase: " + str(missing_in_ab))
 
     # Upload delta to AB
     if missing_in_ab_db != []:
@@ -4008,7 +4029,7 @@ try:
             
         else:
             # Will patch in RE
-            print("Will update chaoter in RE")
+            print("Will update chapter in RE")
             params = {
                 'value': ab_chapter,
                 'comment': 'Updated from AlmaBase',
@@ -4135,10 +4156,8 @@ try:
     conn.commit()
     print("Added RE ID in AlmaBase as external_database_id")
     
-    # Close DB connection
-    print("Closing DB connection")
-    cur.close()
-    conn.close()
+    # Close writing to Process.log
+    sys.stdout.close()
     # exit()
 except Exception as Argument:
     print("Error while syncing Alumni data between Raisers Edge & Almabase")
@@ -4152,3 +4171,11 @@ except Exception as Argument:
     # except:
     #     # sys.exit(Argument)
     #     pass
+finally:
+    # Close DB connection
+    print("Closing DB connection")
+    cur.close()
+    conn.close()
+    
+    # Close writing to Process.log
+    sys.stdout.close()
