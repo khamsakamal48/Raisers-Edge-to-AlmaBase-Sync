@@ -67,6 +67,7 @@ with open('access_token_output.json') as access_token_output:
   access_token = data["access_token"]
 
 def get_request_re():
+    print("Running GET Request from RE function")
     time.sleep(5)
     # Request Headers for Blackbaud API request
     headers = {
@@ -81,6 +82,7 @@ def get_request_re():
     check_for_errors()
 
 def get_request_almabase():
+    print("Running GET Request from Almabase function")
     time.sleep(5)
     # Request Headers for AlmaBase API request
     headers = {
@@ -96,6 +98,7 @@ def get_request_almabase():
     check_for_errors()
   
 def post_request_re():
+    print("Running POST Request to RE function")
     time.sleep(5)
     headers = {
     # Request headers
@@ -110,6 +113,7 @@ def post_request_re():
     check_for_errors()
 
 def patch_request_re():
+    print("Running PATCH Request to RE function")
     time.sleep(5)
     headers = {
     # Request headers
@@ -124,6 +128,7 @@ def patch_request_re():
     check_for_errors()
     
 def patch_request_ab():
+    print("Running PATCH Request to Almabase function")
     time.sleep(5)
     # Request Headers for AlmaBase API request
     headers = {
@@ -140,6 +145,7 @@ def patch_request_ab():
     check_for_errors()
 
 def post_request_ab():
+    print("Running POST Request from Almabase function")
     time.sleep(5)
     # Request Headers for AlmaBase API request
     headers = {
@@ -156,6 +162,7 @@ def post_request_ab():
     check_for_errors()
     
 def check_for_errors():
+    print("Checking for errors")
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
     
     if any(x in re_api_response for x in error_keywords):
@@ -164,6 +171,7 @@ def check_for_errors():
         send_error_emails()
 
 def send_error_emails():
+    print("Sending email for an error")
     
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
@@ -277,6 +285,8 @@ def send_error_emails():
     sys.exit()
 
 def constituent_not_found_email():
+    print("Sending an email that the constituent wasn't found")
+    
     # Query the next data to uploaded in RE
     extract_sql = """
             SELECT name FROM all_alums_in_re EXCEPT SELECT name FROM already_synced FETCH FIRST 1 ROW ONLY;
@@ -757,6 +767,7 @@ def constituent_not_found_email():
     sys.exit()
 
 def update_email_in_re():
+    print("Updating email in RE")
     time.sleep(5)
     global params
     params = {
@@ -774,6 +785,7 @@ def update_email_in_re():
     check_for_errors()
 
 def del_blank_values_in_json(d):
+    print("Removing blank values from JSON")
     """
     Delete keys with the value ``None`` in a dictionary, recursively.
 
@@ -792,6 +804,7 @@ def print_json(d):
     print(json.dumps(d, indent=4))
 
 def get_address(address):
+    print("Getting city, state and country from an Address")
     time.sleep(5)
     # initialize Nominatim API
     geolocator = Nominatim(user_agent="geoapiExercises")
@@ -867,6 +880,7 @@ def get_address(address):
 
 try:
     # Query the next data to uploaded in RE
+    print("Querying the next data to uploaded in RE")
     extract_sql = """
             SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
             """
@@ -875,6 +889,7 @@ try:
 
     # Ensure no comma or brackets in output
     re_system_id = result[0]
+    print("Working on Alumni with RE ID: " + re_system_id)
 
     # Get email list from RE
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
@@ -889,6 +904,7 @@ try:
     count = 0
     while count != 1:
         # Search in AlmaBase
+        print("Locating the Alum in Almabase")
         for address in re_api_response['value']:
             try:
                 email = (address['address'])
@@ -909,13 +925,16 @@ try:
         ab_system_id = ab_api_response["results"][0]["id"]
 
     # Retrieve the AlmaBase Profile
+    print("Got the Almabase ID: " + ab_system_id)
     url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
 
     get_request_almabase()
-
+    
+    print("Fetching the Almabase profile")
     ab_profile = ab_api_response
 
     # Get email list from AlmaBase
+    print("Getting email list from AlmaBase")
     ab_email_list = []
     for address in ab_profile['email_addresses']:
         try:
@@ -937,7 +956,9 @@ try:
             # Email IDs that don't have any email addresses in AlmaBase
             blank_email_ids.append(each_id)
             pass
+    print("Email list in Almabase: " + ab_email_list)
 
+    print("Getting email list from RE")
     re_email_list = []
     for address in re_api_response['value']:
         try:
@@ -945,15 +966,19 @@ try:
             re_email_list.append(emails)
         except:
             pass
+    print("Email list in RE: " + re_email_list)
         
     # Finding missing email addresses to be added in RE
+    print("Finding missing email addresses to be added in RE")
     set1 = set([i for i in ab_email_list if i])
     set2 = set(re_email_list)
 
     missing_in_re = list(sorted(set1 - set2))
+    print("Missing email addresses in RE: " + missing_in_re)
 
     # Will update missing email IDs to RE
     if missing_in_re != []:
+        print("Updating the missing email IDs to RE")
         email_type_list = []
         for emails in missing_in_re:
             try:
@@ -984,17 +1009,21 @@ try:
                                 """
                 cur.execute(insert_updates, [re_system_id, email_address])
                 conn.commit()
+                print("Updated all the missing email IDs to RE")
             except:
                 send_error_emails()
 
     # Finding missing email addresses to be added in AlmaBase
+    print("Finding missing email addresses to be added in AlmaBase")
     set1 = set([i for i in re_email_list if i])
     set2 = set(ab_email_list)
 
     missing_in_ab = list(sorted(set1 - set2))
+    print("Missing email addresses in RE: " + missing_in_ab)
 
     # Upload missing email addresses in AlmaBase
     if missing_in_ab != []:
+        print("Updating the missing email IDs to RE")
         for each_record in zip(missing_in_ab, blank_email_ids):
             try:
                 each_email, each_id = each_record
@@ -1025,10 +1054,12 @@ try:
                                 """
                 cur.execute(insert_updates, [ab_system_id, each_email])
                 conn.commit()
+                print("Updated all the missing email IDs to Almabase")
             except:
                 send_error_emails()
         
     # Get list of of phone numbers in RE
+    print("Get list of of phone numbers in RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
     params = {}
     get_request_re()
@@ -1040,8 +1071,10 @@ try:
             re_phone_list.append(phones)
         except:
             pass
+    print("List of phone numbers in RE: " + re_phone_list)
         
     # Get list of phone numbers in AlmaBase
+    print("Get list of phone numbers in AlmaBase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s/phone_numbers" % ab_system_id
     get_request_almabase()
 
@@ -1054,6 +1087,7 @@ try:
             pass
 
     # Get list of available custom fields starting with phone, fax, mobile, pager
+    print("Getting list of available custom fields starting with phone, fax, mobile, pager")
     regex = re.compile('\w+phone|\w+fax|\w+mobile|\w+pager')
     phone_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
 
@@ -1066,8 +1100,10 @@ try:
             # Email IDs that don't have any email addresses in AlmaBase
             blank_phone_ids.append(each_id)
             pass
+    print("List of phone numbers in Almabase: " + ab_phone_list)
 
     # Finding missing phone numbers to be added in RE
+    print("Finding missing phone numbers to be added in RE")
     missing_in_re = []
     for each_phone in ab_phone_list:
         try:
@@ -1078,12 +1114,15 @@ try:
             missing_in_re.append(each_phone)
 
     # Making sure that there are no duplicates in the missing list
+    print("Removing duplicates in the missing list")
     if missing_in_re != []:
         missing = list(process.dedupe(missing_in_re, threshold=80))
         missing_in_re = missing
+        print("Missing phone numbers in RE: " + missing_in_re)
 
     # Upload missing numbers in RE
     if missing_in_re != []:
+        print("Uploading missing numbers in RE")
         for each_phone in missing_in_re:
             try:
                 url = "https://api.sky.blackbaud.com/constituent/v1/phones"
@@ -1105,8 +1144,10 @@ try:
                 conn.commit()
             except:
                 pass
+        print("Uploaded all missing numbers in RE")
             
     # Finding missing phone numbers to be added in AlmaBase
+    print("Finding missing phone numbers to be added in AlmaBase")
     missing_in_ab = []
     for each_phone in re_phone_list:
         try:
@@ -1117,12 +1158,15 @@ try:
             missing_in_ab.append(each_phone)
 
     # Making sure that there are no duplicates in the missing list
+    print("Making sure that there are no duplicates in the missing list")
     if missing_in_ab != []:
         missing = list(process.dedupe(missing_in_ab, threshold=80))
         missing_in_ab = missing
+        print("Missing phone numbers in Almabase: " + missing_in_ab)
 
     # Upload missing numbers in AlmaBase
     if missing_in_ab != []:
+        print("Uploading missing numbers in AlmaBase")
         for each_record in zip(missing_in_ab, blank_phone_ids):
             try:
                 each_phone, each_id = each_record
@@ -1152,10 +1196,12 @@ try:
                                 """
                 cur.execute(insert_updates, [ab_system_id, each_phone])
                 conn.commit()
+                print("Uploaded missing numbers in AlmaBase")
             except:
                 send_error_emails()
                 
     # Get Relation list from RE
+    print("Getting Employment list from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/relationships" % re_system_id
     params = {}
     get_request_re()
@@ -1172,6 +1218,7 @@ try:
             pass
 
     # Get Employment list from AlmaBase
+    print("Getting Employment list from AlmaBase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
     get_request_almabase()
 
@@ -1186,6 +1233,7 @@ try:
             pass
 
     # Finding missing employments to be added in RE
+    print("Finding missing employments to be added in RE")
     missing_in_re = []
     for each_org in ab_org_name_list:
         try:
@@ -1196,12 +1244,15 @@ try:
             missing_in_re.append(each_org)
 
     # Making sure that there are no duplicates in the missing list
+    print("Making sure that there are no duplicates in the missing list")
     if missing_in_re != []:
         missing = list(process.dedupe(missing_in_re, threshold=80))
         missing_in_re = missing
+    print("Missing employments in RE: " + missing_in_re)
 
     # Upload missing employments in RE
     if missing_in_re != []:
+        print("Uploading missing employments in RE")
         for each_org in missing_in_re:
             if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
                 try:
@@ -1248,6 +1299,7 @@ try:
                     pass
                 
                 # Check if organisation is a University
+                print("Checking if the missing employments is a University")
                 school_matches = ["school", "college", "university", "institute", "iit", "iim"]
                 if any(x in each_org.lower() for x in school_matches):
                     relationship = "University"
@@ -1279,8 +1331,10 @@ try:
                 url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
                 
                 post_request_re()
+                print("Added missing employment")
         
     # Update missing details in RE
+    print("Checking missing details from any existing employment...")
     for each_org in re_api_response_org['value']:
         try:
            if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
@@ -1315,6 +1369,7 @@ try:
                 relationship_id = each_org['id']
                 
                 # Get values present in AlmaBase for above same organisation
+                print("... by comparsing the same organisation present in Almabase")
                 for each_ab_org in ab_api_response_org['results']:
                     try:
                         if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
@@ -1365,15 +1420,18 @@ try:
                                 url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
                                 
                                 # Check if position needs an update
+                                print("Checking if position needs an update")
                                 if re_org_position != "" or ab_org_position == "":
                                     ab_org_position = ""
                                     
                                 # Check if joining year needs an update
+                                print("Checking if joining year needs an update")
                                 if re_org_start_year != "" or ab_org_start_year == "":
                                     ab_org_start_month = ""
                                     ab_org_start_year = ""
                                     
                                 # Check if leaving year needs an update
+                                print("Checking if leaving year needs an update")
                                 if re_org_end_year != "" or ab_org_end_year == "":
                                     ab_org_end_month = ""
                                     ab_org_end_year = ""
@@ -1397,12 +1455,14 @@ try:
                                 if params != {}:
                                     # Update in RE
                                     patch_request_re()
+                                    print("Updated missing employment details in RE")
                     except:
                         pass
         except:
             pass
         
     # Finding missing employments to be added in AlmaBase
+    print("Finding missing employments to be added in AlmaBase")
     missing_in_ab = []
     for each_org in re_org_name_list:
         try:
@@ -1413,12 +1473,15 @@ try:
             missing_in_ab.append(each_org)
         
     # Making sure that there are no duplicates in the missing list
+    print("Making sure that there are no duplicates in the missing list")
     if missing_in_ab != []:
         missing = list(process.dedupe(missing_in_ab, threshold=80))
         missing_in_ab = missing
+    print("Missing employments in Almabase: " + missing_in_ab)
 
-    # Upload missing employments in RE
+    # Upload missing employments in Almabase
     if missing_in_ab != []:
+        print("Uploading missing employments in Almabase")
         for each_org in missing_in_ab:
             try:
                 for each_re_org in re_api_response_org['value']:
@@ -1452,7 +1515,8 @@ try:
                         if position == "" and start_month == "" and start_year == "" and end_month == "" and end_year == "":
                             break
                         else:
-                            # Create an employment in RE
+                            # Create an employment in Almabase
+                            print("Creating an employment in Almabase")
                             url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
                             
                             params_ab = {
@@ -1474,11 +1538,13 @@ try:
                             
                             # Update in Almabase
                             post_request_ab()
+                            print("Added missing employment in Almabase")
                         break
             except:
                 pass
 
     # Update missing details in AlmaBase
+    print("Updating missing details in AlmaBase")
     for each_org in ab_api_response_org['results']:
         try:
             # Get values present in AB
@@ -1527,6 +1593,7 @@ try:
             ab_org_relationship_id = each_org['id']
 
             # Get values present in RE for above same organisation
+            print("Getting values present in RE for the same organisation")
             for each_re_org in re_api_response_org['value']:
                 try:
                     if fuzz.token_set_ratio(ab_org_name.lower(),each_re_org['name'].lower()) >= 90:
@@ -1562,15 +1629,18 @@ try:
                             url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments/%s" % (ab_system_id, ab_org_relationship_id)
                             
                             # Check if position needs an update
+                            print("Checking if position needs an update")
                             if re_org_position == "" or ab_org_position != "":
                                 re_org_position = ""
                                 
                             # Check if joining year needs an update
+                            print("Checking if joining year needs an update")
                             if re_org_start_year == "" or ab_org_start_year != "":
                                 re_org_start_month = ""
                                 re_org_start_year = ""
                                 
                             # Check if leaving year needs an update
+                            print("Checking if leaving year needs an update")
                             if re_org_end_year == "" or ab_org_end_year != "":
                                 re_org_end_month = ""
                                 re_org_end_year = ""
@@ -1591,12 +1661,14 @@ try:
                                 
                             if params != {}:           
                                 patch_request_ab()
+                                print("Updated employment details in Almabase")
                 except:
                     pass
         except:
             pass
         
     # Retrieve addresses from RE
+    print("Retrieving addresses from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/addresses?include_inactive=true" % re_system_id
     params = {}
     get_request_re()
@@ -1604,6 +1676,7 @@ try:
     re_api_response_address = re_api_response
 
     # Retrieve addresses from Almabase - 1
+    print("Retrieving addresses from Almabase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=addresses" % ab_system_id
 
     get_request_almabase()
@@ -1615,7 +1688,8 @@ try:
     get_request_almabase()
     ab_api_response_address_custom_fields = ab_api_response
 
-    # Retrive details from Permanent address in AlmaBase
+    # Retrieve details from Permanent address in AlmaBase
+    print("Retrieving details from Permanent address in AlmaBase")
     try:
         ab_permanent_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['permanent_address']['values'][0]['value']['content']
     except:
@@ -1647,6 +1721,7 @@ try:
         ab_permanent_address_zip = ""
 
     # Retrive details from Work address in AlmaBase
+    print("Retrieving details from Work address in AlmaBase")
     try:
         ab_work_address_line_1 = ab_api_response_address_custom_fields['custom_fields']['work_address_line_1']['values'][0]['value']['content']
     except:
@@ -1707,12 +1782,14 @@ try:
         ab_api_response_address['addresses'].append(each_address)
 
     # Compare the ones in RE with AB and find delta
+    print("Compare the addresses in RE with AB and find delta")
     re_address_list = []
     for each_value in re_api_response_address['value']:
         re_address = each_value['formatted_address'].replace("\r\n",", ")
         re_address_list.append(re_address)
 
     # Finding missing addresses to be added in RE
+    print("Finding missing addresses to be added in RE")
     missing_in_re = []
     for each_value in ab_api_response_address['addresses']:
         try:
@@ -1779,9 +1856,11 @@ try:
     if missing_in_re != []:
         missing = list(process.dedupe(missing_in_re, threshold=80))
         missing_in_re = missing
+        print("Addresses missing in RE: " + missing_in_re)
 
     # Create missing address in RE
     if missing_in_re != []:
+        print("Adding missing addresses in RE")
         for address in missing_in_re:
             try:
                 # Get city, state and country from Address
@@ -1808,10 +1887,12 @@ try:
                                 """
                 cur.execute(insert_updates, [re_system_id, address])
                 conn.commit()
+                print("Added missing addresses in RE")
             except:
                 pass
 
     # Compare the ones in AB with RE and find delta
+    print("Comparing the addresses in AB with RE and finding delta")
     ab_address_list = []
     for each_value in ab_api_response_address['addresses']:
         try:
@@ -1865,6 +1946,7 @@ try:
         ab_address_list.append(ab_address)
 
     # Finding missing addresses to be added in AlmaBase
+    print("Finding missing addresses to be added in AlmaBase")
     missing_in_ab = []
     for each_value in re_api_response_address['value']:
         re_address = each_value['formatted_address'].replace("\r\n",", ")
@@ -1877,16 +1959,20 @@ try:
             missing_in_ab.append(re_address)
 
     # Making sure that there are no duplicates in the missing list
+    print("Making sure that there are no duplicates in the missing list")
     if missing_in_ab != []:
         missing = list(process.dedupe(missing_in_ab, threshold=80))
         missing_in_ab = missing
+        print("Missing addresses in Almabase: " + missing_in_ab)
 
     # Create missing address in AB
     if missing_in_ab != []:
+        print("Adding missing address in Almabase")
         i = 0
         for address in missing_in_ab:
             try:
                 # Check where the new address can be added
+                print("Checking where the new address can be added in Almabase")
                 while i == 0:
                     for each_value in ab_api_response_address['addresses']:
                         try:
@@ -1953,8 +2039,9 @@ try:
                 # Patch Profile
                 url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
                 
-                # Will add as address    
+                # Will add as address
                 if ab_address_number <= 2:
+                    print("Will add the new location as Address")  
                     
                     params = {
                         'addresses': [
@@ -1972,6 +2059,7 @@ try:
                 
                 # Will add as custom field - permanent address   
                 elif ab_address_number == 3:
+                    print("Will add the new location as custom field - permanent address")  
                     
                     params = {
                         'custom_fields': {
@@ -2029,7 +2117,7 @@ try:
                     }
                 
                 else:
-                    
+                    print("Will add the new location as custom field - work address")  
                     params = {
                         'custom_fields': {
                             'work_address_line_1': {
@@ -2095,10 +2183,12 @@ try:
                                 """
                 cur.execute(insert_updates, [ab_system_id, address])
                 conn.commit()
+                print("Added the missing address in Almabase")
             except:
                 pass
             
     # Retrieve IITB education from RE
+    print("Retrieving IITB education details from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
     params = {}
     get_request_re()
@@ -2117,14 +2207,17 @@ try:
             re_api_response_education['value'].append(each_education)
 
     # Retrieve IITB education from AlmaBase
+    print("Retrieving IITB education details from Almabase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s/educations" % ab_system_id
 
     get_request_almabase()
     ab_api_response_education = ab_api_response
 
     # Compare the ones present in RE with AlmaBase and find delta
+    print("Comparing the education details present in RE with AlmaBase and find delta")
     # When only one education exists in both
     if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
+        print("Only one education record exisst in RE")
         
         # Get data from RE
         try:
@@ -2163,6 +2256,7 @@ try:
         re_education_id = re_api_response_education['value'][0]['id']
             
         # Get data from AlmaBase
+        print("Getting the corresponding education details from Almabase")
         try:
             ab_class_of = ab_api_response_education['results'][0]['class_year']
             
@@ -2223,6 +2317,8 @@ try:
         
         # Upload the delta to RE
         if re_class_of == "" or re_department == "" or re_degree == "" or re_hostel == "" or re_joining_year == "" or re_roll_number == "":
+            print("Uploading the delta in RE")
+            
             if re_class_of == "" and ab_class_of != "":
                 re_class_of = ab_class_of
                 re_graduation_status = "Graduated"
@@ -2304,6 +2400,7 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, re_roll_number, re_department, re_joining_year, re_class_of, re_degree, re_hostel])
             conn.commit()
+            print("Added missing education details in RE")
         
         # # Compare the ones present in AlmaBase with RE and find delta
         # if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
@@ -2385,10 +2482,12 @@ try:
         
     # When more than one exists
     else:
+        print("Multiple IITB education exists in RE")
         subject = "Multiple IITB Education details exists in either Raisers Edge or AlmaBase for syncing"
         constituent_not_found_email()
 
     # Get other education details from RE
+    print("Getting other education details from RE")
     re_other_school_name_list = []
 
     for each_education in re_api_response_org['value']:
@@ -2408,6 +2507,7 @@ try:
             pass
 
     # Get other education details from AlmaBase
+    print("Getting other education details from AlmaBase")
     ab_other_school_name_list = []
 
     url  = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
@@ -2423,6 +2523,7 @@ try:
         pass
 
     # Finding missing other schools to be added in Raisers Edge
+    print("Finding missing other schools to be added in Raisers Edge")
     missing_in_re = []
     for each_school in ab_other_school_name_list:
         try:
@@ -2431,9 +2532,11 @@ try:
                 missing_in_re.append(each_school)
         except:
             missing_in_re.append(each_school)
+    print("Missing schools in RE: " + missing_in_re)
             
     # Add missing records in RE
     if missing_in_re != []:
+        print("Adding missing schools in RE")
         # Get from PostgreSQL
         extract_sql = """
                 SELECT long_description FROM re_schools;
@@ -2598,8 +2701,10 @@ try:
                                     """
                     cur.execute(insert_updates, [re_system_id, likely_school])
                     conn.commit()
+                    print("Updated (other) education details in RE")
                 else:
                     # Will add a new school in RE
+                    print("Adding a new (other) school in RE")
                     try:
                         params = {
                             'long_description': each_school
@@ -2763,12 +2868,14 @@ try:
                                         """
                         cur.execute(insert_updates, [re_system_id, likely_school])
                         conn.commit()
+                        print("Added a new (other) education in RE")
                     except:
                         pass
             except:
                 pass
 
     # Finding missing other schools to be added in AlmaBase
+    print("Finding missing other schools to be added in AlmaBase")
     missing_in_ab = []
     for each_school in re_other_school_name_list:
         try:
@@ -2879,11 +2986,14 @@ try:
                                 """
                 cur.execute(insert_updates, [ab_system_id, each_school])
                 conn.commit()
+                print("Added (other) education details in Almabase")
             except:
                 pass
 
     # Sync Generic person Details
+    print("Syncing Generic details...")
     # Get personal details from RE
+    print("Getting personal details from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
     params = {}
     get_request_re()
@@ -2950,6 +3060,7 @@ try:
         re_deceased = ""
 
     # Get personal details from Almabase
+    print("Getting personal details from Almabase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
     get_request_almabase()
 
@@ -3018,6 +3129,7 @@ try:
         ab_nickname = ""
 
     # Compare RE with AB
+    print('Comparing personal details of RE with Almabase')
     re_gender_update = ""
     if re_gender == "" or re_gender == "Unknown" and ab_gender != "":
         re_gender_update = ab_gender
@@ -3072,6 +3184,7 @@ try:
     re_preferred_name_update = ab_nickname
 
     # Find delta and upload
+    print("Finding delta for personal data and uploading in RE")
     params_re = {
         'birthdate': {
             'd': re_dob_day_update,
@@ -3102,8 +3215,10 @@ try:
                         """
         cur.execute(insert_updates, [re_system_id, re_dob_day_update, re_dob_month_update, re_dob_year_update, re_deceased_update, re_first_name_update, re_former_name_update, re_gender_update, re_last_name_update, re_middle_name_update, re_preferred_name_update])
         conn.commit()
+        print("Updated personal details in RE")
 
     # Compare AB with RE
+    print("Comparing the personal details to upload in AlmaBase")
     ab_gender_update = ""
     if re_gender != "" and ab_gender == "":
         ab_gender_update = re_gender
@@ -3140,6 +3255,7 @@ try:
         ab_deceased_update = ""
 
     # Find delta and upload
+    print("Finding delta to upload in Almabase")
     params_ab = {
         'first_name': ab_first_name_update,
         'middle_name': ab_middle_name_update,
@@ -3154,6 +3270,7 @@ try:
         params = del_blank_values_in_json(params_ab.copy())
         
     if params != {}:
+        print("Uploading delta of personal details in Almabase")
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
         patch_request_ab()
         
@@ -3164,9 +3281,12 @@ try:
                         """
         cur.execute(insert_updates, [ab_system_id, ab_first_name_update, ab_middle_name_update, ab_last_name_update, ab_gender_update, ab_dob_update, ab_deceased_update])
         conn.commit()
+        print("Uploaded delta of personal details in Almabase")
         
     # Sync Social media details
+    print("Syncing Social Media details")
     # Get social media details from RE
+    print("Getting social media details from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/onlinepresences" % re_system_id
     params = {}
     get_request_re()
@@ -3181,6 +3301,7 @@ try:
     for each_social in re_api_response_social['value']:
         try:
             # Get Website
+            print("Checing website")
             try:
                 if each_social['type'] == "Website":
                     website_re = each_social['address']
@@ -3191,6 +3312,7 @@ try:
                 website_re = ""
             
             # Get LinkedIn
+            print("Checing LinkedIn")
             try:
                 if each_social['type'] == "LinkedIn":
                     linkedin_re = each_social['address']
@@ -3201,6 +3323,7 @@ try:
                 linkedin_re = ""
 
             # Get Facebook
+            print("Checing Facebook")
             try:
                 if each_social['type'] == "Facebook":
                     facebook_re = each_social['address']
@@ -3211,6 +3334,7 @@ try:
                 facebook_re = ""
             
             # Get Twitter
+            print("Checing Twitter")
             try:
                 if each_social['type'] == "Twitter":
                     twitter_re = each_social['address']
@@ -3221,6 +3345,7 @@ try:
                 twitter_re = ""
             
             # Get Google
+            print("Checing Google")
             try:
                 if each_social['type'] == "Google":
                     google_re = each_social['address']
@@ -3272,6 +3397,7 @@ try:
         google_re = ""
 
     # Get social media details from AB
+    print("Getting social media details from Almabase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
     get_request_almabase()
     ab_api_response_social = ab_api_response
@@ -3285,6 +3411,7 @@ try:
     for each_social in ab_api_response_social['results']:
         try:
             # Get Website
+            print("Checking Website")
             try:
                 if each_social['type_display'] == "Website":
                     website_ab = each_social['link']
@@ -3295,6 +3422,7 @@ try:
                 website_ab = ""
             
             # Get LinkedIn
+            print("Checking LinkedIn")
             try:
                 if each_social['type_display'] == "LinkedIn":
                     linkedin = each_social['link']
@@ -3305,6 +3433,7 @@ try:
                 linkedin_ab = ""
 
             # Get Facebook
+            print("Checking Facebook")
             try:
                 if each_social['type_display'] == "Facebook":
                     facebook_ab = each_social['link']
@@ -3315,6 +3444,7 @@ try:
                 facebook_ab = ""
             
             # Get Twitter
+            print("Checking Twitter")
             try:
                 if each_social['type_display'] == "Twitter":
                     twitter_ab = each_social['link']
@@ -3325,6 +3455,7 @@ try:
                 twitter_ab = ""
             
             # Get Google
+            print("Checking Google")
             try:
                 if each_social['type_display'] == "Google":
                     google_ab = each_social['link']
@@ -3376,6 +3507,7 @@ try:
         google_ab = ""
 
     # Compare RE with AB
+    print("Comparing RE details with Almabase")
     if re_website == "" and ab_website != "":
         re_website = ab_website
     else:
@@ -3402,8 +3534,10 @@ try:
         re_google = ""
 
     # Upload the delta to RE
+    print("Uploading the missing social media details to RE")
     if re_website != "" or re_linkedin != "" or re_facebook != "" or re_twitter != "" or re_google != "":
         if re_website != "":
+            print("Uploading Website in RE")
             params = {
                 'address': re_website,
                 'constituent_id': re_system_id,
@@ -3422,6 +3556,7 @@ try:
             conn.commit()
             
         if re_linkedin != "":
+            print("Uploading LinkedIn in RE")
             params = {
                 'address': re_linkedin,
                 'constituent_id': re_system_id,
@@ -3441,6 +3576,7 @@ try:
             conn.commit()
             
         if re_facebook != "":
+            print("Uploading Facebook in RE")
             params = {
                 'address': re_facebook,
                 'constituent_id': re_system_id,
@@ -3459,6 +3595,7 @@ try:
             conn.commit()
             
         if re_twitter != "":
+            print("Uploading Twitter in RE")
             params = {
                 'address': re_twitter,
                 'constituent_id': re_system_id,
@@ -3477,6 +3614,7 @@ try:
             conn.commit()
         
         if re_google != "":
+            print("Uploading Google in RE")
             params = {
                 'address': re_google,
                 'constituent_id': re_system_id,
@@ -3495,6 +3633,7 @@ try:
             conn.commit()
             
     # Compare AB with RE
+    print("Comparing Social media details of Almabase with RE")
     if ab_website == "" and website_re != "":
         ab_website = website_re
     else:
@@ -3521,8 +3660,10 @@ try:
         ab_google = ""
 
     # Upload the delta to AB
+    print("Uploading the missing social media details to Almabase")
     if ab_website != "" or ab_linkedin != "" or ab_facebook != "" or ab_twitter != "" or ab_google != "":
         if ab_website != "":
+            print("Uploading Website in Almabase")
             params = {
                 'link': ab_website,
                 'type': 0
@@ -3540,6 +3681,7 @@ try:
             conn.commit()
             
         if ab_linkedin != "":
+            print("Uploading LinkedIn in Almabase")
             params = {
                 'link': ab_linkedin,
                 'type': 1
@@ -3557,6 +3699,7 @@ try:
             conn.commit()
             
         if ab_facebook != "":
+            print("Uploading Facebook in Almabase")
             params = {
                 'link': ab_facebook,
                 'type': 2
@@ -3574,6 +3717,7 @@ try:
             conn.commit()
             
         if ab_twitter != "":
+            print("Uploading Twitter in Almabase")
             params = {
                 'link': ab_twitter,
                 'type': 3
@@ -3591,6 +3735,7 @@ try:
             conn.commit()
             
         if ab_google != "":
+            print("Uploading Google in Almabase")
             params = {
                 'link': ab_google,
                 'type': 4
@@ -3608,7 +3753,9 @@ try:
             conn.commit()
 
     # Sync interests
+    print("Syncing interets")
     # Get interests from RE
+    print("Getting interests from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/customfields" % re_system_id
     params = {}
     get_request_re()
@@ -3624,6 +3771,7 @@ try:
             pass
 
     # Get interests from AB
+    print("Getting interests from Almabase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=interests" % ab_system_id
     get_request_almabase()
 
@@ -3635,6 +3783,7 @@ try:
             pass
 
     # Compare interests between RE & AB
+    print("Comparing interests between RE & Almabase")
     missing_in_re = []
     for each_interest in ab_interest_list:
         try:
@@ -3643,9 +3792,11 @@ try:
                 missing_in_re.append(each_interest)
         except:
             missing_in_re.append(each_interest)
+    print("Interests missing in RE: " + missing_in_re)
 
     # Upload delta to RE
     if missing_in_re != []:
+        print("Uploading missing interests in RE")
         try:
             for each_interest in missing_in_re:
                 params = {
@@ -3666,10 +3817,12 @@ try:
                                 """
                 cur.execute(insert_updates, [re_system_id, each_interest])
                 conn.commit()
+                print("Uploaded missing interests in RE")
         except:
             pass
 
     # Compare interests between AB & RE
+    print("Compare interests between Almabase and RE")
     missing_in_ab_db = []
     for each_interest in re_interest_list:
         try:
@@ -3680,10 +3833,12 @@ try:
             missing_in_ab_db.append(each_interest)
 
     missing_in_almabase = re_interest_list + ab_interest_list
-    missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
+    missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))
+    print("Missing interests in Almabase: " + missing_in_ab)
 
     # Upload delta to AB
     if missing_in_ab_db != []:
+        print("Uploading missing interests in Almabase")
         try:
             names = []
             for each_interest in missing_in_ab:
@@ -3706,11 +3861,14 @@ try:
                                 """
                 cur.execute(insert_updates, [ab_system_id, each_interest])
                 conn.commit()
+            print("Uploaded missing interests in Almabase")
         except:
             pass
         
     # Sync skills
+    print("Syncing skills")
     # Get skills from RE
+    print("Getting skills from RE")
     re_skill_list = []
     for each_value in re_api_response_custom_fields['value']:
         try:
@@ -3720,6 +3878,7 @@ try:
             pass
 
     # Get interests from AB
+    print("Getting skills from Almabase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s?fields=skills" % ab_system_id
     get_request_almabase()
 
@@ -3731,6 +3890,7 @@ try:
             pass
 
     # Compare interests between RE & AB
+    print("Comparing interests between RE & Almabase")
     missing_in_re = []
     for each_skill in ab_skill_list:
         try:
@@ -3742,6 +3902,7 @@ try:
 
     # Upload delta to RE
     if missing_in_re != []:
+        print("Uploading delta to RE")
         try:
             for each_skill in missing_in_re:
                 params = {
@@ -3766,6 +3927,7 @@ try:
             pass
 
     # Compare interests between AB & RE
+    print("Comparing interests between Almabase & RE")
     missing_in_ab_db = []
     for each_skill in re_skill_list:
         try:
@@ -3780,6 +3942,7 @@ try:
 
     # Upload delta to AB
     if missing_in_ab_db != []:
+        print("Uploading missing skills to Almabase")
         try:
             names = []
             for each_skill in missing_in_ab:
@@ -3802,10 +3965,12 @@ try:
                                 """
                 cur.execute(insert_updates, [ab_system_id, each_skill])
                 conn.commit()
+                print("Uploaded missing skills to Almabase")
         except:
             pass
 
     # Get Chapter from RE
+    print("Getting Chapter from RE")
     re_chapter = ""
     try:
         for each_value in re_api_response_custom_fields['value']:
@@ -3817,16 +3982,19 @@ try:
         re_chapter = ""
 
     # Get Chapter from AlmaBase
+    print("Getting Chapter from AlmaBase")
     try:
         ab_chapter = ab_profile['custom_fields']['chapter']['values'][0]['value']['content']
     except:
         ab_chapter = ""
         
     # Compare Chapters and update in RE
+    print("Comparing Chapters and update in RE")
     if ab_chapter != "" and re_chapter != ab_chapter:
         
         if re_chapter == "":
             # Will post in RE
+            print("Will add new chaoter in RE")
             params = {
                 'category': 'Chapter',
                 'value': ab_chapter,
@@ -3840,6 +4008,7 @@ try:
             
         else:
             # Will patch in RE
+            print("Will update chaoter in RE")
             params = {
                 'value': ab_chapter,
                 'comment': 'Updated from AlmaBase',
@@ -3856,11 +4025,14 @@ try:
                         """
         cur.execute(insert_updates, [re_system_id, ab_chapter])
         conn.commit()
+        print("Updated Chapter in RE")
         
     # Life member update
+    print("Checking if Alum is a Life Member")
     ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
 
     if ab_life_member == "yes":
+        print("Updating Life membership in RE")
         url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/constituentcodes" % re_system_id
         params = {}
         get_request_re()
@@ -3891,8 +4063,10 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id])
             conn.commit()
+            print("Updated Life membership in RE")
             
     # Add RE ID in AlmaBase (external_database_id)
+    print("Adding RE ID in AlmaBase as external_database_id")
     try:
         external_database_id = ab_profile['external_database_id']
     except:
@@ -3914,8 +4088,10 @@ try:
                         """
         cur.execute(insert_updates, [ab_system_id, re_system_id])
         conn.commit()
+        print("Added RE ID in AlmaBase as external_database_id")
         
     # Add AlmaBase ID in Raisers Edge (Alias - Almabase ID)
+    print("Adding AlmaBase ID in Raisers Edge as Alias - Almabase ID")
     try:
         url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/aliases" % re_system_id
         params = {}
@@ -3957,12 +4133,15 @@ try:
                     """
     cur.execute(insert_updates, [re_system_id, ab_system_id])
     conn.commit()
+    print("Added RE ID in AlmaBase as external_database_id")
     
     # Close DB connection
+    print("Closing DB connection")
     cur.close()
     conn.close()
     # exit()
 except Exception as Argument:
+    print("Error while syncing Alumni data between Raisers Edge & Almabase")
     subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
     send_error_emails()
     # try:
