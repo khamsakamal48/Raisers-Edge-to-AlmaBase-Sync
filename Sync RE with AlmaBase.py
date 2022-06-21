@@ -298,6 +298,8 @@ def send_error_emails():
         imap.login(MAIL_USERN, MAIL_PASSWORD)
         imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
         imap.logout()
+    
+    server.quit()
 
 def constituent_not_found_email():
     print("Sending an email that the constituent wasn't found")
@@ -774,12 +776,8 @@ def constituent_not_found_email():
         imap.login(MAIL_USERN, MAIL_PASSWORD)
         imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
         imap.logout()
-
-    # Close DB connection
-    cur.close()
-    conn.close()
-
-    sys.exit()
+        
+    server.quit()
 
 def update_email_in_re():
     print("Updating email in RE")
