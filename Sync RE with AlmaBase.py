@@ -900,7 +900,7 @@ try:
     print("Querying the next data to uploaded in RE")
     
     # Putting the subject in advance if error pops up
-    global subject
+    # global subject
     subject = "No Alums available for sync. Sync has been completed"
     
     extract_sql = """
@@ -966,8 +966,10 @@ try:
             pass
 
     # Get list of available custom fields starting with email_id_
+    print("Getting list of available custom fields starting with email_id_")
     regex = re.compile('email_id_*')
     email_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+    print_json(email_id_list)
 
     blank_email_ids = []
     for each_id in email_id_list:
@@ -1020,7 +1022,7 @@ try:
                     incremental_max_count = new_max_count
                 else:
                     incremental_max_count = incremental_max_count + 1            
-                global new_email_type
+                # global new_email_type
                 new_email_type = "Email " + str(incremental_max_count)
                 update_email_in_re()
                 
@@ -2556,9 +2558,9 @@ try:
     # Making sure that there are no duplicates in the missing list
     print("Making sure that there are no duplicates in the missing list")
     if missing_in_ab != []:
-        addresses_in_ab = missing_in_ab + ab_address_list
-        missing = list(process.dedupe(addresses_in_ab, threshold=80))
-        missing_in_ab = missing
+        missing = list(process.dedupe(missing_in_ab, threshold=80))
+        # Removing blank strings
+        missing_in_ab = [x.strip() for x in missing if x.strip()]
         print("Missing addresses in Almabase: " + str(missing_in_ab))
         
     # Identifying which Address slot is blank in Almabase
@@ -2583,7 +2585,7 @@ try:
         consumed_slot.append(slot)
 
     available_slots = set(almabase_slots) - set(consumed_slot)
-    if available_slots == set():
+    if available_slots == set() or available_slots == "" or available_slots == {}:
         available_slots = 0
     print("Available address slots in Almabase: " + str(available_slots))
 
@@ -2594,249 +2596,242 @@ try:
         
         print("Adding missing address in Almabase")
         
+        updated_address = []
+        
         for address in missing_in_ab:
             # Check where the new address can be added
             print("Checking where the new address can be added in Almabase")
             for ab_address_number in available_slots:
-            
-                # Get city, state and country from Address
-                get_address(address)
                 
-                # Will add as address
-                if int(ab_address_number) == 1 or int(ab_address_number) == 2:
-                    print("Will add the new location as Address")
+                if missing_in_ab != {} or available_slots != {}:
+            
+                    # Get city, state and country from Address
+                    get_address(address)
                     
-                    if int(ab_address_number) == 2:
-                        try:
-                            for home_address in ab_api_response_address['addresses']:
-                                print("Getting existing home address")
-                                if home_address['type'] == 1:
-                                    existing_address = {
-                                        'addresses': [
-                                            {
-                                                'line1': home_address['line1'],
-                                            'zip_code': home_address['zip_code'],
-                                            'location': {
-                                                'name': home_address['location']['name'],
-                                                'type': 1
-                                                },
-                                            "type": 1
-                                            }
-                                        ]
-                                    }
-                                    print_json(existing_address)
-                                    break
-                        except:
-                            pass
-                                
-                    if int(ab_address_number) == 1:
-                        try:
-                            for home_address in ab_api_response_address['addresses']:
-                                print("Getting existing office address")
-                                if home_address['type'] == 2:
-                                    existing_address = {
-                                        'addresses': [
-                                            {
-                                                'line1': home_address['line1'],
+                    # Will add as address
+                    if int(ab_address_number) == 1 or int(ab_address_number) == 2:
+                        print("Will add the new location as Address")
+                        
+                        if int(ab_address_number) == 2:
+                            try:
+                                for home_address in ab_api_response_address['addresses']:
+                                    print("Getting existing home address")
+                                    if home_address['type'] == 1:
+                                        existing_address = {
+                                            'addresses': [
+                                                {
+                                                    'line1': home_address['line1'],
                                                 'zip_code': home_address['zip_code'],
                                                 'location': {
                                                     'name': home_address['location']['name'],
                                                     'type': 1
                                                     },
-                                                "type": 2
-                                            }
-                                        ]
-                                    }
-                                    break
-                        except:
-                            pass
+                                                "type": 1
+                                                }
+                                            ]
+                                        }
+                                        print_json(existing_address)
+                                        break
+                            except:
+                                pass
                                     
-                    new_address = {
-                        'addresses': [
-                            {
-                                'line1': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
-                                'zip_code': zip,
-                                'location': {
-                                    'name': city + ", " + state + ", " + country,
+                        if int(ab_address_number) == 1:
+                            try:
+                                for home_address in ab_api_response_address['addresses']:
+                                    print("Getting existing office address")
+                                    if home_address['type'] == 2:
+                                        existing_address = {
+                                            'addresses': [
+                                                {
+                                                    'line1': home_address['line1'],
+                                                    'zip_code': home_address['zip_code'],
+                                                    'location': {
+                                                        'name': home_address['location']['name'],
+                                                        'type': 1
+                                                        },
+                                                    "type": 2
+                                                }
+                                            ]
+                                        }
+                                        break
+                            except:
+                                pass
+                                        
+                        new_address = {
+                            'addresses': [
+                                {
+                                    'line1': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, ""),
+                                    'zip_code': zip,
+                                    'location': {
+                                        'name': city + ", " + state + ", " + country,
+                                        "type": ab_address_number
+                                    },
                                     "type": ab_address_number
+                                }
+                            ]
+                        }
+                        
+                        print_json(new_address)
+                        
+                        params_address = []
+                        for each_address in existing_address['addresses']:
+                            params_address.append(each_address)
+                            
+                        for each_address in new_address['addresses']:
+                            params_address.append(each_address)
+                            
+                        params = {
+                            'addresses': params_address
+                        }
+                        
+                        print_json(params)
+                        
+                    # Will add as custom field - permanent address   
+                    if int(ab_address_number) == 3:
+                        print("Will add the new location as custom field - permanent address")  
+                        
+                        params = {
+                            'custom_fields': {
+                                'permanent_address': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
                                 },
-                                "type": ab_address_number
-                            }
-                        ]
-                    }
-                    
-                    print_json(new_address)
-                    
-                    # params = {
-                    #     'addresses': [ existing_address + new_address ]
-                    # }
-                    
-                    # combined_json = str(existing_address) + "," + str(new_address)
-                    # params = [combined_json.replace('"','')]
-                    
-                    # print_json(params)
-                    
-                    # a = json.loads(existing_address)
-                    # b = json.loads(new_address)
-                    # params = dict(a.items() + b.items())
-                    
-                    params_address = []
-
-                    for each_address in existing_address['addresses']:
-                        params_address.append(each_address)
-                        
-                    for each_address in new_address['addresses']:
-                        params_address.append(each_address)
-                        
-                    params = {
-                        'addresses': params_address
-                    }
-                    
-                    print_json(params)
-                    
-                # Will add as custom field - permanent address   
-                if int(ab_address_number) == 3:
-                    print("Will add the new location as custom field - permanent address")  
-                    
-                    params = {
-                        'custom_fields': {
-                            'permanent_address': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'permanent_city': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': city
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'permanent_state': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': state
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'permanent_country': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': country
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'permanent_postal_code': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': zip
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
+                                'permanent_city': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': city
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'permanent_state': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': state
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'permanent_country': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': country
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'permanent_postal_code': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': zip
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                }
                             }
                         }
-                    }
-                
-                # Will add as address
-                if int(ab_address_number) == 4:
-                    print("Will add the new location as Address")
                     
-                    print("Will add the new location as custom field - work address")  
-                    params = {
-                        'custom_fields': {
-                            'work_address_line_1': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'work_city': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': city
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'work_state': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': state
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'work_country': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': country
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
-                            },
-                            'work_postal_code': {
-                                'values': [
-                                    {
-                                        'value': {
-                                            'content': zip
-                                        },
-                                        'display_order': 0
-                                    }
-                                ]
+                    # Will add as address
+                    if int(ab_address_number) == 4:
+                        print("Will add the new location as Address")
+                        
+                        print("Will add the new location as custom field - work address")  
+                        params = {
+                            'custom_fields': {
+                                'work_address_line_1': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': address.replace("  ", " ").replace(" " + city + " " + state + " " + country, "").replace(zip, "")
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'work_city': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': city
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'work_state': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': state
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'work_country': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': country
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                },
+                                'work_postal_code': {
+                                    'values': [
+                                        {
+                                            'value': {
+                                                'content': zip
+                                            },
+                                            'display_order': 0
+                                        }
+                                    ]
+                                }
                             }
                         }
-                    }
-                
-                print("I am going with Address No.: " + str(ab_address_number))
-                patch_request_ab()
-                print(ab_api_response)
-                
-                # Will update in PostgreSQL
-                insert_updates = """
-                                INSERT INTO ab_address_added (ab_system_id, address, date)
-                                VALUES (%s, %s, now())
-                                """
-                cur.execute(insert_updates, [ab_system_id, address])
-                conn.commit()
-                print("Added the missing address in Almabase")
-                
-                # Remove the slot from the available ones
-                print("Removing the address slot from the available ones")
-                consumed_slot.append(ab_address_number)
-                available_slots = set(almabase_slots) - set(consumed_slot)
-                
-                print("Available slots: " + str(available_slots))
-                
-                # Break if there's no slot available
-                if available_slots == [] or available_slots == {}:
-                    available_slots = 0
-                
+                    
+                    print("I am going with Address No.: " + str(ab_address_number))
+                    patch_request_ab()
+                    print(ab_api_response)
+                    
+                    # Will update in PostgreSQL
+                    insert_updates = """
+                                    INSERT INTO ab_address_added (ab_system_id, address, date)
+                                    VALUES (%s, %s, now())
+                                    """
+                    cur.execute(insert_updates, [ab_system_id, address])
+                    conn.commit()
+                    print("Added the missing address in Almabase")
+                    
+                    # Remove the slot from the available ones
+                    print("Removing the address slot from the available ones")
+                    consumed_slot.append(ab_address_number)
+                    available_slots = set(almabase_slots) - set(consumed_slot)
+                    
+                    print("Available address slots: " + str(available_slots))
+                        
+                    # Remove the address from the missing ones
+                    print("Removing the address from the missing ones")
+                    updated_address.append(address)
+                    new_missing_in_ab = set(missing_in_ab) - set(updated_address)
+                    missing_in_ab = new_missing_in_ab
+                    
+                    print("Yet to be added address in AB: " + str(missing_in_ab))
                 break
             
     # Retrieve IITB education from RE
@@ -4795,8 +4790,9 @@ try:
     
     # Close writing to Process.log
     sys.stdout.close()
-    sys.exit(0)
     
+    sys.exit()
+
 except Exception as Argument:
     print("Error while syncing Alumni data between Raisers Edge & Almabase")
     subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
