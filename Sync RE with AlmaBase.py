@@ -968,7 +968,14 @@ try:
     # Get list of available custom fields starting with email_id_
     print("Getting list of available custom fields starting with email_id_")
     regex = re.compile('email_id_*')
-    email_id_list = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+    email_id_list_ab = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
+    email_id_list_og = ["email_id_1", "email_id_2", "email_id_3", "email_id_4"]
+    
+    email_id_list_combo = email_id_list_ab + email_id_list_og
+    
+    email_id_list = []
+    [email_id_list.append(x) for x in email_id_list_combo if x not in email_id_list]
+    
     print_json(email_id_list)
 
     blank_email_ids = []
@@ -1044,7 +1051,8 @@ try:
 
     missing_in_ab = list(sorted(set1 - set2))
     print("Missing email addresses in Almabase: " + str(missing_in_ab))
-
+    print("Available email blank values in Almabase: " + str(blank_email_ids))
+    
     # Upload missing email addresses in AlmaBase
     if missing_in_ab != []:
         print("Updating the missing email IDs to Almabase")
@@ -1067,6 +1075,9 @@ try:
                             }
                         }
                     }
+                
+                print_json(params)
+                
                 url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
                     
                 patch_request_ab()
