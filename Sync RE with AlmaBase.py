@@ -2966,33 +2966,30 @@ try:
             ab_class_of = ""
             
         try:
-            ab_department = ab_api_response_education['results'][0]['course']['name']
-            
-            if ab_department == "null" or ab_department is None:
-                ab_department = ""
-        except:
-            ab_department = ""
-            
-        try:
             ab_department = ab_api_response_education['results'][0]['branch']['name']
             
-            if ab_department == "null" or ab_department is None:
+            if ab_department == "null" or ab_department is None or ab_department == "Other" or ab_department.strip() == "Other":
                 ab_department = ""
         except:
             ab_department = ""
             
         try:
             ab_degree = ab_api_response_education['results'][0]['course']['name']
+            print(ab_degree)
             
-            if ab_degree == "null" or ab_degree is None:
+            if ab_degree == "Other" or ab_degree == "null" or ab_degree is None or ab_degree.strip() == "Other":
+                print("Convering Other to blank")
                 ab_degree = ""
+            
         except:
             ab_degree = ""
+            
+        print(ab_degree)
             
         try:
             ab_hostel = ab_api_response_education['results'][0]['custom_fields']['hostel']['values'][0]['value']['label']
             
-            if ab_hostel == "null" or ab_hostel is None:
+            if ab_hostel == "Other" or ab_hostel == "null" or ab_hostel is None or ab_hostel.strip() == "Other":
                 ab_hostel = ""
         except:
             ab_hostel = ""
@@ -3089,9 +3086,12 @@ try:
             for i in range(10):
                 params = del_blank_values_in_json(params_re.copy())
                 
+            print_json(params)
+                
             if params != {}:
                 url = "https://api.sky.blackbaud.com/constituent/v1/educations/%s" % re_education_id
                 patch_request_re()
+                print(re_api_response)
                 
             # Will update in PostgreSQL
             insert_updates = """
