@@ -2619,14 +2619,19 @@ try:
                     # Get city, state and country from Address
                     get_address(address)
                     
+                    existing_address = {'addresses': []}
+                    
                     # Will add as address
                     if int(ab_address_number) == 1 or int(ab_address_number) == 2:
                         print("Will add the new location as Address")
+                        
+                        print(ab_address_number)
                         
                         if int(ab_address_number) == 2:
                             try:
                                 for home_address in ab_api_response_address['addresses']:
                                     print("Getting existing home address")
+                                    print(home_address['type'])
                                     if home_address['type'] == 1:
                                         existing_address = {
                                             'addresses': [
@@ -2643,6 +2648,22 @@ try:
                                         }
                                         print_json(existing_address)
                                         break
+                                    # else:
+                                    #     existing_address = {
+                                    #         'addresses': [
+                                    #             {
+                                    #                 'line1': home_address['line1'],
+                                    #                 'zip_code': home_address['zip_code'],
+                                    #                 'location': {
+                                    #                     'name': home_address['location']['name'],
+                                    #                     'type': 1
+                                    #                     },
+                                    #                 "type": 2
+                                    #             }
+                                    #         ]
+                                    #     }
+                                    #     print_json(existing_address)
+                                    #     break
                             except:
                                 pass
                                     
@@ -2664,7 +2685,24 @@ try:
                                                 }
                                             ]
                                         }
+                                        print_json(existing_address)
                                         break
+                                    # else:
+                                    #     existing_address = {
+                                    #         'addresses': [
+                                    #             {
+                                    #                 'line1': home_address['line1'],
+                                    #             'zip_code': home_address['zip_code'],
+                                    #             'location': {
+                                    #                 'name': home_address['location']['name'],
+                                    #                 'type': 1
+                                    #                 },
+                                    #             "type": 1
+                                    #             }
+                                    #         ]
+                                    #     }
+                                    #     print_json(existing_address)
+                                    #     break
                             except:
                                 pass
                                         
@@ -2682,7 +2720,11 @@ try:
                             ]
                         }
                         
+                        print("New Address")
                         print_json(new_address)
+                        
+                        print("Existing Address")
+                        print_json(existing_address)
                         
                         params_address = []
                         for each_address in existing_address['addresses']:
