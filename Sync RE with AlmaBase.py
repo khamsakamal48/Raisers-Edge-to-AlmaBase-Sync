@@ -3102,83 +3102,92 @@ try:
             conn.commit()
             print("Added missing education details in RE")
         
-        # # Compare the ones present in AlmaBase with RE and find delta
-        # if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
-        #     if re_class_of != "" and ab_class_of == "":
-        #         ab_class_of = re_class_of
+        # Compare the ones present in AlmaBase with RE and find delta
+        if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
+            if re_class_of != "" and ab_class_of == "":
+                ab_class_of = re_class_of
                 
-        #     if re_department != "" and ab_department == "":
-        #         extract_department = """
-        #         SELECT ab_department FROM department_mapping WHERE re_department = '%s' FETCH FIRST 1 ROW ONLY;
-        #         """
-        #         cur.execute(extract_sql, [re_department])
-        #         result = cur.fetchone()
+            if re_department != "" and ab_department == "":
+                extract_department = """
+                SELECT ab_department FROM department_mapping WHERE re_department = '%s' FETCH FIRST 1 ROW ONLY;
+                """
+                cur.execute(extract_sql, [re_department])
+                result = cur.fetchone()
                 
-        #         # Ensure no comma or brackets in output
-        #         ab_department = result[0]
+                # Ensure no comma or brackets in output
+                ab_department = result[0]
                 
-        #     if re_degree != "" and ab_degree == "":
-        #         extract_degree = """
-        #         SELECT ab_degree FROM degree_mapping WHERE re_degree = '%s' FETCH FIRST 1 ROW ONLY;
-        #         """
-        #         cur.execute(extract_degree, [re_degree])
-        #         result = cur.fetchone()
+            if re_degree != "" and ab_degree == "":
+                extract_degree = """
+                SELECT ab_degree FROM degree_mapping WHERE re_degree = '%s' FETCH FIRST 1 ROW ONLY;
+                """
+                cur.execute(extract_degree, [re_degree])
+                result = cur.fetchone()
                 
-        #         # Ensure no comma or brackets in output
-        #         ab_degree = result[0]
+                # Ensure no comma or brackets in output
+                ab_degree = result[0]
                 
-        #     if re_hostel != "" and ab_hostel == "":
-        #         # Taking the last Hostel after comma
-        #         ab_hostel = re_hostel[re_hostel.rfind(",") +1:].lower().replace(" ","_")
-        #     else:
-        #         ab_hostel_content = ab_hostel.lower().replace(" ","_")
-        #         ab_hostel = ab_hostel_content
+            if re_hostel != "" and ab_hostel == "":
+                # Taking the last Hostel after comma
+                ab_hostel = re_hostel[re_hostel.rfind(",") +1:].lower().replace(" ","_")
+            else:
+                ab_hostel_content = ab_hostel.lower().replace(" ","_")
+                ab_hostel = ab_hostel_content
                 
-        #     if re_joining_year != "" and ab_joining_year == "":
-        #         ab_joining_year = re_joining_year
+            if re_joining_year != "" and ab_joining_year == "":
+                ab_joining_year = re_joining_year
                 
-        #     if re_roll_number != "" and ab_roll_number == "":
-        #             ab_roll_number = re_roll_number
+            if re_roll_number != "" and ab_roll_number == "":
+                    ab_roll_number = re_roll_number
                 
-        #     params_ab = {
-        #         'course': {
-        #             'name': ab_degree
-        #             },
-        #         'branch': {
-        #             'name': ab_department
-        #             },
-        #         'custom_fields': {
-        #             'hostel': {
-        #                 'values': [
-        #                     {
-        #                         'value': {
-        #                             'content': ab_hostel
-        #                         },
-        #                         'display_order': 0
-        #                     }
-        #                 ]
-        #             }
-        #         },
-        #         'year_of_graduation': ab_class_of,
-        #         'year_of_joining': ab_joining_year,
-        #         'year_of_leaving': ab_class_of,
-        #         'roll_number': ab_roll_number,
-        #         'college': {
-        #             'name': "IIT Bombay"
-        #         }
-        #     }
+            params_ab = {
+                'course': {
+                    'name': ab_degree
+                    },
+                'branch': {
+                    'name': ab_department
+                    },
+                'custom_fields': {
+                    'hostel': {
+                        'values': [
+                            {
+                                'value': {
+                                    'content': ab_hostel
+                                },
+                                'display_order': 0
+                            }
+                        ]
+                    }
+                },
+                'year_of_graduation': ab_class_of,
+                'year_of_joining': ab_joining_year,
+                'year_of_leaving': ab_class_of,
+                'roll_number': ab_roll_number,
+                'college': {
+                    'name': "IIT Bombay"
+                }
+            }
             
-        #     # Delete blank values from JSON
-        #     for i in range(10):
-        #         params = del_blank_values_in_json(params_ab.copy())
+            # Delete blank values from JSON
+            for i in range(10):
+                params = del_blank_values_in_json(params_ab.copy())
                 
-        #     print_json(params)
+            print_json(params)
             
-        #     if params != {} and ab_class_of != "":
-        #         url = "https://api.almabaseapp.com/api/profiles/%s/educations" % (ab_system_id, ab_education_id)
-        #         print(url)
-        #         patch_request_ab()
-        #         print(ab_api_response)
+            if params != {} and ab_class_of != "":
+                url = "https://api.almabaseapp.com/api/profiles/%s/educations" % (ab_system_id, ab_education_id)
+                print(url)
+                patch_request_ab()
+                print(ab_api_response)
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO ab_iitb_education_added (ab_system_id, roll_number, department, joining_year, class_of, degree, hostel, date)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                                """
+                cur.execute(insert_updates, [ab_system_id, ab_roll_number, ab_department, ab_joining_year, ab_class_of, ab_degree, ab_hostel])
+                conn.commit()
+                print("Added missing education details in Almabase")
         
     # When more than one exists
     else:

@@ -118,6 +118,18 @@ CREATE TABLE re_iitb_education_added
     date date
 );
 
+CREATE TABLE ab_iitb_education_added
+(
+    ab_system_id character varying,
+    roll_number character varying,
+    department character varying,
+    joining_year character varying,
+    class_of character varying,
+    degree character varying,
+    hostel character varying,
+    date date
+);
+
 CREATE TABLE re_schools
 (
     table_entries_id character varying,
