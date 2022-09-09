@@ -1024,9 +1024,9 @@ try:
             if count == 1:
                 break
             
-            else:
-                subject = "Unable to find Alums in AlmaBase for sync"
-                constituent_not_found_email()
+        if count != 1:
+            subject = "Unable to find Alums in AlmaBase for sync"
+            constituent_not_found_email()
                     
             # except:
             #     # Can't find Alum in AlmaBase
