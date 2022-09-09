@@ -308,6 +308,67 @@ def send_error_emails():
         
     exit()
 
+def notify_sync_finished():
+    print("Notfying that Sync has finished")
+    
+    subject = "Raisers Edge & Almabase Sync has finished"
+    
+    # # Close writing to Process.log
+    # sys.stdout.close()
+    
+    message = MIMEMultipart()
+    message["Subject"] = subject
+    message["From"] = MAIL_USERN
+    message["To"] = SEND_TO
+    
+    # Adding Reply-to header
+    message.add_header('reply-to', MAIL_USERN)
+    
+    TEMPLATE = """
+    <html>
+        <body>
+            <p>Hi,<br><br>
+            This is to inform you that the Raisers Edge <-> Almabase syncing has finished for all the Alums assisgned to the list.<br><br>
+            The program will re-start the sync from start and make updates in the records on the go.<br><br>
+            This if for your information and requires no further action from your end.<br><br><br>
+            Thanks & Regards<br>
+            a BOT<br>
+            </p>
+        </body>
+    </html>
+    """
+    
+    # Create a text/html message from a rendered template
+    emailbody = MIMEText(
+        Environment().from_string(TEMPLATE).render(), "html"
+    )
+    
+    # Add HTML parts to MIMEMultipart message
+    # The email client will try to render the last part first
+    message.attach(emailbody)
+    emailcontent = message.as_string()
+    
+    # Create secure connection with server and send email
+    context = ssl._create_unverified_context()
+    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
+        server.login(MAIL_USERN, MAIL_PASSWORD)
+        server.sendmail(
+            MAIL_USERN, SEND_TO, emailcontent
+        )
+
+    # Save copy of the sent email to sent items folder
+    with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
+        imap.login(MAIL_USERN, MAIL_PASSWORD)
+        imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
+        imap.logout()
+        
+    # Close DB connection
+    if conn:
+        cur.close()
+        conn.close()
+        
+    exit()
+
 def constituent_not_found_email():
     print("Sending an email that the constituent wasn't found")
     
@@ -918,15 +979,27 @@ try:
     # global subject
     subject = "No Alums available for sync. Sync has been completed"
     
-    extract_sql = """
+    try:
+        extract_sql = """
             SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
             """
-    cur.execute(extract_sql)
-    result = cur.fetchone()
+        cur.execute(extract_sql)
+        result = cur.fetchone()
 
-    # Ensure no comma or brackets in output
-    re_system_id = result[0]
-    print("Working on Alumni with RE ID: " + str(re_system_id))
+        # Ensure no comma or brackets in output
+        re_system_id = result[0]
+        print("Working on Alumni with RE ID: " + str(re_system_id))
+    
+    except:
+        print(subject)
+        
+        # Delete rows in table
+        cur.execute("truncate already_synced;")
+
+        # Commit changes
+        conn.commit()
+        
+        notify_sync_finished()
 
     # Get email list from RE
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
