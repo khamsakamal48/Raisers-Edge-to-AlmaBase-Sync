@@ -1081,7 +1081,7 @@ try:
             blank_email_ids.append(each_id)
             pass
     print("Email list in Almabase: " + str(ab_email_list))
-
+    
     print("Getting email list from RE")
     re_email_list = []
     for address in re_api_response['value']:
@@ -1146,41 +1146,80 @@ try:
     print("Missing email addresses in Almabase: " + str(missing_in_ab))
     print("Available email blank values in Almabase: " + str(blank_email_ids))
     
+    print_json(ab_email_list)
+    
     # Upload missing email addresses in AlmaBase
     if missing_in_ab != []:
         print("Updating the missing email IDs to Almabase")
-        for each_record in zip(missing_in_ab, blank_email_ids):
+        
+        # ab_email_addresses = []
+        
+        # for each_record in ab_email_list:
+        #     missing_in_ab.append(each_record)
+            
+        print(missing_in_ab)
+        
+        # for each_record in zip(missing_in_ab, blank_email_ids):
+            
+        #     each_email, each_id = each_record
+        
+        for each_record in missing_in_ab:
+            
+            # format = {
+            #             'address': each_record,
+            #             'is_engaged': 'false',
+            #             'is_primary': 'false',
+            #             'source': 'Raisers Edge',
+            #             'is_login_email': 'true'
+            #         }
+                
+            # ab_email_addresses.append(format)
+            
             try:
-                each_email, each_id = each_record
+                # each_email, each_id = each_record
+                # params = {
+                #     'custom_fields': {
+                #         each_id: {
+                #             'type': 'email',
+                #             'label': each_id,      
+                #             'values': [
+                #                 {
+                #                     'value': {
+                #                         'content': each_email
+                #                         },
+                #                     'display_order': int(each_id[-2:].replace("_", ""))
+                #                     }
+                #                 ]
+                #             }
+                #         }
+                #     }
+                
+                # params = {
+                #     'email_addresses': ab_email_addresses
+                # }
+                
                 params = {
-                    'custom_fields': {
-                        each_id: {
-                            'type': 'email',
-                            'label': each_id,      
-                            'values': [
-                                {
-                                    'value': {
-                                        'content': each_email
-                                        },
-                                    'display_order': int(each_id[-2:].replace("_", ""))
-                                    }
-                                ]
-                            }
+                            'address': each_record,
+                            'is_engaged': 'false',
+                            'is_primary': 'false',
+                            'source': 'Raisers Edge',
+                            'is_login_email': 'true'
                         }
-                    }
                 
                 print_json(params)
                 
-                url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                # url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
+                url = f"https://api.almabaseapp.com/api/v1/profiles/{ab_system_id}/email_addresses"
                     
-                patch_request_ab()
+                # patch_request_ab()
+                post_request_ab()
                 
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO ab_emails_added (ab_system_id, email, date)
                                 VALUES (%s, %s, now())
                                 """
-                cur.execute(insert_updates, [ab_system_id, each_email])
+                cur.execute(insert_updates, [ab_system_id, each_record])
                 conn.commit()
                 print("Updated all the missing email IDs to Almabase")
             except:
