@@ -100,6 +100,8 @@ def get_request_almabase():
     global ab_api_response
     ab_api_response = http.get(url, headers=headers).json()
     
+    print_json(ab_api_response)
+    
     check_for_errors()
   
 def post_request_re():
@@ -311,11 +313,21 @@ def constituent_not_found_email():
     
     # Query the next data to uploaded in RE
     extract_sql = """
-            SELECT name FROM all_alums_in_re EXCEPT SELECT name FROM already_synced FETCH FIRST 1 ROW ONLY;
+            SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
             """
     cur.execute(extract_sql)
     result = cur.fetchone()
 
+    # Ensure no comma or brackets in output
+    re_system_id = result[0]
+    
+    extract_sql = """
+            SELECT name FROM all_alums_in_re where re_system_id = %s;
+            """
+    
+    cur.execute(extract_sql, [re_system_id])
+    result = cur.fetchone()
+                
     # Ensure no comma or brackets in output
     name = result[0]
     
@@ -733,7 +745,8 @@ def constituent_not_found_email():
     emailbody = MIMEText(
         Environment().from_string(TEMPLATE).render(
             name=name,
-            email_1=address,
+            email_1=address['address'],
+            re_system_id=re_system_id
         ), "html"
     )
 
@@ -782,7 +795,9 @@ def constituent_not_found_email():
         imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
         imap.logout()
         
-    server.quit()
+    # server.quit()
+    
+    exit()
 
 def update_email_in_re():
     print("Updating email in RE")
@@ -928,21 +943,26 @@ try:
         # Search in AlmaBase
         print("Locating the Alum in Almabase")
         for address in re_api_response['value']:
-            try:
-                email = (address['address'])
-                url = "https://api.almabaseapp.com/api/v1/profiles?search=%s&page=1&listed=true" % email
-                get_request_almabase()
-                count = ab_api_response["count"]
-                if count == 1:
-                    break
-            except:
-                # Can't find Alum in AlmaBase
-                status = ab_api_response["status"]
-                if status == 404:
-                    subject = "Unable to find Alums in AlmaBase because of Network Failure"
-                else:
-                    subject = "Unable to find Alums in AlmaBase for sync"
+            # try:
+            email = (address['address'])
+            url = "https://api.almabaseapp.com/api/v1/profiles?search=%s&page=1&listed=true" % email
+            get_request_almabase()
+            count = ab_api_response["count"]
+            if count == 1:
+                break
+            
+            else:
+                subject = "Unable to find Alums in AlmaBase for sync"
                 constituent_not_found_email()
+                    
+            # except:
+            #     # Can't find Alum in AlmaBase
+            #     status = ab_api_response["status"]
+            #     if status == 404:
+            #         subject = "Unable to find Alums in AlmaBase because of Network Failure"
+            #     else:
+            #         subject = "Unable to find Alums in AlmaBase for sync"
+            #     constituent_not_found_email()
     else:
         ab_system_id = ab_api_response["results"][0]["id"]
 
@@ -3089,7 +3109,7 @@ try:
             print_json(params)
                 
             if params != {}:
-                url = "https://api.sky.blackbaud.com/constituent/v1/educations/%s" % re_education_id
+                url = f"https://api.sky.blackbaud.com/constituent/v1/educations/{re_education_id}"
                 patch_request_re()
                 print(re_api_response)
                 
@@ -3175,7 +3195,7 @@ try:
             print_json(params)
             
             if params != {} and ab_class_of != "":
-                url = "https://api.almabaseapp.com/api/profiles/%s/educations" % (ab_system_id, ab_education_id)
+                url = f"https://api.almabaseapp.com/api/profiles/{ab_system_id}/educations/{ab_education_id}"
                 print(url)
                 patch_request_ab()
                 print(ab_api_response)
