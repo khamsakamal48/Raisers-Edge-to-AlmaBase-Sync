@@ -309,7 +309,7 @@ def send_error_emails():
     exit()
 
 def notify_sync_finished():
-    print("Notfying that Sync has finished")
+    print("Notifying that Sync has finished")
     
     subject = "Raisers Edge & Almabase Sync has finished"
     
@@ -368,6 +368,65 @@ def notify_sync_finished():
         conn.close()
         
     exit()
+    
+def multiple_education_exists():
+    print("Notifying that Multiple IITB Education exists")
+    
+    message = MIMEMultipart()
+    message["Subject"] = subject
+    message["From"] = MAIL_USERN
+    message["To"] = SEND_TO
+    
+    # Adding Reply-to header
+    message.add_header('reply-to', MAIL_USERN)
+    
+    TEMPLATE = """
+    <html>
+        <body>
+            <p>Hi,<br><br>
+            This is to inform you that Multiple IIT Bombay education exists while performing Raisers Edge <-> Almabase sync and hence couldn't update their IITB Education records.<br><br>
+            Requesting you the please check the same in RE and Almabase and update (if required).<br><br>
+            Education details:<br><br>
+            Raisers Edge:<br><br>
+            System ID: {{re_system_id}}<br><br>
+            {{re_api_response_education}}<br><br><br>
+            Almabase:<br><br>
+            {{ab_api_response_education}}
+            <br><br><br>
+            Thanks & Regards<br>
+            a BOT<br>
+            </p>
+        </body>
+    </html>
+    """
+    
+    # Create a text/html message from a rendered template
+    emailbody = MIMEText(
+        Environment().from_string(TEMPLATE).render(
+            re_system_id=re_system_id,
+            re_api_response_education=re_api_response_education,
+            ab_api_response_education=ab_api_response_education
+            ), "html"
+    )
+    
+    # Add HTML parts to MIMEMultipart message
+    # The email client will try to render the last part first
+    message.attach(emailbody)
+    emailcontent = message.as_string()
+    
+    # Create secure connection with server and send email
+    context = ssl._create_unverified_context()
+    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
+        server.login(MAIL_USERN, MAIL_PASSWORD)
+        server.sendmail(
+            MAIL_USERN, SEND_TO, emailcontent
+        )
+
+    # Save copy of the sent email to sent items folder
+    with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
+        imap.login(MAIL_USERN, MAIL_PASSWORD)
+        imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
+        imap.logout()
 
 def constituent_not_found_email():
     print("Sending an email that the constituent wasn't found")
@@ -3049,7 +3108,7 @@ try:
     print("Comparing the education details present in RE with AlmaBase and find delta")
     # When only one education exists in both
     if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
-        print("Only one education record exisst in RE")
+        print("Only one education record exist in RE")
         
         # Get data from RE
         try:
@@ -3326,7 +3385,7 @@ try:
     else:
         print("Multiple IITB education exists in RE")
         subject = "Multiple IITB Education details exists in either Raisers Edge or AlmaBase for syncing"
-        constituent_not_found_email()
+        multiple_education_exists()
 
     # Get other education details from RE
     print("Getting other education details from RE")
