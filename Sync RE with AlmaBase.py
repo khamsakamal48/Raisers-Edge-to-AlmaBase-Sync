@@ -3288,7 +3288,8 @@ try:
                                 },
                                 'display_order': 0
                             }
-                        ]
+                        ],
+                        'label': 'Hostel'
                     }
                 },
                 'year_of_graduation': ab_class_of,
@@ -3296,7 +3297,7 @@ try:
                 'year_of_leaving': ab_class_of,
                 'roll_number': ab_roll_number,
                 'college': {
-                    'name': "IIT Bombay"
+                    'name': 'IIT Bombay'
                 }
             }
             
