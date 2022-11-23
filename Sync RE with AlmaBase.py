@@ -5165,7 +5165,6 @@ finally:
     
     # Close DB connection
     if conn:
-        print("Closing DB connection")
         cur.close()
         conn.close()
     
