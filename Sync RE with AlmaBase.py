@@ -1154,7 +1154,9 @@ try:
     for address in ab_profile['email_addresses']:
         try:
             emails = (address['address']).lower()
-            ab_email_list.append(emails)
+            
+            if '@' in emails:
+                ab_email_list.append(emails)
         except:
             pass
 
@@ -1175,7 +1177,8 @@ try:
     for each_id in email_id_list:
         try:
             emails = (ab_profile['custom_fields'][each_id]['values'][0]['value']['content'])
-            ab_email_list.append(emails)
+            if '@' in emails:
+                ab_email_list.append(emails)
         except:
             # Email IDs that don't have any email addresses in AlmaBase
             blank_email_ids.append(each_id)
@@ -1187,7 +1190,8 @@ try:
     for address in re_api_response['value']:
         try:
             emails = (address['address']).lower()
-            re_email_list.append(emails)
+            if '@' in emails:
+                re_email_list.append(emails)
         except:
             pass
     print("Email list in RE: " + str(re_email_list))
