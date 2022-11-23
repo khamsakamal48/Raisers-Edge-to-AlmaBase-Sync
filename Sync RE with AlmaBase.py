@@ -300,13 +300,6 @@ def send_error_emails():
         imap.login(MAIL_USERN, MAIL_PASSWORD)
         imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
         imap.logout()
-        
-    # Close DB connection
-    if conn:
-        cur.close()
-        conn.close()
-        
-    exit()
 
 def notify_sync_finished():
     print("Notifying that Sync has finished")
