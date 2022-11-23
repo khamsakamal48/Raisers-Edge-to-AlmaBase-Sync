@@ -27,15 +27,15 @@ load_dotenv()
 # Retrieve contents from .env file
 AUTH_CODE = os.getenv("AUTH_CODE")
 
-# Blackbaud Token URL
-url = 'https://oauth2.sky.blackbaud.com/token'
-
 def access_token():
     # Retrieve access_token from file
     with open('access_token_output.json') as access_token_output:
-      data = json.load(access_token_output)
-      access_token = data["access_token"]
+        data = json.load(access_token_output)
+        access_token = data["access_token"]
     return access_token
+
+# Blackbaud Token URL
+url = 'https://oauth2.sky.blackbaud.com/token'
 
 og_file = "access_token_output.json"
 bak_file = "access_token_output.json.bak"
@@ -49,8 +49,8 @@ shutil.copyfile(og_file, bak_file)
 
 # Retrieve refresh_token from file
 with open('access_token_output.json') as access_token_output:
-  data = json.load(access_token_output)
-  refresh_token = data["refresh_token"]
+    data = json.load(access_token_output)
+    refresh_token = data["refresh_token"]
 
 # Request Headers for Blackbaud API request
 headers = {
