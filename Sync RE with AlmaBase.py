@@ -2643,47 +2643,47 @@ try:
         try:
             try:
                 line1 = each_value['line1']
-                if line1 is None:
+                if line1 is None or line1 == 'Other':
                     line1 = ""
             except:
                 line1 = ""
                 
             try:
                 line2 = each_value['line2']
-                if line2 is None:
+                if line2 is None or line2 == 'Other':
                     line2 = ""
             except:
                 line2 = ""
             
             try:
                 city = each_value['location']['city']
-                if city is None:
+                if city is None or city == 'Other':
                     city = ""
             except:
                 city = ""
             
             try:
                 state = each_value['location']['state']
-                if state is None:
+                if state is None or state == 'Other':
                     state = ""
             except:
                 try:
                     state = each_value['location']['county']
-                    if state is None:
+                    if state is None or state == 'Other':
                         state = ""
                 except:
                     state = ""
                     
             try:
                 country = each_value['location']['country']
-                if country is None:
+                if country is None or country == 'Other':
                     country = ""
             except:
                 country = ""
                 
             try:
                 zip_code = each_value['zip_code']
-                if zip_code is None:
+                if zip_code is None or zip_code == 'Other':
                     zip_code = ""
             except:
                 zip_code = ""
@@ -2752,69 +2752,69 @@ try:
         
         try:
             line1 = each_value['line1']
-            if line1 is None:
+            if line1 is None or line1 == 'Other':
                 line1 = ""
         except:
             line1 = ""
             
         try:
             line2 = each_value['line2']
-            if line2 is None:
+            if line2 is None or line2 == 'Other':
                 line2 = ""
         except:
             line2 = ""
         
         try:
             city = each_value['location']['city']
-            if city is None:
+            if city is None or city == 'Other':
                 city = ""
         except:
             city = ""
         
         try:
             state = each_value['location']['state']
-            if state is None:
+            if state is None or state == 'None':
                 state = ""
         except:
             try:
                 state = each_value['location']['county']
-                if state is None:
+                if state is None or state == 'None':
                     state = ""
             except:
                 state = ""
                 
         try:
             country = each_value['location']['country']
-            if country is None:
+            if country is None or country == 'None':
                 country = ""
         except:
             country = ""
             
         try:
             zip_code = each_value['zip_code']
-            if zip_code is None:
+            if zip_code is None or zip_code == 'None':
                 zip_code = ""
         except:
             zip_code = ""
             
         ab_address = (line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code).replace("  ", " ").replace("  ", " ").replace("  ", " ")
-        if ab_address != "" and ab_address != " ":
+        if ab_address != "" and ab_address != " " and ab_address != 'Other' and ab_address != 'India':
             ab_address_list.append(ab_address)
 
     # Finding missing addresses to be added in AlmaBase
     print("Finding missing addresses to be added in AlmaBase")
     missing_in_ab = []
     for each_value in re_api_response_address['value']:
-        if each_value != '' and each_value != "" and each_value != " ":
+        if each_value != '' and each_value != "" and each_value != " " and each_value != 'India':
             re_address = each_value['formatted_address'].replace("\r\n",", ")
         
         try:
-            if re_address != "" and re_address != " ":
+            if re_address != "" and re_address != " " and re_address != 'India':
                 likely_address, score = process.extractOne(re_address, ab_address_list)
                 if score < 80:
                     missing_in_ab.append(re_address)
         except:
-            if re_address != " " and re_address != "":
+            if re_address != " " and re_address != "" and re_address != 'India':
                 missing_in_ab.append(re_address)
 
     # Making sure that there are no duplicates in the missing list
