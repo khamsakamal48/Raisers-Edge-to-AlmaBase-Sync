@@ -195,111 +195,118 @@ def send_error_emails():
     # Close writing to Process.log
     sys.stdout.close()
     
-    message = MIMEMultipart()
-    message["Subject"] = subject
-    message["From"] = MAIL_USERN
-    message["To"] = SEND_TO
-
-    # Adding Reply-to header
-    message.add_header('reply-to', MAIL_USERN)
+    # Checking if it's evening to avoid sending emails
+    current_time = time.strftime("%H", time.localtime())
+    
+    if 10 <= int(current_time) < 19:
         
-    TEMPLATE="""
-    <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
-    <tbody>
-    <tr style="height: 127px;">
-    <td style="background-color: #363636; width: 100%; text-align: center; vertical-align: middle; height: 127px;">&nbsp;
-    <h1><span style="color: #ffffff;">&nbsp;Raiser's Edge Automation: {{job_name}} Failed</span>&nbsp;</h1>
-    </td>
-    </tr>
-    <tr style="height: 18px;">
-    <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
-    </tr>
-    <tr style="height: 18px;">
-    <td style="width: 100%; height: 18px; background-color: #ffffff; border-color: #ffffff; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #455362;">This is to notify you that execution of Auto-updating Alumni records has failed.</span>&nbsp;</td>
-    </tr>
-    <tr style="height: 18px;">
-    <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
-    </tr>
-    <tr style="height: 61px;">
-    <td style="width: 100%; background-color: #2f2f2f; height: 61px; text-align: center; vertical-align: middle;">
-    <h2><span style="color: #ffffff;">Job details:</span></h2>
-    </td>
-    </tr>
-    <tr style="height: 52px;">
-    <td style="height: 52px;">
-    <table style="background-color: #2f2f2f; width: 100%; margin-left: auto; margin-right: auto; height: 42px;">
-    <tbody>
-    <tr>
-    <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Job :</span>&nbsp;</td>
-    <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{job_name}}&nbsp;</td>
-    </tr>
-    <tr>
-    <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Failed on :</span>&nbsp;</td>
-    <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{current_time}}&nbsp;</td>
-    </tr>
-    </tbody>
-    </table>
-    </td>
-    </tr>
-    <tr style="height: 18px;">
-    <td style="height: 18px; background-color: #ffffff;">&nbsp;</td>
-    </tr>
-    <tr style="height: 18px;">
-    <td style="height: 18px; width: 100%; background-color: #ffffff; text-align: center; vertical-align: middle;">Below is the detailed error log,</td>
-    </tr>
-    <tr style="height: 217.34375px;">
-    <td style="height: 217.34375px; background-color: #f8f9f9; width: 100%; text-align: left; vertical-align: middle;">{{error_log_message}}</td>
-    </tr>
-    </tbody>
-    </table>
-    """
-    
-    # Create a text/html message from a rendered template
-    emailbody = MIMEText(
-        Environment().from_string(TEMPLATE).render(
-            job_name = "Syncing Raisers Edge and AlmaBase",
-            current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            error_log_message = Argument
-        ), "html"
-    )
-    
-    # Add HTML parts to MIMEMultipart message
-    # The email client will try to render the last part first
-    message.attach(emailbody)
-    attach_file_to_email(message, 'Process.log')
-    emailcontent = message.as_string()
-    
-    # # Create a secure SSL context
-    # context = ssl.create_default_context()
-    
-    # # Try to log in to server and send email
-    # try:
-    #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-    #     server.ehlo() # Can be omitted
-    #     server.starttls(context=context) # Secure the connection
-    #     server.ehlo() # Can be omitted
-    #     server.login(MAIL_USERN, MAIL_PASSWORD)
-    #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-    #     # TODO: Send email here
-    # except Exception as e:
-    #     # Print any error messages to stdout
-    #     print(e)
-    # # finally:
-    # #     server.quit()
-    
-    # Create secure connection with server and send email
-    context = ssl._create_unverified_context()
-    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
-        server.login(MAIL_USERN, MAIL_PASSWORD)
-        server.sendmail(
-            MAIL_USERN, SEND_TO, emailcontent
+        # It's morning
+
+        message = MIMEMultipart()
+        message["Subject"] = subject
+        message["From"] = MAIL_USERN
+        message["To"] = SEND_TO
+
+        # Adding Reply-to header
+        message.add_header('reply-to', MAIL_USERN)
+            
+        TEMPLATE="""
+        <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
+        <tbody>
+        <tr style="height: 127px;">
+        <td style="background-color: #363636; width: 100%; text-align: center; vertical-align: middle; height: 127px;">&nbsp;
+        <h1><span style="color: #ffffff;">&nbsp;Raiser's Edge Automation: {{job_name}} Failed</span>&nbsp;</h1>
+        </td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="width: 100%; height: 18px; background-color: #ffffff; border-color: #ffffff; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #455362;">This is to notify you that execution of Auto-updating Alumni records has failed.</span>&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
+        </tr>
+        <tr style="height: 61px;">
+        <td style="width: 100%; background-color: #2f2f2f; height: 61px; text-align: center; vertical-align: middle;">
+        <h2><span style="color: #ffffff;">Job details:</span></h2>
+        </td>
+        </tr>
+        <tr style="height: 52px;">
+        <td style="height: 52px;">
+        <table style="background-color: #2f2f2f; width: 100%; margin-left: auto; margin-right: auto; height: 42px;">
+        <tbody>
+        <tr>
+        <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Job :</span>&nbsp;</td>
+        <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{job_name}}&nbsp;</td>
+        </tr>
+        <tr>
+        <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Failed on :</span>&nbsp;</td>
+        <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{current_time}}&nbsp;</td>
+        </tr>
+        </tbody>
+        </table>
+        </td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px; background-color: #ffffff;">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px; width: 100%; background-color: #ffffff; text-align: center; vertical-align: middle;">Below is the detailed error log,</td>
+        </tr>
+        <tr style="height: 217.34375px;">
+        <td style="height: 217.34375px; background-color: #f8f9f9; width: 100%; text-align: left; vertical-align: middle;">{{error_log_message}}</td>
+        </tr>
+        </tbody>
+        </table>
+        """
+
+        # Create a text/html message from a rendered template
+        emailbody = MIMEText(
+            Environment().from_string(TEMPLATE).render(
+                job_name = "Syncing Raisers Edge and AlmaBase",
+                current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                error_log_message = Argument
+            ), "html"
         )
 
-    # Save copy of the sent email to sent items folder
-    with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
-        imap.login(MAIL_USERN, MAIL_PASSWORD)
-        imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
-        imap.logout()
+        # Add HTML parts to MIMEMultipart message
+        # The email client will try to render the last part first
+        message.attach(emailbody)
+        attach_file_to_email(message, 'Process.log')
+        emailcontent = message.as_string()
+
+        # # Create a secure SSL context
+        # context = ssl.create_default_context()
+
+        # # Try to log in to server and send email
+        # try:
+        #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
+        #     server.ehlo() # Can be omitted
+        #     server.starttls(context=context) # Secure the connection
+        #     server.ehlo() # Can be omitted
+        #     server.login(MAIL_USERN, MAIL_PASSWORD)
+        #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
+        #     # TODO: Send email here
+        # except Exception as e:
+        #     # Print any error messages to stdout
+        #     print(e)
+        # # finally:
+        # #     server.quit()
+
+        # Create secure connection with server and send email
+        context = ssl._create_unverified_context()
+        with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
+            server.login(MAIL_USERN, MAIL_PASSWORD)
+            server.sendmail(
+                MAIL_USERN, SEND_TO, emailcontent
+            )
+
+        # Save copy of the sent email to sent items folder
+        with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
+            imap.login(MAIL_USERN, MAIL_PASSWORD)
+            imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
+            imap.logout()
 
 def notify_sync_finished():
     print("Notifying that Sync has finished")
@@ -424,493 +431,498 @@ def multiple_education_exists():
 def constituent_not_found_email():
     print("Sending an email that the constituent wasn't found")
     
-    # Query the next data to uploaded in RE
-    extract_sql = """
-            SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
-            """
-    cur.execute(extract_sql)
-    result = cur.fetchone()
-
-    # Ensure no comma or brackets in output
-    re_system_id = result[0]
+    # Checking if it's evening to avoid sending emails
+    current_time = time.strftime("%H", time.localtime())
     
-    extract_sql = """
-            SELECT name FROM all_alums_in_re where re_system_id = %s;
-            """
+    if 10 <= int(current_time) < 19:
     
-    cur.execute(extract_sql, [re_system_id])
-    result = cur.fetchone()
-                
-    # Ensure no comma or brackets in output
-    name = result[0]
-    
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    message["From"] = MAIL_USERN
-    message["To"] = SEND_TO
+        # Query the next data to uploaded in RE
+        extract_sql = """
+                SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
+                """
+        cur.execute(extract_sql)
+        result = cur.fetchone()
 
-    # Adding Reply-to header
-    message.add_header('reply-to', MAIL_USERN)
+        # Ensure no comma or brackets in output
+        re_system_id = result[0]
+        
+        extract_sql = """
+                SELECT name FROM all_alums_in_re where re_system_id = %s;
+                """
+        
+        cur.execute(extract_sql, [re_system_id])
+        result = cur.fetchone()
+                    
+        # Ensure no comma or brackets in output
+        name = result[0]
+        
+        message = MIMEMultipart("alternative")
+        message["Subject"] = subject
+        message["From"] = MAIL_USERN
+        message["To"] = SEND_TO
 
-    TEMPLATE = """
-    <!DOCTYPE html>
-    <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-    <head>
-        <meta charset="utf-8"> <!-- utf-8 works for most cases -->
-        <meta name="viewport" content="width=device-width"> <!-- Forcing initial-scale shouldn't be necessary -->
-        <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Use the latest (edge) version of IE rendering engine -->
-        <meta name="x-apple-disable-message-reformatting">  <!-- Disable auto-scale in iOS 10 Mail entirely -->
-        <title>Create a Donor?</title> <!-- The title tag shows in email notifications, like Android 4.4. -->
-        <!-- Web Font / @font-face : BEGIN -->
-        <!-- NOTE: If web fonts are not required, lines 10 - 27 can be safely removed. -->
-        <!-- Desktop Outlook chokes on web font references and defaults to Times New Roman, so we force a safe fallback font. -->
-        <!--[if mso]>
+        # Adding Reply-to header
+        message.add_header('reply-to', MAIL_USERN)
+
+        TEMPLATE = """
+        <!DOCTYPE html>
+        <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+        <head>
+            <meta charset="utf-8"> <!-- utf-8 works for most cases -->
+            <meta name="viewport" content="width=device-width"> <!-- Forcing initial-scale shouldn't be necessary -->
+            <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Use the latest (edge) version of IE rendering engine -->
+            <meta name="x-apple-disable-message-reformatting">  <!-- Disable auto-scale in iOS 10 Mail entirely -->
+            <title>Create a Donor?</title> <!-- The title tag shows in email notifications, like Android 4.4. -->
+            <!-- Web Font / @font-face : BEGIN -->
+            <!-- NOTE: If web fonts are not required, lines 10 - 27 can be safely removed. -->
+            <!-- Desktop Outlook chokes on web font references and defaults to Times New Roman, so we force a safe fallback font. -->
+            <!--[if mso]>
+                <style>
+                    * {
+                        font-family: Arial, sans-serif !important;
+                    }
+                </style>
+            <![endif]-->
+            <!-- All other clients get the webfont reference; some will render the font and others will silently fail to the fallbacks. More on that here: http://stylecampaign.com/blog/2015/02/webfont-support-in-email/ -->
+            <!--[if !mso]><!-->
+                <link href="https://fonts.googleapis.com/css?family=Montserrat:300,500" rel="stylesheet">
+            <!--<![endif]-->
+            <!-- Web Font / @font-face : END -->
+            <!-- CSS Reset -->
             <style>
+                /* What it does: Remove spaces around the email design added by some email clients. */
+                /* Beware: It can remove the padding / margin and add a background color to the compose a reply window. */
+                html,
+                body {
+                    margin: 0 auto !important;
+                    padding: 0 !important;
+                    height: 100% !important;
+                    width: 100% !important;
+                }
+                /* What it does: Stops email clients resizing small text. */
                 * {
-                    font-family: Arial, sans-serif !important;
+                    -ms-text-size-adjust: 100%;
+                    -webkit-text-size-adjust: 100%;
+                }
+                /* What it does: Centers email on Android 4.4 */
+                div[style*="margin: 16px 0"] {
+                    margin:0 !important;
+                }
+                /* What it does: Stops Outlook from adding extra spacing to tables. */
+                table,
+                td {
+                    mso-table-lspace: 0pt !important;
+                    mso-table-rspace: 0pt !important;
+                }
+                /* What it does: Fixes webkit padding issue. Fix for Yahoo mail table alignment bug. Applies table-layout to the first 2 tables then removes for anything nested deeper. */
+                table {
+                    border-spacing: 0 !important;
+                    border-collapse: collapse !important;
+                    table-layout: fixed !important;
+                    margin: 0 auto !important;
+                }
+                table table table {
+                    table-layout: auto;
+                }
+                /* What it does: Uses a better rendering method when resizing images in IE. */
+                img {
+                    -ms-interpolation-mode:bicubic;
+                }
+                /* What it does: A work-around for email clients meddling in triggered links. */
+                *[x-apple-data-detectors],  /* iOS */
+                .x-gmail-data-detectors,    /* Gmail */
+                .x-gmail-data-detectors *,
+                .aBn {
+                    border-bottom: 0 !important;
+                    cursor: default !important;
+                    color: inherit !important;
+                    text-decoration: none !important;
+                    font-size: inherit !important;
+                    font-family: inherit !important;
+                    font-weight: inherit !important;
+                    line-height: inherit !important;
+                }
+                /* What it does: Prevents Gmail from displaying an download button on large, non-linked images. */
+                .a6S {
+                    display: none !important;
+                    opacity: 0.01 !important;
+                }
+                /* If the above doesn't work, add a .g-img class to any image in question. */
+                img.g-img + div {
+                    display:none !important;
+                    }
+                /* What it does: Prevents underlining the button text in Windows 10 */
+                .button-link {
+                    text-decoration: none !important;
+                }
+                /* What it does: Removes right gutter in Gmail iOS app: https://github.com/TedGoas/Cerberus/issues/89  */
+                /* Create one of these media queries for each additional viewport size you'd like to fix */
+                /* Thanks to Eric Lepetit @ericlepetitsf) for help troubleshooting */
+                @media only screen and (min-device-width: 375px) and (max-device-width: 413px) { /* iPhone 6 and 6+ */
+                    .email-container {
+                        min-width: 375px !important;
+                    }
                 }
             </style>
-        <![endif]-->
-        <!-- All other clients get the webfont reference; some will render the font and others will silently fail to the fallbacks. More on that here: http://stylecampaign.com/blog/2015/02/webfont-support-in-email/ -->
-        <!--[if !mso]><!-->
-            <link href="https://fonts.googleapis.com/css?family=Montserrat:300,500" rel="stylesheet">
-        <!--<![endif]-->
-        <!-- Web Font / @font-face : END -->
-        <!-- CSS Reset -->
-        <style>
-            /* What it does: Remove spaces around the email design added by some email clients. */
-            /* Beware: It can remove the padding / margin and add a background color to the compose a reply window. */
-            html,
-            body {
-                margin: 0 auto !important;
-                padding: 0 !important;
-                height: 100% !important;
-                width: 100% !important;
-            }
-            /* What it does: Stops email clients resizing small text. */
-            * {
-                -ms-text-size-adjust: 100%;
-                -webkit-text-size-adjust: 100%;
-            }
-            /* What it does: Centers email on Android 4.4 */
-            div[style*="margin: 16px 0"] {
-                margin:0 !important;
-            }
-            /* What it does: Stops Outlook from adding extra spacing to tables. */
-            table,
-            td {
-                mso-table-lspace: 0pt !important;
-                mso-table-rspace: 0pt !important;
-            }
-            /* What it does: Fixes webkit padding issue. Fix for Yahoo mail table alignment bug. Applies table-layout to the first 2 tables then removes for anything nested deeper. */
-            table {
-                border-spacing: 0 !important;
-                border-collapse: collapse !important;
-                table-layout: fixed !important;
-                margin: 0 auto !important;
-            }
-            table table table {
-                table-layout: auto;
-            }
-            /* What it does: Uses a better rendering method when resizing images in IE. */
-            img {
-                -ms-interpolation-mode:bicubic;
-            }
-            /* What it does: A work-around for email clients meddling in triggered links. */
-            *[x-apple-data-detectors],  /* iOS */
-            .x-gmail-data-detectors,    /* Gmail */
-            .x-gmail-data-detectors *,
-            .aBn {
-                border-bottom: 0 !important;
-                cursor: default !important;
-                color: inherit !important;
-                text-decoration: none !important;
-                font-size: inherit !important;
-                font-family: inherit !important;
-                font-weight: inherit !important;
-                line-height: inherit !important;
-            }
-            /* What it does: Prevents Gmail from displaying an download button on large, non-linked images. */
-            .a6S {
-                display: none !important;
-                opacity: 0.01 !important;
-            }
-            /* If the above doesn't work, add a .g-img class to any image in question. */
-            img.g-img + div {
-                display:none !important;
+            <!-- Progressive Enhancements -->
+            <style>
+                /* What it does: Hover styles for buttons */
+                .button-td,
+                .button-a {
+                    transition: all 100ms ease-in;
                 }
-            /* What it does: Prevents underlining the button text in Windows 10 */
-            .button-link {
-                text-decoration: none !important;
-            }
-            /* What it does: Removes right gutter in Gmail iOS app: https://github.com/TedGoas/Cerberus/issues/89  */
-            /* Create one of these media queries for each additional viewport size you'd like to fix */
-            /* Thanks to Eric Lepetit @ericlepetitsf) for help troubleshooting */
-            @media only screen and (min-device-width: 375px) and (max-device-width: 413px) { /* iPhone 6 and 6+ */
-                .email-container {
-                    min-width: 375px !important;
+                .button-td:hover,
+                .button-a:hover {
+                    background: #555555 !important;
+                    border-color: #555555 !important;
                 }
-            }
-        </style>
-        <!-- Progressive Enhancements -->
-        <style>
-            /* What it does: Hover styles for buttons */
-            .button-td,
-            .button-a {
-                transition: all 100ms ease-in;
-            }
-            .button-td:hover,
-            .button-a:hover {
-                background: #555555 !important;
-                border-color: #555555 !important;
-            }
-            /* Media Queries */
-            @media screen and (max-width: 480px) {
-                /* What it does: Forces elements to resize to the full width of their container. Useful for resizing images beyond their max-width. */
-                .fluid {
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    height: auto !important;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
+                /* Media Queries */
+                @media screen and (max-width: 480px) {
+                    /* What it does: Forces elements to resize to the full width of their container. Useful for resizing images beyond their max-width. */
+                    .fluid {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        height: auto !important;
+                        margin-left: auto !important;
+                        margin-right: auto !important;
+                    }
+                    /* What it does: Forces table cells into full-width rows. */
+                    .stack-column,
+                    .stack-column-center {
+                        display: block !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        direction: ltr !important;
+                    }
+                    /* And center justify these ones. */
+                    .stack-column-center {
+                        text-align: center !important;
+                    }
+                    /* What it does: Generic utility class for centering. Useful for images, buttons, and nested tables. */
+                    .center-on-narrow {
+                        text-align: center !important;
+                        display: block !important;
+                        margin-left: auto !important;
+                        margin-right: auto !important;
+                        float: none !important;
+                    }
+                    table.center-on-narrow {
+                        display: inline-block !important;
+                    }
+                    /* What it does: Adjust typography on small screens to improve readability */
+                    .email-container p {
+                        font-size: 17px !important;
+                        line-height: 22px !important;
+                    }
                 }
-                /* What it does: Forces table cells into full-width rows. */
-                .stack-column,
-                .stack-column-center {
-                    display: block !important;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    direction: ltr !important;
-                }
-                /* And center justify these ones. */
-                .stack-column-center {
-                    text-align: center !important;
-                }
-                /* What it does: Generic utility class for centering. Useful for images, buttons, and nested tables. */
-                .center-on-narrow {
-                    text-align: center !important;
-                    display: block !important;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
-                    float: none !important;
-                }
-                table.center-on-narrow {
-                    display: inline-block !important;
-                }
-                /* What it does: Adjust typography on small screens to improve readability */
-                .email-container p {
-                    font-size: 17px !important;
-                    line-height: 22px !important;
-                }
-            }
-        </style>
-        <!-- What it does: Makes background images in 72ppi Outlook render at correct size. -->
-        <!--[if gte mso 9]>
-        <xml>
-            <o:OfficeDocumentSettings>
-                <o:AllowPNG/>
-                <o:PixelsPerInch>96</o:PixelsPerInch>
-            </o:OfficeDocumentSettings>
-        </xml>
-        <![endif]-->
-    </head>
-    <body width="100%" bgcolor="#F1F1F1" style="margin: 0; mso-line-height-rule: exactly;">
-        <center style="width: 100%; background: #F1F1F1; text-align: left;">
-            <!-- Visually Hidden Preheader Text : BEGIN -->
-            <div style="display:none;font-size:1px;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;mso-hide:all;font-family: sans-serif;">
-                Hello Kamal, I couldn't find below donor in Raiser's Edge. Let me know what you want me to do now.
-            </div>
-            <!-- Visually Hidden Preheader Text : END -->
-            <!--
-                Set the email width. Defined in two places:
-                1. max-width for all clients except Desktop Windows Outlook, allowing the email to squish on narrow but never go wider than 680px.
-                2. MSO tags for Desktop Windows Outlook enforce a 680px width.
-                Note: The Fluid and Responsive templates have a different width (600px). The hybrid grid is more "fragile", and I've found that 680px is a good width. Change with caution.
-            -->
-            <div style="max-width: 680px; margin: auto;" class="email-container">
-                <!--[if mso]>
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="680" align="center">
-                <tr>
-                <td>
-                <![endif]-->
-                <!-- Email Body : BEGIN -->
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 680px;" class="email-container">
-                    <!-- HEADER : BEGIN -->
+            </style>
+            <!-- What it does: Makes background images in 72ppi Outlook render at correct size. -->
+            <!--[if gte mso 9]>
+            <xml>
+                <o:OfficeDocumentSettings>
+                    <o:AllowPNG/>
+                    <o:PixelsPerInch>96</o:PixelsPerInch>
+                </o:OfficeDocumentSettings>
+            </xml>
+            <![endif]-->
+        </head>
+        <body width="100%" bgcolor="#F1F1F1" style="margin: 0; mso-line-height-rule: exactly;">
+            <center style="width: 100%; background: #F1F1F1; text-align: left;">
+                <!-- Visually Hidden Preheader Text : BEGIN -->
+                <div style="display:none;font-size:1px;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;mso-hide:all;font-family: sans-serif;">
+                    Hello Kamal, I couldn't find below donor in Raiser's Edge. Let me know what you want me to do now.
+                </div>
+                <!-- Visually Hidden Preheader Text : END -->
+                <!--
+                    Set the email width. Defined in two places:
+                    1. max-width for all clients except Desktop Windows Outlook, allowing the email to squish on narrow but never go wider than 680px.
+                    2. MSO tags for Desktop Windows Outlook enforce a 680px width.
+                    Note: The Fluid and Responsive templates have a different width (600px). The hybrid grid is more "fragile", and I've found that 680px is a good width. Change with caution.
+                -->
+                <div style="max-width: 680px; margin: auto;" class="email-container">
+                    <!--[if mso]>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="680" align="center">
                     <tr>
-                        <td bgcolor="#333333">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="padding: 10px 40px 10px 40px; text-align: center;">
-                                        <img src="https://i.ibb.co/fk6J37P/iitblogowhite.png" width="57" height="13" alt="alt_text" border="0" style="height: auto; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #555555;">
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <!-- HEADER : END -->
-                    <!-- HERO : BEGIN -->
-                    <tr>
-                        <!-- Bulletproof Background Images c/o https://backgrounds.cm -->
-                        <td background="https://i.ibb.co/y8dhxm3/Background.png" bgcolor="#222222" align="center" valign="top" style="text-align: center; background-position: center center !important; background-size: cover !important;">
-                            <!--[if gte mso 9]>
-                            <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:680px; height:380px; background-position: center center !important;">
-                            <v:fill type="tile" src="background.png" color="#222222" />
-                            <v:textbox inset="0,0,0,0">
-                            <![endif]-->
-                            <div>
-                                <!--[if mso]>
-                                <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="500">
-                                <tr>
-                                <td align="center" valign="middle" width="500">
-                                <![endif]-->
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width:500px; margin: auto;">
+                    <td>
+                    <![endif]-->
+                    <!-- Email Body : BEGIN -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 680px;" class="email-container">
+                        <!-- HEADER : BEGIN -->
+                        <tr>
+                            <td bgcolor="#333333">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                                     <tr>
-                                        <td height="20" style="font-size:20px; line-height:20px;">&nbsp;</td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center" valign="middle">
-                                        <table>
-                                        <tr>
-                                            <td valign="top" style="text-align: center; padding: 60px 0 10px 20px;">
-                                                <h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 30px; line-height: 36px; color: #ffffff; font-weight: bold;">Hello,</h1>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td valign="top" style="text-align: center; padding: 10px 20px 15px 20px; font-family: sans-serif;  font-size: 20px; line-height: 25px; color: #ffffff;">
-                                                <p style="margin: 0;">I couldn't update below Alum for syncing Raiser's Edge and AlmaBase.</p>
-                                            </td>
-                                        </tr>
-                                        </table>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td height="20" style="font-size:20px; line-height:20px;">&nbsp;</td>
-                                    </tr>
-                                </table>
-                                <!--[if mso]>
-                                </td>
-                                </tr>
-                                </table>
-                                <![endif]-->
-                            </div>
-                            <!--[if gte mso 9]>
-                            </v:textbox>
-                            </v:rect>
-                            <![endif]-->
-                        </td>
-                    </tr>
-                    <!-- HERO : END -->
-                    <!-- INTRO : BEGIN -->
-                    <tr>
-                        <td bgcolor="#ffffff">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="padding: 40px 40px 20px 40px; text-align: left;">
-                                        <h1 style="margin: 0; font-family: arial, cochin, sans-serif; font-size: 20px; line-height: 26px; color: #333333; font-weight: bold;">Below are the Alum details,</h1>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left" style="padding: 0px 40px 20px 40px;">
-                                <table cellspacing="0" cellpadding="0" border="0" width="100%">
-                                    <tr>
-                                        <td width="30%" align="left" bgcolor="#eeeeee" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 800; line-height: 24px; padding: 10px;">
-                                            Name
-                                        </td>
-                                        <td width="70%" align="left" bgcolor="#eeeeee" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 800; line-height: 24px; padding: 10px;">
-                                            {{name}}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td width="30%" align="left" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; padding: 15px 10px 5px 10px;">
-                                            Email Addresses
-                                        </td>
-                                        <td width="70%" align="left" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; padding: 15px 10px 5px 10px;">
-                                            <p>{{email_1}}</p>
+                                        <td style="padding: 10px 40px 10px 40px; text-align: center;">
+                                            <img src="https://i.ibb.co/fk6J37P/iitblogowhite.png" width="57" height="13" alt="alt_text" border="0" style="height: auto; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #555555;">
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
+                        <!-- HEADER : END -->
+                        <!-- HERO : BEGIN -->
                         <tr>
-                            <td align="left" style="padding-top: 20px;">
+                            <!-- Bulletproof Background Images c/o https://backgrounds.cm -->
+                            <td background="https://i.ibb.co/y8dhxm3/Background.png" bgcolor="#222222" align="center" valign="top" style="text-align: center; background-position: center center !important; background-size: cover !important;">
+                                <!--[if gte mso 9]>
+                                <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:680px; height:380px; background-position: center center !important;">
+                                <v:fill type="tile" src="background.png" color="#222222" />
+                                <v:textbox inset="0,0,0,0">
+                                <![endif]-->
+                                <div>
+                                    <!--[if mso]>
+                                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="500">
+                                    <tr>
+                                    <td align="center" valign="middle" width="500">
+                                    <![endif]-->
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width:500px; margin: auto;">
+                                        <tr>
+                                            <td height="20" style="font-size:20px; line-height:20px;">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td align="center" valign="middle">
+                                            <table>
+                                            <tr>
+                                                <td valign="top" style="text-align: center; padding: 60px 0 10px 20px;">
+                                                    <h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 30px; line-height: 36px; color: #ffffff; font-weight: bold;">Hello,</h1>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td valign="top" style="text-align: center; padding: 10px 20px 15px 20px; font-family: sans-serif;  font-size: 20px; line-height: 25px; color: #ffffff;">
+                                                    <p style="margin: 0;">I couldn't update below Alum for syncing Raiser's Edge and AlmaBase.</p>
+                                                </td>
+                                            </tr>
+                                            </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td height="20" style="font-size:20px; line-height:20px;">&nbsp;</td>
+                                        </tr>
+                                    </table>
+                                    <!--[if mso]>
+                                    </td>
+                                    </tr>
+                                    </table>
+                                    <![endif]-->
+                                </div>
+                                <!--[if gte mso 9]>
+                                </v:textbox>
+                                </v:rect>
+                                <![endif]-->
                             </td>
-                                </tr>
-                                <tr>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 0px 40px 0px 50px; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #555555; text-align: left; font-weight:normal;">
-                                        <p style="margin: 0;">Yours sincerely,</p>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left" style="padding: 0px 40px 40px 40px;">
-                                        <table width="200" align="left">
-                                            <tr>
-                                                <td width="90">
-                                                <img src="https://i.ibb.co/J262D44/Bot.png" width="90" height="90" style="margin:0; padding:0; border:none; display:block;" border="0" alt="">
-                                                </td>
-                                                <td width="110">
-                                                <table width="" cellpadding="0" cellspacing="0" border="0">
-                                                    <tr>
-                                                    <td align="left" style="font-family: sans-serif; font-size:15px; line-height:20px; color:#222222; font-weight:bold;" class="body-text">
-                                                        <p style="font-family: 'Montserrat', sans-serif; font-size:15px; line-height:20px; color:#222222; font-weight:bold; padding:0; margin:0;" class="body-text">A Bot,</p>
+                        </tr>
+                        <!-- HERO : END -->
+                        <!-- INTRO : BEGIN -->
+                        <tr>
+                            <td bgcolor="#ffffff">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="padding: 40px 40px 20px 40px; text-align: left;">
+                                            <h1 style="margin: 0; font-family: arial, cochin, sans-serif; font-size: 20px; line-height: 26px; color: #333333; font-weight: bold;">Below are the Alum details,</h1>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left" style="padding: 0px 40px 20px 40px;">
+                                    <table cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                            <td width="30%" align="left" bgcolor="#eeeeee" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 800; line-height: 24px; padding: 10px;">
+                                                Name
+                                            </td>
+                                            <td width="70%" align="left" bgcolor="#eeeeee" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 800; line-height: 24px; padding: 10px;">
+                                                {{name}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30%" align="left" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; padding: 15px 10px 5px 10px;">
+                                                Email Addresses
+                                            </td>
+                                            <td width="70%" align="left" style="font-family: Open Sans, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; padding: 15px 10px 5px 10px;">
+                                                <p>{{email_1}}</p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="padding-top: 20px;">
+                                </td>
+                                    </tr>
+                                    <tr>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px 40px 0px 50px; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #555555; text-align: left; font-weight:normal;">
+                                            <p style="margin: 0;">Yours sincerely,</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left" style="padding: 0px 40px 40px 40px;">
+                                            <table width="200" align="left">
+                                                <tr>
+                                                    <td width="90">
+                                                    <img src="https://i.ibb.co/J262D44/Bot.png" width="90" height="90" style="margin:0; padding:0; border:none; display:block;" border="0" alt="">
                                                     </td>
-                                                    </tr>
-                                                    <tr>
-                                                    <td align="left" style="font-family: sans-serif; font-size:15px; line-height:20px; color:#666666;" class="body-text">
-                                                        <p style="font-family: sans-serif; font-size:15px; line-height:20px; color:#666666; padding:0; margin:0;" class="body-text">made by Kamal.</p>
+                                                    <td width="110">
+                                                    <table width="" cellpadding="0" cellspacing="0" border="0">
+                                                        <tr>
+                                                        <td align="left" style="font-family: sans-serif; font-size:15px; line-height:20px; color:#222222; font-weight:bold;" class="body-text">
+                                                            <p style="font-family: 'Montserrat', sans-serif; font-size:15px; line-height:20px; color:#222222; font-weight:bold; padding:0; margin:0;" class="body-text">A Bot,</p>
+                                                        </td>
+                                                        </tr>
+                                                        <tr>
+                                                        <td align="left" style="font-family: sans-serif; font-size:15px; line-height:20px; color:#666666;" class="body-text">
+                                                            <p style="font-family: sans-serif; font-size:15px; line-height:20px; color:#666666; padding:0; margin:0;" class="body-text">made by Kamal.</p>
+                                                        </td>
+                                                        </tr>
+                                                    </table>
                                                     </td>
-                                                    </tr>
-                                                </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- INTRO : END -->
+                        <!-- CTA : BEGIN -->
+                        <tr>
+                            <td bgcolor="#26a4d3">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="padding: 40px 40px 5px 40px; text-align: center;">
+                                            <h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 20px; line-height: 24px; color: #ffffff; font-weight: bold;">YOU CAN CHECK THIS ALUMNI</h1>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px 40px 20px 40px; font-family: sans-serif; font-size: 17px; line-height: 23px; color: #aad4ea; text-align: center; font-weight:normal;">
+                                            <p style="margin: 0;">in Raiser's Edge</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td valign="middle" align="center" style="text-align: center; padding: 0px 20px 40px 20px;">
+                                            <!-- Button : BEGIN -->
+                                            <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" class="center-on-narrow">
+                                                <tr>
+                                                    <td style="border-radius: 50px; background: #ffffff; text-align: center;" class="button-td">
+                                                        <a href="https://host.nxt.blackbaud.com/constituent/records/{{re_system_id}}?envid=p-dzY8gGigKUidokeljxaQiA&svcid=renxt" style="background: #ffffff; border: 15px solid #ffffff; font-family: 'Montserrat', sans-serif; font-size: 14px; line-height: 1.1; text-align: center; text-decoration: none; display: block; border-radius: 50px; font-weight: bold;" class="button-a">
+                                                            <span style="color:#26a4d3;" class="button-link">&nbsp;&nbsp;&nbsp;&nbsp;CHECK NOW&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- Button : END -->
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- CTA : END -->
+                        <!-- SOCIAL : BEGIN -->
+                        <tr>
+                            <td bgcolor="#292828">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="padding: 30px 30px; text-align: center;">
+                                            <table align="center" style="text-align: center;">
+                                                <tr>
+                                                    <td>
+                                                        <h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 20px; line-height: 24px; color: #ffffff; font-weight: bold;">Have a nice day! 😊</h1>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- SOCIAL : END -->
+                        <!-- FOOTER : BEGIN -->
+                        <tr>
+                            <td bgcolor="#ffffff">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="padding: 40px 40px 0px 40px; font-family: sans-serif; font-size: 14px; line-height: 18px; color: #666666; text-align: center; font-weight:normal;">
+                                            <p style="margin: 0;"><b>Indian Institute of Technology Bombay</b></p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px 40px 30px 40px; font-family: sans-serif; font-size: 12px; line-height: 18px; color: #666666; text-align: center; font-weight:normal;">
+                                            <p style="margin: 0;">Powai, Mumbai, Maharashtra, India 400076</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- FOOTER : END -->
+                    </table>
+                    <!-- Email Body : END -->
+                    <!--[if mso]>
+                    </td>
                     </tr>
-                    <!-- INTRO : END -->
-                    <!-- CTA : BEGIN -->
-                    <tr>
-                        <td bgcolor="#26a4d3">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="padding: 40px 40px 5px 40px; text-align: center;">
-                                        <h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 20px; line-height: 24px; color: #ffffff; font-weight: bold;">YOU CAN CHECK THIS ALUMNI</h1>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 0px 40px 20px 40px; font-family: sans-serif; font-size: 17px; line-height: 23px; color: #aad4ea; text-align: center; font-weight:normal;">
-                                        <p style="margin: 0;">in Raiser's Edge</p>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td valign="middle" align="center" style="text-align: center; padding: 0px 20px 40px 20px;">
-                                        <!-- Button : BEGIN -->
-                                        <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" class="center-on-narrow">
-                                            <tr>
-                                                <td style="border-radius: 50px; background: #ffffff; text-align: center;" class="button-td">
-                                                    <a href="https://host.nxt.blackbaud.com/constituent/records/{{re_system_id}}?envid=p-dzY8gGigKUidokeljxaQiA&svcid=renxt" style="background: #ffffff; border: 15px solid #ffffff; font-family: 'Montserrat', sans-serif; font-size: 14px; line-height: 1.1; text-align: center; text-decoration: none; display: block; border-radius: 50px; font-weight: bold;" class="button-a">
-                                                        <span style="color:#26a4d3;" class="button-link">&nbsp;&nbsp;&nbsp;&nbsp;CHECK NOW&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        <!-- Button : END -->
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <!-- CTA : END -->
-                    <!-- SOCIAL : BEGIN -->
-                    <tr>
-                        <td bgcolor="#292828">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="padding: 30px 30px; text-align: center;">
-                                        <table align="center" style="text-align: center;">
-                                            <tr>
-                                                <td>
-                                                    <h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 20px; line-height: 24px; color: #ffffff; font-weight: bold;">Have a nice day! 😊</h1>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <!-- SOCIAL : END -->
-                    <!-- FOOTER : BEGIN -->
-                    <tr>
-                        <td bgcolor="#ffffff">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="padding: 40px 40px 0px 40px; font-family: sans-serif; font-size: 14px; line-height: 18px; color: #666666; text-align: center; font-weight:normal;">
-                                        <p style="margin: 0;"><b>Indian Institute of Technology Bombay</b></p>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 0px 40px 30px 40px; font-family: sans-serif; font-size: 12px; line-height: 18px; color: #666666; text-align: center; font-weight:normal;">
-                                        <p style="margin: 0;">Powai, Mumbai, Maharashtra, India 400076</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <!-- FOOTER : END -->
-                </table>
-                <!-- Email Body : END -->
-                <!--[if mso]>
-                </td>
-                </tr>
-                </table>
-                <![endif]-->
-            </div>
-        </center>
-    </body>
-    </html>
-    """
+                    </table>
+                    <![endif]-->
+                </div>
+            </center>
+        </body>
+        </html>
+        """
 
-    # Create a text/html message from a rendered template
-    emailbody = MIMEText(
-        Environment().from_string(TEMPLATE).render(
-            name=name,
-            email_1=address['address'],
-            re_system_id=re_system_id
-        ), "html"
-    )
-
-    # Add HTML parts to MIMEMultipart message
-    # The email client will try to render the last part first
-    message.attach(emailbody)
-    emailcontent = message.as_string()
-    
-    #   # Create secure connection with server and send email
-    #   context = ssl._create_unverified_context()
-    #   with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
-    #       server.login(MAIL_USERN, MAIL_PASSWORD)
-    #       server.sendmail(
-    #           MAIL_USERN, MAIL_USERN, emailcontent
-    #       )
-
-    # # Create a secure SSL context
-    # context = ssl.create_default_context()
-    
-    # # Try to log in to server and send email
-    # try:
-    #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-    #     server.ehlo() # Can be omitted
-    #     server.starttls(context=context) # Secure the connection
-    #     server.ehlo() # Can be omitted
-    #     server.login(MAIL_USERN, MAIL_PASSWORD)
-    #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-    #     # TODO: Send email here
-    # except Exception as e:
-    #     # Print any error messages to stdout
-    #     print(e)
-    # # finally:
-    # #     server.quit()
-    
-    # Create secure connection with server and send email
-    context = ssl._create_unverified_context()
-    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
-        server.login(MAIL_USERN, MAIL_PASSWORD)
-        server.sendmail(
-            MAIL_USERN, SEND_TO, emailcontent
+        # Create a text/html message from a rendered template
+        emailbody = MIMEText(
+            Environment().from_string(TEMPLATE).render(
+                name=name,
+                email_1=address['address'],
+                re_system_id=re_system_id
+            ), "html"
         )
 
-    # Save copy of the sent email to sent items folder
-    with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
-        imap.login(MAIL_USERN, MAIL_PASSWORD)
-        imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
-        imap.logout()
+        # Add HTML parts to MIMEMultipart message
+        # The email client will try to render the last part first
+        message.attach(emailbody)
+        emailcontent = message.as_string()
         
-    # server.quit()
-    
-    exit()
+        #   # Create secure connection with server and send email
+        #   context = ssl._create_unverified_context()
+        #   with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
+        #       server.login(MAIL_USERN, MAIL_PASSWORD)
+        #       server.sendmail(
+        #           MAIL_USERN, MAIL_USERN, emailcontent
+        #       )
+
+        # # Create a secure SSL context
+        # context = ssl.create_default_context()
+        
+        # # Try to log in to server and send email
+        # try:
+        #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
+        #     server.ehlo() # Can be omitted
+        #     server.starttls(context=context) # Secure the connection
+        #     server.ehlo() # Can be omitted
+        #     server.login(MAIL_USERN, MAIL_PASSWORD)
+        #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
+        #     # TODO: Send email here
+        # except Exception as e:
+        #     # Print any error messages to stdout
+        #     print(e)
+        # # finally:
+        # #     server.quit()
+        
+        # Create secure connection with server and send email
+        context = ssl._create_unverified_context()
+        with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
+            server.login(MAIL_USERN, MAIL_PASSWORD)
+            server.sendmail(
+                MAIL_USERN, SEND_TO, emailcontent
+            )
+
+        # Save copy of the sent email to sent items folder
+        with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
+            imap.login(MAIL_USERN, MAIL_PASSWORD)
+            imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
+            imap.logout()
+            
+        # server.quit()
+        
+        exit()
 
 def add_tags(attr_type, atrr_comment):
     
