@@ -68,8 +68,8 @@ cur = conn.cursor()
 # Retrieve access_token from file
 print("Retrieve token from API connections")
 with open('access_token_output.json') as access_token_output:
-  data = json.load(access_token_output)
-  access_token = data["access_token"]
+    data = json.load(access_token_output)
+    access_token = data["access_token"]
 
 def get_request_re():
     print("Running GET Request from RE function")
@@ -103,7 +103,7 @@ def get_request_almabase():
     print_json(ab_api_response)
     
     check_for_errors()
-  
+
 def post_request_re():
     print("Running POST Request to RE function")
     time.sleep(5)
@@ -919,6 +919,51 @@ def constituent_not_found_email():
     
     exit()
 
+def add_tags(attr_type, atrr_comment):
+    
+    print("Adding update tags for new email in RE")
+    
+    global params, url
+    
+    url = 'https://api.sky.blackbaud.com/constituent/v1/constituents/customfields'
+    
+    if attr_type == 'email':
+        value = 'AlmaBase - Automatically | Email address'
+        
+    elif attr_type == 'mobile':
+        value = 'AlmaBase - Automatically | Phone Number'
+        
+    elif attr_type == 'employment':
+        value = 'AlmaBase - Automatically | Employment - Org. Name'
+        
+    elif attr_type == 'position':
+        value = 'AlmaBase - Automatically | Employment - Position'
+        
+    elif attr_type == 'location':
+        value = 'AlmaBase - Automatically | Location'
+        
+    elif attr_type == 'education':
+        value = 'AlmaBase - Automatically | Education'
+        
+    elif attr_type == 'bio':
+        value = 'AlmaBase - Automatically | Bio Details'
+        
+    elif attr_type == 'online':
+        value = 'AlmaBase - Automatically | Online Presence'
+    
+    params = {
+        'category': 'Synced from',
+        'parent_id': re_system_id,
+        'value': value,
+        'comment': atrr_comment,
+        'date': datetime.now().replace(microsecond=0).isoformat()
+    }
+    
+    # Blackbaud API POST request
+    post_request_re()
+    
+    check_for_errors()
+
 def update_email_in_re():
     print("Updating email in RE")
     time.sleep(5)
@@ -936,6 +981,9 @@ def update_email_in_re():
     post_request_re()
     
     check_for_errors()
+    
+    # Adding Update Tags
+    add_tags('email', email_address)
 
 def del_blank_values_in_json(d):
     """
@@ -1361,6 +1409,11 @@ try:
                 
                 post_request_re()
                 
+                check_for_errors()
+                
+                # Adding Update Tags
+                add_tags('mobile', each_phone)
+                
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO re_phone_added (re_system_id, phone, date)
@@ -1558,13 +1611,19 @@ try:
                 url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
                 
                 post_request_re()
+                
+                check_for_errors()
+                
+                # Adding Update Tags
+                add_tags('employment', each_org)
+                
                 print("Added missing employment")
         
     # Update missing details in RE
     print("Checking missing details from any existing employment...")
     for each_org in re_api_response_org['value']:
         try:
-           if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
+            if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
                 # Get values present in RE
                 re_org_name = each_org['name']
                 
@@ -1682,6 +1741,12 @@ try:
                                 if params != {}:
                                     # Update in RE
                                     patch_request_re()
+                                    
+                                    check_for_errors()
+                                    
+                                    # Adding Update Tags
+                                    add_tags('position', ab_org_position)
+
                                     print("Updated missing employment details in RE")
                     except:
                         pass
@@ -1895,7 +1960,7 @@ try:
                     pass
         except:
             pass
-   
+
     # for i in range(10):
     #     # Retrieve addresses from RE
     #     print("Retrieving addresses from RE")
@@ -2673,6 +2738,11 @@ try:
                 
                 post_request_re()
                 
+                check_for_errors()
+                
+                # Adding Update Tags
+                add_tags('location', address)
+                
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO re_address_added (re_system_id, address, date)
@@ -3282,6 +3352,12 @@ try:
             if params != {}:
                 url = f"https://api.sky.blackbaud.com/constituent/v1/educations/{re_education_id}"
                 patch_request_re()
+                
+                check_for_errors()
+                
+                # Adding Update Tags
+                add_tags('education', params)
+                
                 print(re_api_response)
                 
             # Will update in PostgreSQL
@@ -3595,6 +3671,13 @@ try:
                     url = "https://api.sky.blackbaud.com/constituent/v1/educations"
                     post_request_re()
                     
+                    check_for_errors()
+                
+                    # Adding Update Tags
+                    add_tags('education', params)
+                    
+                    print(re_api_response)
+                    
                     # Will update in PostgreSQL
                     insert_updates = """
                                     INSERT INTO re_other_education_added (re_system_id, school_name, date)
@@ -3761,6 +3844,13 @@ try:
                         
                         url = "https://api.sky.blackbaud.com/constituent/v1/educations"
                         post_request_re()
+                        
+                        check_for_errors()
+                
+                        # Adding Update Tags
+                        add_tags('education', params)
+                        
+                        print(re_api_response)
                         
                         # Will update in PostgreSQL
                         insert_updates = """
@@ -4109,6 +4199,13 @@ try:
         url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
         patch_request_re()
         
+        check_for_errors()
+                
+        # Adding Update Tags
+        add_tags('bio', params)
+        
+        print(re_api_response)
+        
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, birth_year, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
@@ -4202,7 +4299,7 @@ try:
     for each_social in re_api_response_social['value']:
         try:
             # Get Website
-            print("Checing website")
+            print("Checking website")
             try:
                 if each_social['type'] == "Website":
                     website_re = each_social['address']
@@ -4448,6 +4545,11 @@ try:
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
             
+            check_for_errors()
+    
+            # Adding Update Tags
+            add_tags('online', f'Website: {re_website}')
+            
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4468,6 +4570,11 @@ try:
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
             
+            check_for_errors()
+    
+            # Adding Update Tags
+            add_tags('online', f'LinkedIn: {re_linkedin}')
+            
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4486,6 +4593,11 @@ try:
             
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
+            
+            check_for_errors()
+    
+            # Adding Update Tags
+            add_tags('online', f'Facebook: {re_facebook}')
             
             # Will update in PostgreSQL
             insert_updates = """
@@ -4506,6 +4618,11 @@ try:
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
             
+            check_for_errors()
+    
+            # Adding Update Tags
+            add_tags('online', f'Twitter: {re_twitter}')
+            
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4524,6 +4641,11 @@ try:
             
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
+            
+            check_for_errors()
+    
+            # Adding Update Tags
+            add_tags('online', f'Google: {re_google}')
             
             # Will update in PostgreSQL
             insert_updates = """
@@ -4710,6 +4832,8 @@ try:
                 
                 url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
                 post_request_re()
+                
+                
                 
                 # Will update in PostgreSQL
                 insert_updates = """
@@ -5036,29 +5160,20 @@ try:
     conn.commit()
     print("Added RE ID in AlmaBase as external_database_id")
     
-    # Close DB connection
-    if conn:
-        print("Closing DB connection")
-        cur.close()
-        conn.close()
-    
     # Close writing to Process.log
     sys.stdout.close()
-    
-    sys.exit()
 
 except Exception as Argument:
     print("Error while syncing Alumni data between Raisers Edge & Almabase")
     subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
     send_error_emails()
     
-# finally:
-#     # # Close DB connection
-#     # if conn:
-#     #     print("Closing DB connection")
-#     #     cur.close()
-#     #     conn.close()
+finally:
     
-#     # Close writing to Process.log
-#     # sys.stdout.close()
-#     exit()
+    # Close DB connection
+    if conn:
+        print("Closing DB connection")
+        cur.close()
+        conn.close()
+    
+    sys.exit()
