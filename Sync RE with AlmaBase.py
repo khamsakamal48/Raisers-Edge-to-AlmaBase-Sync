@@ -914,7 +914,7 @@ def constituent_not_found_email():
 
 def add_tags(attr_type, atrr_comment):
     
-    print("Adding update tags for new email in RE")
+    print("Adding update tags for new updates in RE")
     
     global params, url
     
@@ -948,7 +948,7 @@ def add_tags(attr_type, atrr_comment):
         'category': 'Synced from',
         'parent_id': re_system_id,
         'value': value,
-        'comment': atrr_comment,
+        'comment': str(atrr_comment),
         'date': datetime.now().replace(microsecond=0).isoformat()
     }
     
@@ -5012,7 +5012,7 @@ try:
         
         if re_chapter == "":
             # Will post in RE
-            print("Will add new chaoter in RE")
+            print("Will add new chapter in RE")
             params = {
                 'category': 'Chapter',
                 'value': ab_chapter,
