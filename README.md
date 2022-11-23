@@ -10,11 +10,14 @@ Raisers Edge to AlmaBase Sync is a program written in Python to compare IIT Bomb
 sudo apt install python3-pip
 
 # Python Modules
+pip3 install requests
+pip3 install jinja2
 pip3 install psycopg2
 pip3 install python-dotenv
 pip3 install fuzzywuzzy
 pip3 install python-Levenshtein
 pip3 install geopy
+pip3 install click
 
 ```
 - If you encounter error on installing **pyscopg2**, then try:
