@@ -176,6 +176,17 @@ def check_for_errors():
         # Send emails
         print ("Will send email now")
         send_error_emails()
+        
+    try:
+        error_name = re_api_response[0]['error_name']
+        
+        if error_name == 'ContactBusinessLogicPhoneNumberIsInvalid':
+            # Send emails
+            print ("Will send email now")
+            send_error_emails()
+    except:
+        pass
+        
 
 def attach_file_to_email(message, filename):
     # Open the attachment file for reading in binary mode, and make it a MIMEApplication class
@@ -1378,7 +1389,8 @@ try:
     for each_id in phone_id_list:
         try:
             phones = re.sub("[^0-9]", "",(ab_profile['custom_fields'][each_id]['values'][0]['value']['content']))
-            ab_phone_list.append(phones)
+            if len(phones) > 5:
+                ab_phone_list.append(phones)
         except:
             # Email IDs that don't have any email addresses in AlmaBase
             blank_phone_ids.append(each_id)
@@ -1392,9 +1404,11 @@ try:
         try:
             likely_phone, score = process.extractOne(each_phone, re_phone_list)
             if score < 80:
-                missing_in_re.append(each_phone)
+                if len(each_phone) > 5:
+                    missing_in_re.append(each_phone)
         except:
-            missing_in_re.append(each_phone)
+            if len(each_phone) > 5:
+                missing_in_re.append(each_phone)
 
     # Making sure that there are no duplicates in the missing list
     print("Removing duplicates in the missing list")
@@ -1407,6 +1421,7 @@ try:
     if missing_in_re != []:
         print("Uploading missing numbers in RE")
         for each_phone in missing_in_re:
+            
             url = "https://api.sky.blackbaud.com/constituent/v1/phones"
         
             params = {
