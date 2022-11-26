@@ -215,7 +215,7 @@ def send_error_emails():
         pass
     
     # Checking if it's evening to avoid sending emails
-    current_time = time.strftime("%H", time.localtime())
+    current_time = datetime.now().strftime("%H", time.localtime())
     
     if 10 <= int(current_time) < 19:
         
