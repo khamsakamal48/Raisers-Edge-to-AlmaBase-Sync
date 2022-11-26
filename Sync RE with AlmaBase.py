@@ -170,10 +170,14 @@ def post_request_ab():
     
 def check_for_errors():
     print("Checking for errors")
+    
+    global subject
+    
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
     
     if any(x in re_api_response for x in error_keywords):
         # Send emails
+        subject = 'Error while syncing Raisers Edge and Almabase'
         print ("Will send email now")
         send_error_emails()
         
@@ -183,6 +187,7 @@ def check_for_errors():
         if error_name == 'ContactBusinessLogicPhoneNumberIsInvalid':
             # Send emails
             print ("Will send email now")
+            subject = 'Error while syncing Raisers Edge and Almabase: Phone Number is invalid'
             send_error_emails()
     except:
         pass
@@ -211,7 +216,7 @@ def send_error_emails():
     
     if 10 <= int(current_time) < 19:
         
-        # It's morning
+        print('It is morning')
 
         message = MIMEMultipart()
         message["Subject"] = subject
@@ -970,11 +975,13 @@ def add_tags(attr_type, atrr_comment):
     elif attr_type == 'online':
         value = 'AlmaBase - Automatically | Online Presence'
     
+    comment = 'Update: ' + str(atrr_comment)
+    
     params = {
         'category': 'Synced from',
         'parent_id': re_system_id,
         'value': value,
-        'comment': str(atrr_comment),
+        'comment': comment,
         'date': datetime.now().replace(microsecond=0).isoformat()
     }
     
