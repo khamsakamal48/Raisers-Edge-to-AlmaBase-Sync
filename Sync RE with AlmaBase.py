@@ -5043,7 +5043,12 @@ try:
         
     # Life member update
     print("Checking if Alum is a Life Member")
-    ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
+    
+    try:
+        ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
+    
+    except:
+        ab_life_member = 'no'
 
     if ab_life_member == "yes":
         print("Updating Life membership in RE")
