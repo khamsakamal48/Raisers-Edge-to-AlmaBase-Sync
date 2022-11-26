@@ -208,127 +208,114 @@ def attach_file_to_email(message, filename):
 def send_error_emails():
     print("Sending email for an error")
     
-    try:
-        # Close writing to Process.log
+    if sys.stdout:
         sys.stdout.close()
-    except:
-        pass
-    
-    # Checking if it's evening to avoid sending emails
-    current_time = datetime.now().strftime("%H", time.localtime())
-    
-    if 10 <= int(current_time) < 19:
+
+    message = MIMEMultipart()
+    message["Subject"] = subject
+    message["From"] = MAIL_USERN
+    message["To"] = SEND_TO
+
+    # Adding Reply-to header
+    message.add_header('reply-to', MAIL_USERN)
         
-        print('It is morning')
+    TEMPLATE="""
+    <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
+    <tbody>
+    <tr style="height: 127px;">
+    <td style="background-color: #363636; width: 100%; text-align: center; vertical-align: middle; height: 127px;">&nbsp;
+    <h1><span style="color: #ffffff;">&nbsp;Raiser's Edge Automation: {{job_name}} Failed</span>&nbsp;</h1>
+    </td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="width: 100%; height: 18px; background-color: #ffffff; border-color: #ffffff; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #455362;">This is to notify you that execution of Auto-updating Alumni records has failed.</span>&nbsp;</td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
+    </tr>
+    <tr style="height: 61px;">
+    <td style="width: 100%; background-color: #2f2f2f; height: 61px; text-align: center; vertical-align: middle;">
+    <h2><span style="color: #ffffff;">Job details:</span></h2>
+    </td>
+    </tr>
+    <tr style="height: 52px;">
+    <td style="height: 52px;">
+    <table style="background-color: #2f2f2f; width: 100%; margin-left: auto; margin-right: auto; height: 42px;">
+    <tbody>
+    <tr>
+    <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Job :</span>&nbsp;</td>
+    <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{job_name}}&nbsp;</td>
+    </tr>
+    <tr>
+    <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Failed on :</span>&nbsp;</td>
+    <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{current_time}}&nbsp;</td>
+    </tr>
+    </tbody>
+    </table>
+    </td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; background-color: #ffffff;">&nbsp;</td>
+    </tr>
+    <tr style="height: 18px;">
+    <td style="height: 18px; width: 100%; background-color: #ffffff; text-align: center; vertical-align: middle;">Below is the detailed error log,</td>
+    </tr>
+    <tr style="height: 217.34375px;">
+    <td style="height: 217.34375px; background-color: #f8f9f9; width: 100%; text-align: left; vertical-align: middle;">{{error_log_message}}</td>
+    </tr>
+    </tbody>
+    </table>
+    """
 
-        message = MIMEMultipart()
-        message["Subject"] = subject
-        message["From"] = MAIL_USERN
-        message["To"] = SEND_TO
+    # Create a text/html message from a rendered template
+    emailbody = MIMEText(
+        Environment().from_string(TEMPLATE).render(
+            job_name = "Syncing Raisers Edge and AlmaBase",
+            current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            error_log_message = Argument
+        ), "html"
+    )
 
-        # Adding Reply-to header
-        message.add_header('reply-to', MAIL_USERN)
-            
-        TEMPLATE="""
-        <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
-        <tbody>
-        <tr style="height: 127px;">
-        <td style="background-color: #363636; width: 100%; text-align: center; vertical-align: middle; height: 127px;">&nbsp;
-        <h1><span style="color: #ffffff;">&nbsp;Raiser's Edge Automation: {{job_name}} Failed</span>&nbsp;</h1>
-        </td>
-        </tr>
-        <tr style="height: 18px;">
-        <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
-        </tr>
-        <tr style="height: 18px;">
-        <td style="width: 100%; height: 18px; background-color: #ffffff; border-color: #ffffff; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #455362;">This is to notify you that execution of Auto-updating Alumni records has failed.</span>&nbsp;</td>
-        </tr>
-        <tr style="height: 18px;">
-        <td style="height: 18px; background-color: #ffffff; border-color: #ffffff;">&nbsp;</td>
-        </tr>
-        <tr style="height: 61px;">
-        <td style="width: 100%; background-color: #2f2f2f; height: 61px; text-align: center; vertical-align: middle;">
-        <h2><span style="color: #ffffff;">Job details:</span></h2>
-        </td>
-        </tr>
-        <tr style="height: 52px;">
-        <td style="height: 52px;">
-        <table style="background-color: #2f2f2f; width: 100%; margin-left: auto; margin-right: auto; height: 42px;">
-        <tbody>
-        <tr>
-        <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Job :</span>&nbsp;</td>
-        <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{job_name}}&nbsp;</td>
-        </tr>
-        <tr>
-        <td style="width: 50%; text-align: center; vertical-align: middle;">&nbsp;<span style="color: #ffffff;">Failed on :</span>&nbsp;</td>
-        <td style="background-color: #ff8e2d; width: 50%; text-align: center; vertical-align: middle;">&nbsp;{{current_time}}&nbsp;</td>
-        </tr>
-        </tbody>
-        </table>
-        </td>
-        </tr>
-        <tr style="height: 18px;">
-        <td style="height: 18px; background-color: #ffffff;">&nbsp;</td>
-        </tr>
-        <tr style="height: 18px;">
-        <td style="height: 18px; width: 100%; background-color: #ffffff; text-align: center; vertical-align: middle;">Below is the detailed error log,</td>
-        </tr>
-        <tr style="height: 217.34375px;">
-        <td style="height: 217.34375px; background-color: #f8f9f9; width: 100%; text-align: left; vertical-align: middle;">{{error_log_message}}</td>
-        </tr>
-        </tbody>
-        </table>
-        """
+    # Add HTML parts to MIMEMultipart message
+    # The email client will try to render the last part first
+    message.attach(emailbody)
+    attach_file_to_email(message, 'Process.log')
+    emailcontent = message.as_string()
 
-        # Create a text/html message from a rendered template
-        emailbody = MIMEText(
-            Environment().from_string(TEMPLATE).render(
-                job_name = "Syncing Raisers Edge and AlmaBase",
-                current_time=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                error_log_message = Argument
-            ), "html"
+    # # Create a secure SSL context
+    # context = ssl.create_default_context()
+
+    # # Try to log in to server and send email
+    # try:
+    #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
+    #     server.ehlo() # Can be omitted
+    #     server.starttls(context=context) # Secure the connection
+    #     server.ehlo() # Can be omitted
+    #     server.login(MAIL_USERN, MAIL_PASSWORD)
+    #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
+    #     # TODO: Send email here
+    # except Exception as e:
+    #     # Print any error messages to stdout
+    #     print(e)
+    # # finally:
+    # #     server.quit()
+
+    # Create secure connection with server and send email
+    context = ssl._create_unverified_context()
+    with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
+        server.login(MAIL_USERN, MAIL_PASSWORD)
+        server.sendmail(
+            MAIL_USERN, SEND_TO, emailcontent
         )
 
-        # Add HTML parts to MIMEMultipart message
-        # The email client will try to render the last part first
-        message.attach(emailbody)
-        attach_file_to_email(message, 'Process.log')
-        emailcontent = message.as_string()
-
-        # # Create a secure SSL context
-        # context = ssl.create_default_context()
-
-        # # Try to log in to server and send email
-        # try:
-        #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-        #     server.ehlo() # Can be omitted
-        #     server.starttls(context=context) # Secure the connection
-        #     server.ehlo() # Can be omitted
-        #     server.login(MAIL_USERN, MAIL_PASSWORD)
-        #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-        #     # TODO: Send email here
-        # except Exception as e:
-        #     # Print any error messages to stdout
-        #     print(e)
-        # # finally:
-        # #     server.quit()
-
-        # Create secure connection with server and send email
-        context = ssl._create_unverified_context()
-        with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
-            server.login(MAIL_USERN, MAIL_PASSWORD)
-            server.sendmail(
-                MAIL_USERN, SEND_TO, emailcontent
-            )
-
-        # Save copy of the sent email to sent items folder
-        with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
-            imap.login(MAIL_USERN, MAIL_PASSWORD)
-            imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
-            imap.logout()
-        
-    else:
-        print('Its evening')
+    # Save copy of the sent email to sent items folder
+    with imaplib.IMAP4_SSL(IMAP_URL, IMAP_PORT) as imap:
+        imap.login(MAIL_USERN, MAIL_PASSWORD)
+        imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
+        imap.logout()
 
 def notify_sync_finished():
     print("Notifying that Sync has finished")
@@ -5163,7 +5150,8 @@ try:
     print("Added RE ID in AlmaBase as external_database_id")
     
     # Close writing to Process.log
-    sys.stdout.close()
+    if sys.stdout:
+        sys.stdout.close()
 
 except Exception as Argument:
     print("Error while syncing Alumni data between Raisers Edge & Almabase")
@@ -5171,6 +5159,10 @@ except Exception as Argument:
     send_error_emails()
     
 finally:
+    
+    # Close writing to Process.log
+    if sys.stdout:
+        sys.stdout.close()
     
     # Close DB connection
     if conn:
