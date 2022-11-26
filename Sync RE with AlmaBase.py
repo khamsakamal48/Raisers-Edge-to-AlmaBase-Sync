@@ -171,7 +171,7 @@ def post_request_ab():
 def check_for_errors():
     print("Checking for errors")
     
-    global subject
+    global subject, error_name
     
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
     
@@ -1434,16 +1434,18 @@ try:
             
             check_for_errors()
             
-            # Adding Update Tags
-            add_tags('mobile', each_phone)
+            if error_name != 'ContactBusinessLogicPhoneNumberIsInvalid':
             
-            # Will update in PostgreSQL
-            insert_updates = """
-                            INSERT INTO re_phone_added (re_system_id, phone, date)
-                            VALUES (%s, %s, now())
-                            """
-            cur.execute(insert_updates, [re_system_id, each_phone])
-            conn.commit()
+                # Adding Update Tags
+                add_tags('mobile', each_phone)
+                
+                # Will update in PostgreSQL
+                insert_updates = """
+                                INSERT INTO re_phone_added (re_system_id, phone, date)
+                                VALUES (%s, %s, now())
+                                """
+                cur.execute(insert_updates, [re_system_id, each_phone])
+                conn.commit()
             
         print("Uploaded all missing numbers in RE")
             
