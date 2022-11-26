@@ -208,8 +208,11 @@ def attach_file_to_email(message, filename):
 def send_error_emails():
     print("Sending email for an error")
     
-    # Close writing to Process.log
-    sys.stdout.close()
+    try:
+        # Close writing to Process.log
+        sys.stdout.close()
+    except:
+        pass
     
     # Checking if it's evening to avoid sending emails
     current_time = time.strftime("%H", time.localtime())
