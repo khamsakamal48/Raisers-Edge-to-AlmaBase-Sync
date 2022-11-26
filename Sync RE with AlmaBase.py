@@ -1768,7 +1768,7 @@ try:
                             check_for_errors()
                             
                             # Adding Update Tags
-                            add_tags('position', ab_org_position)
+                            add_tags('position', params)
 
                             print("Updated missing employment details in RE")
         
