@@ -1103,6 +1103,28 @@ try:
     subject = "No Alums available for sync. Sync has been completed"
     
     try:
+        # Ensuring that Alum exists in Table
+        extract_sql = """
+            SELECT re_system_id FROM all_alums_in_re FETCH FIRST 1 ROW ONLY;
+            """
+        cur.execute(extract_sql)
+        result = cur.fetchone()
+        
+        # Ensure no comma or brackets in output
+        re_system_id = result[0]
+        
+        if re_system_id is None or re_system_id == '':
+            print("Alums not downloaded in the table")
+            subject = "No Alums available for sync. Alums not downloaded in the table"
+            
+            print(subject)
+
+            # Commit changes
+            conn.commit()
+            
+            notify_sync_finished()
+            
+        
         extract_sql = """
             SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
             """
