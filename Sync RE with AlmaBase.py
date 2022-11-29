@@ -1091,7 +1091,7 @@ try:
             
         
         extract_sql = """
-            SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced ORDER BY RANDOM() LIMIT 1;
+            SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced ORDER BY RANDOM() FETCH FIRST 1 ROW ONLY;
             """
         cur.execute(extract_sql)
         result = cur.fetchone()
