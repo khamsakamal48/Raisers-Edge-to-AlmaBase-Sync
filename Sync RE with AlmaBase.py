@@ -1091,7 +1091,9 @@ try:
             
         
         extract_sql = """
-            SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced ORDER BY RAND() LIMIT 1;
+            SELECT re_system_id FROM all_alums_in_re WHERE re_system_id NOT IN (SELECT re_system_id FROM already_synced) 
+            ORDER BY random()
+            LIMIT 1;
             """
         cur.execute(extract_sql)
         result = cur.fetchone()
