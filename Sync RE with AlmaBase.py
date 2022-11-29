@@ -210,8 +210,12 @@ def attach_file_to_email(message, filename):
 def send_error_emails():
     print("Sending email for an error")
     
-    if sys.stdout:
-        sys.stdout.close()
+    try:
+        if sys.stdout:
+            sys.stdout.close()
+            
+    except:
+        pass
 
     message = MIMEMultipart()
     message["Subject"] = subject
@@ -283,28 +287,15 @@ def send_error_emails():
 
     # Add HTML parts to MIMEMultipart message
     # The email client will try to render the last part first
-    message.attach(emailbody)
-    attach_file_to_email(message, 'Process.log')
-    emailcontent = message.as_string()
-
-    # # Create a secure SSL context
-    # context = ssl.create_default_context()
-
-    # # Try to log in to server and send email
-    # try:
-    #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-    #     server.ehlo() # Can be omitted
-    #     server.starttls(context=context) # Secure the connection
-    #     server.ehlo() # Can be omitted
-    #     server.login(MAIL_USERN, MAIL_PASSWORD)
-    #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-    #     # TODO: Send email here
-    # except Exception as e:
-    #     # Print any error messages to stdout
-    #     print(e)
-    # # finally:
-    # #     server.quit()
-
+    try:
+        message.attach(emailbody)
+        attach_file_to_email(message, 'Process.log')
+        emailcontent = message.as_string()
+        
+    except:
+        message.attach(emailbody)
+        emailcontent = message.as_string()
+    
     # Create secure connection with server and send email
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
