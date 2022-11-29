@@ -882,32 +882,6 @@ def constituent_not_found_email():
         message.attach(emailbody)
         emailcontent = message.as_string()
         
-        #   # Create secure connection with server and send email
-        #   context = ssl._create_unverified_context()
-        #   with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
-        #       server.login(MAIL_USERN, MAIL_PASSWORD)
-        #       server.sendmail(
-        #           MAIL_USERN, MAIL_USERN, emailcontent
-        #       )
-
-        # # Create a secure SSL context
-        # context = ssl.create_default_context()
-        
-        # # Try to log in to server and send email
-        # try:
-        #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
-        #     server.ehlo() # Can be omitted
-        #     server.starttls(context=context) # Secure the connection
-        #     server.ehlo() # Can be omitted
-        #     server.login(MAIL_USERN, MAIL_PASSWORD)
-        #     server.sendmail(MAIL_USERN, MAIL_USERN, emailcontent)
-        #     # TODO: Send email here
-        # except Exception as e:
-        #     # Print any error messages to stdout
-        #     print(e)
-        # # finally:
-        # #     server.quit()
-        
         # Create secure connection with server and send email
         context = ssl._create_unverified_context()
         with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -921,10 +895,8 @@ def constituent_not_found_email():
             imap.login(MAIL_USERN, MAIL_PASSWORD)
             imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
             imap.logout()
-            
-        # server.quit()
         
-        exit()
+    exit()
 
 def add_tags(attr_type, atrr_comment):
     
