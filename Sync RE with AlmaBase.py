@@ -179,6 +179,7 @@ def check_for_errors():
         # Send emails
         subject = 'Error while syncing Raisers Edge and Almabase'
         print ("Will send email now")
+        print(subject)
         send_error_emails()
         
     try:
@@ -188,6 +189,7 @@ def check_for_errors():
             # Send emails
             print ("Will send email now")
             subject = 'Error while syncing Raisers Edge and Almabase: Phone Number is invalid'
+            print(subject)
             send_error_emails()
     except:
         pass
@@ -1453,8 +1455,6 @@ try:
             }
             
             post_request_re()
-            
-            check_for_errors()
             
             # Adding Update Tags
             add_tags('mobile', each_phone)
