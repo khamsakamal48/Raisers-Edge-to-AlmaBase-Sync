@@ -244,6 +244,12 @@ CREATE TABLE ab_interests_skills_added
     date date
 );
 
+CREATE TABLE ab_org_added
+(
+    ab_system_id character varying,
+    org_name character varying,
+    date date
+);
 ```
 
 - Import **Degree Mapping.csv** to ***degree_mapping*** table

@@ -1834,6 +1834,15 @@ try:
                         
                         # Update in Almabase
                         post_request_ab()
+
+                        # Will update in PostgreSQL
+                        insert_updates = """
+                                        INSERT INTO ab_org_added (ab_system_id, org_name, date)
+                                        VALUES (%s, %s, now())
+                                        """
+                        cur.execute(insert_updates, [ab_system_id, each_org])
+                        conn.commit()
+
                         print("Added missing employment in Almabase")
                     break
 
