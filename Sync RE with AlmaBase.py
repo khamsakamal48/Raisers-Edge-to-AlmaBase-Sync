@@ -933,7 +933,7 @@ def add_tags(attr_type, atrr_comment):
     comment = 'Update: ' + str(atrr_comment)
     
     params = {
-        'category': 'Synced from',
+        'category': 'Sync source',
         'parent_id': re_system_id,
         'value': value,
         'comment': comment,
