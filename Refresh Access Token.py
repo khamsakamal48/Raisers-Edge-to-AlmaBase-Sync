@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import json, requests, os, shutil
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import json, requests, os
 
 # Set current directory
