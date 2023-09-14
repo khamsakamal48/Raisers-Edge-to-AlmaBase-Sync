@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-
+import pandas as pd
 import requests, os, json, glob, csv, psycopg2
 
 # Set current directory
@@ -29,26 +28,26 @@ RE_LIST_ID_1 = os.getenv("RE_LIST_ID_1")
 
 # Retrieve access_token from file
 with open('access_token_output.json') as access_token_output:
-  data = json.load(access_token_output)
-  access_token = data["access_token"]
+    data = json.load(access_token_output)
+    access_token = data["access_token"]
 
 # PostgreSQL DB Connection
 conn = psycopg2.connect(host=DB_IP, dbname=DB_NAME, user=DB_USERNAME, password=DB_PASSWORD)
 
 # Open connection
 cur = conn.cursor()
-  
+
 def get_request_re():
     # Request Headers for Blackbaud API request
     headers = {
-    # Request headers
-    'Bb-Api-Subscription-Key': RE_API_KEY,
-    'Authorization': 'Bearer ' + access_token,
+        # Request headers
+        'Bb-Api-Subscription-Key': RE_API_KEY,
+        'Authorization': 'Bearer ' + access_token,
     }
-    
+
     global re_api_response
     re_api_response = requests.get(url, params=params, headers=headers).json()
-    
+
 def delete_json_files():
     # Iterate over the list of filepaths & remove each file.
     for filePath in fileList:
@@ -56,7 +55,7 @@ def delete_json_files():
             os.remove(filePath)
         except:
             pass
-    
+
 # Housekeeping
 fileList = glob.glob('Schools_in_RE_*.json')
 delete_json_files()
@@ -80,27 +79,20 @@ while url:
         i += 1
     with open("Schools_in_RE_%s.json" % i, "w") as list_output:
         json.dump(re_api_response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
-    
+
     # Check if a variable is present in file
     with open("Schools_in_RE_%s.json" % i) as list_output_last:
         if 'next_link' in list_output_last.read():
             url = re_api_response["next_link"]
         else:
             break
-        
+
 # Read multiple files
 multiple_files = glob.glob("Schools_in_RE_*.json")
 
 # Parse from JSON and write to CSV file
-# Header of CSV file
-header = ['table_entries_id', 'is_active', 'long_description', 'short_description', 'sequence', 'is_system_entry', 'code_tables_id', 'added_by_id', 'code_tables_name']
+data = pd.DataFrame()
 
-with open('Schools_in_RE.csv', 'w', encoding='UTF8') as csv_file:
-    writer = csv.writer(csv_file, delimiter = ";")
-
-    # Write the header
-    writer.writerow(header)
-    
 # Read each file
 for each_file in multiple_files:
 
@@ -108,15 +100,12 @@ for each_file in multiple_files:
     with open(each_file, 'r') as json_file:
         json_content = json.load(json_file)
 
-        for results in json_content['value']:
-            try:
-                data = (results['table_entries_id'],results['is_active'],results['long_description'],results['short_description'],results['sequence'],results['is_system_entry'],results['code_tables_id'],results['added_by_id'],results['code_tables_name'])
-                
-                with open('Schools_in_RE.csv', 'a', encoding='UTF8') as csv_file:
-                    writer = csv.writer(csv_file, delimiter = ";")
-                    writer.writerow(data)
-            except:
-                pass
+        df = pd.json_normalize(json_content['value'])
+        df = df[['table_entries_id', 'is_active', [], 'long_description', 'short_description', 'sequence', 'is_system_entry', 'code_tables_id', 'added_by_id', 'code_tables_name']]
+
+        data = pd.concat([data, df])
+
+data.to_csv('Schools_in_RE.csv', index=False, lineterminator='\r\n', sep=';')
 
 # Delete paginated JSON files
 # Get a list of all the file paths that ends with wildcard from in specified directory
@@ -152,14 +141,14 @@ while url:
         i += 1
     with open("Degrees_in_RE_%s.json" % i, "w") as list_output:
         json.dump(re_api_response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
-    
+
     # Check if a variable is present in file
     with open("Degrees_in_RE_%s.json" % i) as list_output_last:
         if 'next_link' in list_output_last.read():
             url = re_api_response["next_link"]
         else:
             break
-        
+
 # Read multiple files
 multiple_files = glob.glob("Degrees_in_RE_*.json")
 
@@ -172,7 +161,7 @@ with open('Degrees_in_RE.csv', 'w', encoding='UTF8') as csv_file:
 
     # Write the header
     writer.writerow(header)
-    
+
 # Read each file
 for each_file in multiple_files:
 
@@ -183,7 +172,7 @@ for each_file in multiple_files:
         for results in json_content['value']:
             try:
                 data = (results['table_entries_id'],results['is_active'],results['long_description'].replace(";", ","),results['sequence'],results['is_system_entry'],results['code_tables_id'],results['added_by_id'],results['code_tables_name'])
-                
+
                 with open('Degrees_in_RE.csv', 'a', encoding='UTF8') as csv_file:
                     writer = csv.writer(csv_file, delimiter = ";")
                     writer.writerow(data)
@@ -224,14 +213,14 @@ while url:
         i += 1
     with open("Departments_in_RE_%s.json" % i, "w") as list_output:
         json.dump(re_api_response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
-    
+
     # Check if a variable is present in file
     with open("Departments_in_RE_%s.json" % i) as list_output_last:
         if 'next_link' in list_output_last.read():
             url = re_api_response["next_link"]
         else:
             break
-        
+
 # Read multiple files
 multiple_files = glob.glob("Departments_in_RE_*.json")
 
@@ -244,7 +233,7 @@ with open('Departments_in_RE.csv', 'w', encoding='UTF8') as csv_file:
 
     # Write the header
     writer.writerow(header)
-    
+
 # Read each file
 for each_file in multiple_files:
 
@@ -255,7 +244,7 @@ for each_file in multiple_files:
         for results in json_content['value']:
             try:
                 data = (results['table_entries_id'],results['is_active'],results['long_description'].replace(";", ","),results['sequence'],results['is_system_entry'],results['code_tables_id'],results['added_by_id'],results['code_tables_name'])
-                
+
                 with open('Departments_in_RE.csv', 'a', encoding='UTF8') as csv_file:
                     writer = csv.writer(csv_file, delimiter = ";")
                     writer.writerow(data)

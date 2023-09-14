@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import requests, os, json, glob, csv, psycopg2, sys, datetime, smtplib, ssl, imaplib, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -7,6 +5,7 @@ from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from jinja2 import Environment
 from datetime import datetime
+import pandas as pd
 
 # Set current directory
 #os.chdir(os.path.dirname(sys.argv[0]))
@@ -37,7 +36,7 @@ def attach_file_to_email(message, filename):
     # Open the attachment file for reading in binary mode, and make it a MIMEApplication class
     with open(filename, "rb") as f:
         file_attachment = MIMEApplication(f.read())
-    # Add header/name to the attachments    
+    # Add header/name to the attachments
     file_attachment.add_header(
         "Content-Disposition",
         f"attachment; filename= {filename}",
@@ -47,10 +46,10 @@ def attach_file_to_email(message, filename):
 
 def send_error_emails():
     print("Sending email for an error")
-    
+
     # Close writing to Process.log
     sys.stdout.close()
-    
+
     message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = MAIL_USERN
@@ -58,7 +57,7 @@ def send_error_emails():
 
     # Adding Reply-to header
     message.add_header('reply-to', MAIL_USERN)
-        
+
     TEMPLATE="""
     <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
     <tbody>
@@ -109,7 +108,7 @@ def send_error_emails():
     </tbody>
     </table>
     """
-    
+
     # Create a text/html message from a rendered template
     emailbody = MIMEText(
         Environment().from_string(TEMPLATE).render(
@@ -118,16 +117,16 @@ def send_error_emails():
             error_log_message = Argument
         ), "html"
     )
-    
+
     # Add HTML parts to MIMEMultipart message
     # The email client will try to render the last part first
     message.attach(emailbody)
     attach_file_to_email(message, 'Process-Get_Constituent_from_RE_to_sync_with_AlmaBase.log')
     emailcontent = message.as_string()
-    
+
     # # Create a secure SSL context
     # context = ssl.create_default_context()
-    
+
     # # Try to log in to server and send email
     # try:
     #     server = smtplib.SMTP(SMTP_URL,SMTP_PORT)
@@ -142,7 +141,7 @@ def send_error_emails():
     #     print(e)
     # # finally:
     # #     server.quit()
-    
+
     # Create secure connection with server and send email
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -180,11 +179,11 @@ try:
     def get_request_re():
         # Request Headers for Blackbaud API request
         headers = {
-        # Request headers
-        'Bb-Api-Subscription-Key': RE_API_KEY,
-        'Authorization': 'Bearer ' + access_token,
+            # Request headers
+            'Bb-Api-Subscription-Key': RE_API_KEY,
+            'Authorization': 'Bearer ' + access_token,
         }
-        
+
         global re_api_response
         re_api_response = requests.get(url, params=params, headers=headers).json()
 
@@ -209,44 +208,33 @@ try:
             i += 1
         with open("Alums_in_RE_%s.json" % i, "w") as list_output:
             json.dump(re_api_response, list_output,ensure_ascii=False, sort_keys=True, indent=4)
-        
+
         # Check if a variable is present in file
         with open("Alums_in_RE_%s.json" % i) as list_output_last:
             if 'next_link' in list_output_last.read():
                 url = re_api_response["next_link"]
             else:
                 break
-            
+
     # Read multiple files
     multiple_files = glob.glob("Alums_in_RE_*.json")
 
     # Parse from JSON and write to CSV file
-    # Header of CSV file
-    header = ['System_ID', 'Name']
+    data = pd.DataFrame()
 
-    with open('Alums_in_RE.csv', 'w', encoding='UTF8') as csv_file:
-        writer = csv.writer(csv_file, delimiter = ";")
-
-        # Write the header
-        writer.writerow(header)
-        
     # Read each file
     for each_file in multiple_files:
 
         # Open JSON file
         with open(each_file, 'r') as json_file:
             json_content = json.load(json_file)
+            df = pd.json_normalize(json_content['value'])
+            df = df[['id', 'name']]
 
-            for results in json_content['value']:
-                try:
-                    data = (results['id'],results['name'])
-                    
-                    with open('Alums_in_RE.csv', 'a', encoding='UTF8') as csv_file:
-                        writer = csv.writer(csv_file, delimiter = ";")
-                        writer.writerow(data)
-                except:
-                    pass
-                
+            data = pd.concat([data, df])
+
+    data.to_csv('Alums_in_RE.csv', index=False, lineterminator='\r\n', sep=';')
+
     # Delete paginated JSON files
     # Get a list of all the file paths that ends with wildcard from in specified directory
     fileList = glob.glob('Alums_in_RE_*.json')
@@ -257,7 +245,7 @@ try:
             os.remove(filePath)
         except:
             pass
-        
+
     # PostgreSQL DB Connection
     conn = psycopg2.connect(host=DB_IP, dbname=DB_NAME, user=DB_USERNAME, password=DB_PASSWORD)
 
@@ -278,22 +266,22 @@ try:
 
     # Commit changes
     conn.commit()
-    
+
     # Close writing to Process.log
     sys.stdout.close()
 
 except Exception as Argument:
-    
+
     print("Error while downloading Alumni data for syncing Alumni data between Raisers Edge & Almabase")
     subject = "Error while downloading Alumni data for syncing Alumni data between Raisers Edge & Almabase"
-    
+
     send_error_emails()
-    
+
 finally:
-    
+
     # Close DB connection
     if conn:
         cur.close()
         conn.close()
-        
+
     sys.exit()
