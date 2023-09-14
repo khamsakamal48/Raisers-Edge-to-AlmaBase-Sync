@@ -1,13 +1,6 @@
-#!/usr/bin/env python3
-
-from cmath import e
-from sqlite3 import paramstyle
-from textwrap import indent
-from click import echo
 import requests, os, json, glob, csv, psycopg2, sys, smtplib, ssl, imaplib, time, email, re, fuzzywuzzy, itertools, geopy, datetime, logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
 from email.mime.application import MIMEApplication
 from jinja2 import Environment
 from fuzzywuzzy import fuzz
@@ -24,10 +17,10 @@ sys.stdout = open('Process.log', 'w')
 # API Request strategy
 print("Setting API Request strategy")
 retry_strategy = Retry(
-total=3,
-status_forcelist=[429, 500, 502, 503, 504],
-allowed_methods=["HEAD", "GET", "OPTIONS"],
-backoff_factor=10
+    total=3,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["HEAD", "GET", "OPTIONS"],
+    backoff_factor=10
 )
 adapter = HTTPAdapter(max_retries=retry_strategy)
 http = requests.Session()
@@ -76,14 +69,14 @@ def get_request_re():
     time.sleep(5)
     # Request Headers for Blackbaud API request
     headers = {
-    # Request headers
-    'Bb-Api-Subscription-Key': RE_API_KEY,
-    'Authorization': 'Bearer ' + access_token,
+        # Request headers
+        'Bb-Api-Subscription-Key': RE_API_KEY,
+        'Authorization': 'Bearer ' + access_token,
     }
-    
+
     global re_api_response
     re_api_response = http.get(url, params=params, headers=headers).json()
-    
+
     check_for_errors()
 
 def get_request_almabase():
@@ -96,44 +89,44 @@ def get_request_almabase():
         'X-API-Access-Key': ALMABASE_API_KEY,
         'X-API-Access-Token': ALMABASE_API_TOKEN,
     }
-    
+
     global ab_api_response
     ab_api_response = http.get(url, headers=headers).json()
-    
+
     print_json(ab_api_response)
-    
+
     check_for_errors()
 
 def post_request_re():
     print("Running POST Request to RE function")
     time.sleep(5)
     headers = {
-    # Request headers
-    'Bb-Api-Subscription-Key': RE_API_KEY,
-    'Authorization': 'Bearer ' + access_token,
-    'Content-Type': 'application/json',
+        # Request headers
+        'Bb-Api-Subscription-Key': RE_API_KEY,
+        'Authorization': 'Bearer ' + access_token,
+        'Content-Type': 'application/json',
     }
-    
+
     global re_api_response
     re_api_response = http.post(url, params=params, headers=headers, json=params).json()
-    
+
     check_for_errors()
 
 def patch_request_re():
     print("Running PATCH Request to RE function")
     time.sleep(5)
     headers = {
-    # Request headers
-    'Bb-Api-Subscription-Key': RE_API_KEY,
-    'Authorization': 'Bearer ' + access_token,
-    'Content-Type': 'application/json'
+        # Request headers
+        'Bb-Api-Subscription-Key': RE_API_KEY,
+        'Authorization': 'Bearer ' + access_token,
+        'Content-Type': 'application/json'
     }
-    
+
     global re_api_response
     re_api_response = http.patch(url, headers=headers, data=json.dumps(params))
-    
+
     check_for_errors()
-    
+
 def patch_request_ab():
     print("Running PATCH Request to Almabase function")
     time.sleep(5)
@@ -145,10 +138,10 @@ def patch_request_ab():
         'X-API-Access-Key': ALMABASE_API_KEY,
         'X-API-Access-Token': ALMABASE_API_TOKEN,
     }
-    
+
     global ab_api_response
     ab_api_response = http.patch(url, headers=headers, json=params)
-    
+
     check_for_errors()
 
 def post_request_ab():
@@ -162,29 +155,29 @@ def post_request_ab():
         'X-API-Access-Key': ALMABASE_API_KEY,
         'X-API-Access-Token': ALMABASE_API_TOKEN,
     }
-    
+
     global ab_api_response
     ab_api_response = http.post(url, headers=headers, json=params)
-    
+
     check_for_errors()
-    
+
 def check_for_errors():
     print("Checking for errors")
-    
+
     global subject
-    
+
     error_keywords = ["invalid", "error", "bad", "Unauthorized", "Forbidden", "Not Found", "Unsupported Media Type", "Too Many Requests", "Internal Server Error", "Service Unavailable", "Unexpected", "error_code", "400"]
-    
+
     if any(x in re_api_response for x in error_keywords):
         # Send emails
         subject = 'Error while syncing Raisers Edge and Almabase'
         print ("Will send email now")
         print(subject)
         send_error_emails()
-        
+
     try:
         error_name = re_api_response[0]['error_name']
-        
+
         if error_name == 'ContactBusinessLogicPhoneNumberIsInvalid':
             # Send emails
             print ("Will send email now")
@@ -193,7 +186,7 @@ def check_for_errors():
             send_error_emails()
     except:
         pass
-        
+
 
 def attach_file_to_email(message, filename):
     # Open the attachment file for reading in binary mode, and make it a MIMEApplication class
@@ -209,11 +202,11 @@ def attach_file_to_email(message, filename):
 
 def send_error_emails():
     print("Sending email for an error")
-    
+
     try:
         if sys.stdout:
             sys.stdout.close()
-            
+
     except:
         pass
 
@@ -224,7 +217,7 @@ def send_error_emails():
 
     # Adding Reply-to header
     message.add_header('reply-to', MAIL_USERN)
-        
+
     TEMPLATE="""
     <table style="background-color: #ffffff; border-color: #ffffff; width: auto; margin-left: auto; margin-right: auto;">
     <tbody>
@@ -291,11 +284,11 @@ def send_error_emails():
         message.attach(emailbody)
         attach_file_to_email(message, 'Process.log')
         emailcontent = message.as_string()
-        
+
     except:
         message.attach(emailbody)
         emailcontent = message.as_string()
-    
+
     # Create secure connection with server and send email
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -312,20 +305,20 @@ def send_error_emails():
 
 def notify_sync_finished():
     print("Notifying that Sync has finished")
-    
+
     subject = "Raisers Edge & Almabase Sync has finished"
-    
+
     # # Close writing to Process.log
     # sys.stdout.close()
-    
+
     message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = MAIL_USERN
     message["To"] = SEND_TO
-    
+
     # Adding Reply-to header
     message.add_header('reply-to', MAIL_USERN)
-    
+
     TEMPLATE = """
     <html>
         <body>
@@ -339,17 +332,17 @@ def notify_sync_finished():
         </body>
     </html>
     """
-    
+
     # Create a text/html message from a rendered template
     emailbody = MIMEText(
         Environment().from_string(TEMPLATE).render(), "html"
     )
-    
+
     # Add HTML parts to MIMEMultipart message
     # The email client will try to render the last part first
     message.attach(emailbody)
     emailcontent = message.as_string()
-    
+
     # Create secure connection with server and send email
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -363,25 +356,25 @@ def notify_sync_finished():
         imap.login(MAIL_USERN, MAIL_PASSWORD)
         imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
         imap.logout()
-        
+
     # Close DB connection
     if conn:
         cur.close()
         conn.close()
-        
+
     exit()
-    
+
 def multiple_education_exists():
     print("Notifying that Multiple IITB Education exists")
-    
+
     message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = MAIL_USERN
     message["To"] = SEND_TO
-    
+
     # Adding Reply-to header
     message.add_header('reply-to', MAIL_USERN)
-    
+
     TEMPLATE = """
     <html>
         <body>
@@ -401,21 +394,21 @@ def multiple_education_exists():
         </body>
     </html>
     """
-    
+
     # Create a text/html message from a rendered template
     emailbody = MIMEText(
         Environment().from_string(TEMPLATE).render(
             re_system_id=re_system_id,
             re_api_response_education=re_api_response_education,
             ab_api_response_education=ab_api_response_education
-            ), "html"
+        ), "html"
     )
-    
+
     # Add HTML parts to MIMEMultipart message
     # The email client will try to render the last part first
     message.attach(emailbody)
     emailcontent = message.as_string()
-    
+
     # Create secure connection with server and send email
     context = ssl._create_unverified_context()
     with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -432,12 +425,12 @@ def multiple_education_exists():
 
 def constituent_not_found_email():
     print("Sending an email that the constituent wasn't found")
-    
+
     # Checking if it's evening to avoid sending emails
     current_time = time.strftime("%H", time.localtime())
-    
+
     if 10 <= int(current_time) < 19:
-    
+
         # Query the next data to uploaded in RE
         extract_sql = """
                 SELECT re_system_id FROM all_alums_in_re EXCEPT SELECT re_system_id FROM already_synced FETCH FIRST 1 ROW ONLY;
@@ -447,17 +440,17 @@ def constituent_not_found_email():
 
         # Ensure no comma or brackets in output
         re_system_id = result[0]
-        
+
         extract_sql = """
                 SELECT name FROM all_alums_in_re where re_system_id = %s;
                 """
-        
+
         cur.execute(extract_sql, [re_system_id])
         result = cur.fetchone()
-                    
+
         # Ensure no comma or brackets in output
         name = result[0]
-        
+
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = MAIL_USERN
@@ -881,7 +874,7 @@ def constituent_not_found_email():
         # The email client will try to render the last part first
         message.attach(emailbody)
         emailcontent = message.as_string()
-        
+
         # Create secure connection with server and send email
         context = ssl._create_unverified_context()
         with smtplib.SMTP_SSL(SMTP_URL, SMTP_PORT, context=context) as server:
@@ -895,43 +888,43 @@ def constituent_not_found_email():
             imap.login(MAIL_USERN, MAIL_PASSWORD)
             imap.append('Sent', '\\Seen', imaplib.Time2Internaldate(time.time()), emailcontent.encode('utf8'))
             imap.logout()
-        
+
     exit()
 
 def add_tags(attr_type, atrr_comment):
-    
+
     print("Adding update tags for new updates in RE")
-    
+
     global params, url
-    
+
     url = 'https://api.sky.blackbaud.com/constituent/v1/constituents/customfields'
-    
+
     if attr_type == 'email':
         value = 'AlmaBase - Automatically | Email address'
-        
+
     elif attr_type == 'mobile':
         value = 'AlmaBase - Automatically | Phone Number'
-        
+
     elif attr_type == 'employment':
         value = 'AlmaBase - Automatically | Employment - Org. Name'
-        
+
     elif attr_type == 'position':
         value = 'AlmaBase - Automatically | Employment - Position'
-        
+
     elif attr_type == 'location':
         value = 'AlmaBase - Automatically | Location'
-        
+
     elif attr_type == 'education':
         value = 'AlmaBase - Automatically | Education'
-        
+
     elif attr_type == 'bio':
         value = 'AlmaBase - Automatically | Bio Details'
-        
+
     elif attr_type == 'online':
         value = 'AlmaBase - Automatically | Online Presence'
-    
+
     comment = 'Update: ' + str(atrr_comment)
-    
+
     params = {
         'category': 'Sync source',
         'parent_id': re_system_id,
@@ -939,10 +932,10 @@ def add_tags(attr_type, atrr_comment):
         'comment': comment,
         'date': datetime.now().replace(microsecond=0).isoformat()
     }
-    
+
     # Blackbaud API POST request
     post_request_re()
-    
+
     check_for_errors()
 
 def update_email_in_re():
@@ -954,15 +947,15 @@ def update_email_in_re():
         'constituent_id': re_system_id,
         'type': new_email_type
     }
-    
+
     global url
     url = "https://api.sky.blackbaud.com/constituent/v1/emailaddresses"
-    
+
     # Blackbaud API POST request
     post_request_re()
-    
+
     check_for_errors()
-    
+
     # Adding Update Tags
     add_tags('email', email_address)
 
@@ -993,7 +986,7 @@ def get_address(address):
     # adding 1 second padding between calls
     global geocode
     geocode = RateLimiter(geolocator.geocode, min_delay_seconds = 1, return_value_on_exception = None)
-    
+
     location = geolocator.geocode(address, addressdetails=True, language='en')
 
     if location is None:
@@ -1005,7 +998,7 @@ def get_address(address):
         address_split = address[address.index(' ')+1:]
         address = address_split
         location = geolocator.geocode(address_split, addressdetails=True)
-        
+
         if location is None:
             address = address_split
             try:
@@ -1014,12 +1007,12 @@ def get_address(address):
             except:
                 break
             i = 0
-            
+
         if location is not None:
             break
 
     address = location.raw['address']
-    
+
     global city
     try:
         city = address.get('city', '')
@@ -1049,24 +1042,24 @@ def get_address(address):
                 city = address.get('county', '')
             except:
                 city = ""
-    
+
     global state
     state = address.get('state', '')
-    
+
     global country
     country = address.get('country', '')
-    
+
     global zip
     zip = address.get('postcode', '')
 
 try:
     # Query the next data to uploaded in RE
     print("Querying the next data to uploaded in RE")
-    
+
     # Putting the subject in advance if error pops up
     # global subject
     subject = "No Alums available for sync. Sync has been completed"
-    
+
     try:
         # Ensuring that Alum exists in Table
         extract_sql = """
@@ -1074,22 +1067,22 @@ try:
             """
         cur.execute(extract_sql)
         result = cur.fetchone()
-        
+
         # Ensure no comma or brackets in output
         re_system_id = result[0]
-        
+
         if re_system_id is None or re_system_id == '':
             print("Alums not downloaded in the table")
             subject = "No Alums available for sync. Alums not downloaded in the table"
-            
+
             print(subject)
 
             # Commit changes
             conn.commit()
-            
+
             notify_sync_finished()
-            
-        
+
+
         extract_sql = """
             SELECT re_system_id FROM all_alums_in_re WHERE re_system_id NOT IN (SELECT re_system_id FROM already_synced) 
             ORDER BY random()
@@ -1101,24 +1094,24 @@ try:
         # Ensure no comma or brackets in output
         re_system_id = result[0]
         print("Working on Alumni with RE ID: " + str(re_system_id))
-    
+
     except:
         print(subject)
-        
+
         # Delete rows in table
         cur.execute("truncate already_synced;")
 
         # Commit changes
         conn.commit()
-        
+
         notify_sync_finished()
 
     # Get email list from RE
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/emailaddresses?include_inactive=true" % re_system_id
 
     params = {
-            #'search_text':search_text
-        }
+        #'search_text':search_text
+    }
 
     # Blackbaud API GET request
     get_request_re()
@@ -1135,11 +1128,11 @@ try:
             count = ab_api_response["count"]
             if count == 1:
                 break
-            
+
         if count != 1:
             subject = "Unable to find Alums in AlmaBase for sync"
             constituent_not_found_email()
-                    
+
             # except:
             #     # Can't find Alum in AlmaBase
             #     status = ab_api_response["status"]
@@ -1156,7 +1149,7 @@ try:
     url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
 
     get_request_almabase()
-    
+
     print("Fetching the Almabase profile")
     ab_profile = ab_api_response
 
@@ -1166,7 +1159,7 @@ try:
     for address in ab_profile['email_addresses']:
         try:
             emails = (address['address']).lower()
-            
+
             if '@' in emails:
                 ab_email_list.append(emails)
         except:
@@ -1177,12 +1170,12 @@ try:
     regex = re.compile('email_id_*')
     email_id_list_ab = [string for string in ab_profile['custom_fields'] if re.match(regex, string)]
     email_id_list_og = ["email_id_1", "email_id_2", "email_id_3", "email_id_4"]
-    
+
     email_id_list_combo = email_id_list_ab + email_id_list_og
-    
+
     email_id_list = []
     [email_id_list.append(x) for x in email_id_list_combo if x not in email_id_list]
-    
+
     print_json(email_id_list)
 
     blank_email_ids = []
@@ -1196,7 +1189,7 @@ try:
             blank_email_ids.append(each_id)
             pass
     print("Email list in Almabase: " + str(ab_email_list))
-    
+
     print("Getting email list from RE")
     re_email_list = []
     for address in re_api_response['value']:
@@ -1207,7 +1200,7 @@ try:
         except:
             pass
     print("Email list in RE: " + str(re_email_list))
-        
+
     # Finding missing email addresses to be added in RE
     print("Finding missing email addresses to be added in RE")
     set1 = set([i for i in ab_email_list if i])
@@ -1237,11 +1230,11 @@ try:
                 except:
                     incremental_max_count = new_max_count
                 else:
-                    incremental_max_count = incremental_max_count + 1            
-                # global new_email_type
+                    incremental_max_count = incremental_max_count + 1
+                    # global new_email_type
                 new_email_type = "Email " + str(incremental_max_count)
                 update_email_in_re()
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO re_emails_added (re_system_id, email, date)
@@ -1261,26 +1254,26 @@ try:
     missing_in_ab = list(sorted(set1 - set2))
     print("Missing email addresses in Almabase: " + str(missing_in_ab))
     print("Available email blank values in Almabase: " + str(blank_email_ids))
-    
+
     print_json(ab_email_list)
-    
+
     # Upload missing email addresses in AlmaBase
     if missing_in_ab != []:
         print("Updating the missing email IDs to Almabase")
-        
+
         # ab_email_addresses = []
-        
+
         # for each_record in ab_email_list:
         #     missing_in_ab.append(each_record)
-            
+
         print(missing_in_ab)
-        
+
         # for each_record in zip(missing_in_ab, blank_email_ids):
-            
+
         #     each_email, each_id = each_record
-        
+
         for each_record in missing_in_ab:
-            
+
             # format = {
             #             'address': each_record,
             #             'is_engaged': 'false',
@@ -1288,9 +1281,9 @@ try:
             #             'source': 'Raisers Edge',
             #             'is_login_email': 'true'
             #         }
-                
+
             # ab_email_addresses.append(format)
-            
+
             try:
                 # each_email, each_id = each_record
                 # params = {
@@ -1309,27 +1302,27 @@ try:
                 #             }
                 #         }
                 #     }
-                
+
                 # params = {
                 #     'email_addresses': ab_email_addresses
                 # }
-                
+
                 params = {
-                            'address': each_record,
-                            'is_engaged': 'false',
-                            'is_primary': 'false',
-                            'source': 'Raisers Edge',
-                            'is_login_email': 'true'
-                        }
-                
+                    'address': each_record,
+                    'is_engaged': 'false',
+                    'is_primary': 'false',
+                    'source': 'Raisers Edge',
+                    'is_login_email': 'true'
+                }
+
                 print_json(params)
-                
+
                 # url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
                 url = f"https://api.almabaseapp.com/api/v1/profiles/{ab_system_id}/email_addresses"
-                    
+
                 # patch_request_ab()
                 post_request_ab()
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO ab_emails_added (ab_system_id, email, date)
@@ -1340,7 +1333,7 @@ try:
                 print("Updated all the missing email IDs to Almabase")
             except:
                 send_error_emails()
-        
+
     # Get list of of phone numbers in RE
     print("Get list of of phone numbers in RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/phones?include_inactive=true" % re_system_id
@@ -1355,7 +1348,7 @@ try:
         except:
             pass
     print("List of phone numbers in RE: " + str(re_phone_list))
-        
+
     # Get list of phone numbers in AlmaBase
     print("Get list of phone numbers in AlmaBase")
     url = "https://api.almabaseapp.com/api/v1/profiles/%s/phone_numbers" % ab_system_id
@@ -1410,20 +1403,20 @@ try:
     if missing_in_re != []:
         print("Uploading missing numbers in RE")
         for each_phone in missing_in_re:
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/phones"
-        
+
             params = {
                 'constituent_id': re_system_id,
                 'number': each_phone,
                 'type': 'Mobile'
             }
-            
+
             post_request_re()
-            
+
             # Adding Update Tags
             add_tags('mobile', each_phone)
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_phone_added (re_system_id, phone, date)
@@ -1431,9 +1424,9 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, each_phone])
             conn.commit()
-            
+
         print("Uploaded all missing numbers in RE")
-            
+
     # Finding missing phone numbers to be added in AlmaBase
     print("Finding missing phone numbers to be added in AlmaBase")
     missing_in_ab = []
@@ -1459,24 +1452,24 @@ try:
             try:
                 each_phone, each_id = each_record
                 params = {
-                                'custom_fields': {
-                                    each_id: {
-                                        'values': [
-                                            {
-                                                'value': {
-                                                    'content': each_phone
-                                                },
-                                                'display_order': 0
-                                            }
-                                        ]
-                                    }
+                    'custom_fields': {
+                        each_id: {
+                            'values': [
+                                {
+                                    'value': {
+                                        'content': each_phone
+                                    },
+                                    'display_order': 0
                                 }
-                            }
-                
+                            ]
+                        }
+                    }
+                }
+
                 url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-                            
+
                 patch_request_ab()
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO ab_phone_added (ab_system_id, phone, date)
@@ -1487,7 +1480,7 @@ try:
                 print("Uploaded missing numbers in AlmaBase")
             except:
                 send_error_emails()
-                
+
     # Get Relation list from RE
     print("Getting Employment list from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/relationships" % re_system_id
@@ -1547,46 +1540,46 @@ try:
                 try:
                     for each_ab_org in ab_api_response_org['results']:
                         if each_org == each_ab_org['employer']['name']:
-                            
+
                             try:
                                 position = each_ab_org['designation']['name']
                                 if position is None or position == "null" or position == "Null":
                                     position = ""
                             except:
                                 position = ""
-                                
+
                             try:
                                 start_month = each_ab_org['start_month']
                                 if start_month is None or start_month == "null" or start_month == "Null":
                                     start_month = ""
                             except:
                                 start_month = ""
-                            
+
                             try:
                                 start_year = each_ab_org['start_year']
                                 if start_year is None or start_year == "null" or start_year == "Null":
                                     start_year = ""
                             except:
                                 start_year = ""
-                            
+
                             try:
                                 end_month = each_ab_org['end_month']
                                 if end_month is None or end_month == "null" or end_month == "Null":
                                     end_month = ""
                             except:
                                 end_month = ""
-                            
+
                             try:
                                 end_year = each_ab_org['end_year']
                                 if end_year is None or end_year == "null" or end_year == "Null":
                                     end_year = ""
                             except:
                                 end_year = ""
-                                
+
                             break
                 except:
                     pass
-                
+
                 # Check if organisation is a University
                 print("Checking if the missing employments is a University")
                 school_matches = ["school", "college", "university", "institute", "iit", "iim"]
@@ -1594,7 +1587,7 @@ try:
                     relationship = "University"
                 else:
                     relationship = "Employer"
-                
+
                 params_re = {
                     'constituent_id': re_system_id,
                     'relation': {
@@ -1612,61 +1605,61 @@ try:
                     'type': relationship,
                     'reciprocal_type': 'Employee'
                 }
-                
+
                 # Delete blank values from JSON
                 for i in range(10):
                     params = del_blank_values_in_json(params_re.copy())
-                
+
                 url = "https://api.sky.blackbaud.com/constituent/v1/relationships"
-                
+
                 post_request_re()
-                
+
                 check_for_errors()
-                
+
                 # Adding Update Tags
                 add_tags('employment', each_org)
-                
+
                 print("Added missing employment")
-        
+
     # Update missing details in RE
     print("Checking missing details from any existing employment...")
     for each_org in re_api_response_org['value']:
         if each_org != "add-company" and each_org != "Unknown" and each_org != "x":
             # Get values present in RE
             re_org_name = each_org['name']
-            
+
             if 'position' in each_org:
                 re_org_position = each_org['position']
             else:
                 re_org_position = ""
-                
+
             try:
                 re_org_start_month = each_org['start']['m']
             except:
                 re_org_start_month = ""
-                
+
             try:
                 re_org_start_year = each_org['start']['y']
             except:
                 re_org_start_year = ""
-            
+
             try:
                 re_org_end_month = each_org['end']['m']
             except:
                 re_org_end_month = ""
-                
+
             try:
                 re_org_end_year = each_org['end']['y']
             except:
                 re_org_end_year = ""
-            
+
             relationship_id = each_org['id']
-            
+
             # Get values present in AlmaBase for above same organisation
             print("... by comparing the same organisation present in Almabase")
             for each_ab_org in ab_api_response_org['results']:
                 if fuzz.token_set_ratio(re_org_name.lower(),each_ab_org['employer']['name'].lower()) >= 90:
-                    
+
                     try:
                         if each_ab_org['designation']['name'] is not None:
                             ab_org_position = each_ab_org['designation']['name']
@@ -1674,7 +1667,7 @@ try:
                             ab_org_position = ""
                     except:
                         ab_org_position = ""
-                    
+
                     try:
                         if each_ab_org['start_month'] is not None:
                             ab_org_start_month = each_ab_org['start_month']
@@ -1682,7 +1675,7 @@ try:
                             ab_org_start_month = ""
                     except:
                         ab_org_start_month = ""
-                    
+
                     try:
                         if each_ab_org['start_year'] is not None:
                             ab_org_start_year = each_ab_org['start_year']
@@ -1690,7 +1683,7 @@ try:
                             ab_org_start_year = ""
                     except:
                         ab_org_start_year = ""
-                    
+
                     try:
                         if each_ab_org['end_month'] is not None:
                             ab_org_end_month = each_ab_org['end_month']
@@ -1698,7 +1691,7 @@ try:
                             ab_org_end_month = ""
                     except:
                         ab_org_end_month = ""
-                    
+
                     try:
                         if each_ab_org['end_year'] is not None:
                             ab_org_end_year = each_ab_org['end_year']
@@ -1706,41 +1699,41 @@ try:
                             ab_org_end_year = ""
                     except:
                         pass
-                    
+
                     if ab_org_position == "" and ab_org_start_month == "" and ab_org_start_year == "" and ab_org_end_month == "" and ab_org_end_year == "":
                         break
                     else:
                         url = "https://api.sky.blackbaud.com/constituent/v1/relationships/%s" % relationship_id
-                        
+
                         # Check if position needs an update
                         print("Checking if position needs an update")
                         if re_org_position != "" or ab_org_position == "":
                             ab_org_position = ""
-                            
+
                         # Check if joining year needs an update
                         print("Checking if joining year needs an update")
                         if re_org_start_year != "" or ab_org_start_year == "":
                             ab_org_start_month = ""
                             ab_org_start_year = ""
-                            
+
                         # Check if leaving year needs an update
                         print("Checking if leaving year needs an update")
                         if re_org_end_year != "" or ab_org_end_year == "":
                             ab_org_end_month = ""
                             ab_org_end_year = ""
-                        
+
                         params_re = {
-                                'position': ab_org_position[:50],
-                                'start': {
-                                    'm': ab_org_start_month,
-                                    'y': ab_org_start_year
-                                },
-                                'end': {
-                                    'm': ab_org_end_month,
-                                    'y': ab_org_end_year
-                                }
+                            'position': ab_org_position[:50],
+                            'start': {
+                                'm': ab_org_start_month,
+                                'y': ab_org_start_year
+                            },
+                            'end': {
+                                'm': ab_org_end_month,
+                                'y': ab_org_end_year
                             }
-                        
+                        }
+
                         # Delete blank values from JSON
                         for i in range(10):
                             params = del_blank_values_in_json(params_re.copy())
@@ -1748,14 +1741,14 @@ try:
                         if params != {}:
                             # Update in RE
                             patch_request_re()
-                            
+
                             check_for_errors()
-                            
+
                             # Adding Update Tags
                             add_tags('position', params)
 
                             print("Updated missing employment details in RE")
-        
+
     # Finding missing employments to be added in AlmaBase
     print("Finding missing employments to be added in AlmaBase")
     missing_in_ab = []
@@ -1768,7 +1761,7 @@ try:
         except:
             if each_org != '' or each_org != "":
                 missing_in_ab.append(each_org)
-        
+
     # Making sure that there are no duplicates in the missing list
     print("Making sure that there are no duplicates in the missing list")
     if missing_in_ab != []:
@@ -1782,39 +1775,39 @@ try:
         for each_org in missing_in_ab:
             for each_re_org in re_api_response_org['value']:
                 if each_org == each_re_org['name']:
-                    
+
                     try:
                         position = each_re_org['position']
                     except:
                         position = ""
-                    
+
                     try:
                         start_month = each_re_org['start']['m']
                     except:
                         start_month = ""
-                    
+
                     try:
                         start_year = each_re_org['start']['y']
                     except:
                         start_year = ""
-                    
+
                     try:
                         end_month = each_re_org['end']['m']
                     except:
                         end_month = ""
-                    
+
                     try:
                         end_year = each_re_org['end']['y']
                     except:
                         end_year = ""
-                        
+
                     if position == "" and start_month == "" and start_year == "" and end_month == "" and end_year == "":
                         break
                     else:
                         # Create an employment in Almabase
                         print("Creating an employment in Almabase")
                         url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments" % ab_system_id
-                        
+
                         params_ab = {
                             'employer': {
                                 'name': each_org
@@ -1827,11 +1820,11 @@ try:
                             'end_month': end_month,
                             'end_year': end_year
                         }
-                        
+
                         # Delete blank values from JSON
                         for i in range(10):
                             params = del_blank_values_in_json(params_ab.copy())
-                        
+
                         # Update in Almabase
                         post_request_ab()
 
@@ -1851,7 +1844,7 @@ try:
     for each_org in ab_api_response_org['results']:
         # Get values present in AB
         ab_org_name = each_org['employer']['name']
-        
+
         try:
             if each_org['designation']['name'] is not None:
                 ab_org_position = each_org['designation']['name']
@@ -1859,7 +1852,7 @@ try:
                 ab_org_position = ""
         except:
             ab_org_position = ""
-            
+
         try:
             if each_org['start_month'] is not None:
                 ab_org_start_month = each_org['start_month']
@@ -1867,7 +1860,7 @@ try:
                 ab_org_start_month = ""
         except:
             ab_org_start_month = ""
-            
+
         try:
             if each_org['start_year'] is not None:
                 ab_org_start_year = each_org['start_year']
@@ -1875,7 +1868,7 @@ try:
                 ab_org_start_year = ""
         except:
             ab_org_start_year = ""
-            
+
         try:
             if each_org['end_month'] is not None:
                 ab_org_end_month = each_org['end_month']
@@ -1883,7 +1876,7 @@ try:
                 ab_org_end_month = ""
         except:
             ab_org_end_month = ""
-            
+
         try:
             if each_org['end_year'] is not None:
                 ab_org_end_year = each_org['end_year']
@@ -1891,55 +1884,55 @@ try:
                 ab_org_end_year = ""
         except:
             ab_org_end_year = ""
-        
+
         ab_org_relationship_id = each_org['id']
 
         # Get values present in RE for above same organisation
         print("Getting values present in RE for the same organisation")
         for each_re_org in re_api_response_org['value']:
             if fuzz.token_set_ratio(ab_org_name.lower(),each_re_org['name'].lower()) >= 90:
-                
+
                 try:
                     re_org_position = each_re_org['position']
                 except:
                     re_org_position = ""
-                
+
                 try:
                     re_org_start_month = each_re_org['start']['m']
                 except:
                     re_org_start_month = ""
-                
+
                 try:
                     re_org_start_year = each_re_org['start']['y']
                 except:
                     re_org_start_year = ""
-                
+
                 try:
                     re_org_end_month = each_re_org['end']['m']
                 except:
                     re_org_end_month = ""
-                
+
                 try:
                     re_org_end_year = each_re_org['end']['y']
                 except:
                     re_org_end_year = ""
-                
+
                 if re_org_position == "" and re_org_start_month == "" and re_org_start_year == "" and re_org_end_month == "" and re_org_end_year == "":
                     break
                 else:
                     url = "https://api.almabaseapp.com/api/v1/profiles/%s/employments/%s" % (ab_system_id, ab_org_relationship_id)
-                    
+
                     # Check if position needs an update
                     print("Checking if position needs an update")
                     if re_org_position == "" or ab_org_position != "":
                         re_org_position = ""
-                        
+
                     # Check if joining year needs an update
                     print("Checking if joining year needs an update")
                     if re_org_start_year == "" or ab_org_start_year != "":
                         re_org_start_month = ""
                         re_org_start_year = ""
-                        
+
                     # Check if leaving year needs an update
                     print("Checking if leaving year needs an update")
                     if re_org_end_year == "" or ab_org_end_year != "":
@@ -1947,20 +1940,20 @@ try:
                         re_org_end_year = ""
 
                     params_ab = {
-                            'designation': {
-                                'name': re_org_position
-                            },
-                            'start_month': re_org_start_month,
-                            'start_year': re_org_start_year,
-                            'end_month': re_org_end_month,
-                            'end_year': re_org_end_year
-                        }
-                    
+                        'designation': {
+                            'name': re_org_position
+                        },
+                        'start_month': re_org_start_month,
+                        'start_year': re_org_start_year,
+                        'end_month': re_org_end_month,
+                        'end_year': re_org_end_year
+                    }
+
                     # Delete blank values from JSON
                     for i in range(10):
                         params = del_blank_values_in_json(params_ab.copy())
-                        
-                    if params != {}:           
+
+                    if params != {}:
                         patch_request_ab()
                         print("Updated employment details in Almabase")
 
@@ -2017,7 +2010,7 @@ try:
     #         ab_permanent_address_zip = ab_api_response_address_custom_fields['custom_fields']['permanent_postal_code']['values'][0]['value']['content']
     #     except:
     #         ab_permanent_address_zip = ""
-            
+
     #     ab_permanent_address = ab_permanent_address_line_1 + ab_permanent_address_line_2 + ab_permanent_address_city + ab_permanent_address_state + ab_permanent_address_country + ab_permanent_address_zip
 
     #     # Retrive details from Work address in AlmaBase
@@ -2051,9 +2044,9 @@ try:
     #         ab_work_address_zip = ab_api_response_address_custom_fields['custom_fields']['work_postal_code']['values'][0]['value']['content']
     #     except:
     #         ab_work_address_zip = ""
-        
+
     #     ab_work_address = ab_work_address_line_1 + ab_work_address_line_2 + ab_work_address_city + ab_work_address_state + ab_work_address_country + ab_work_address_zip
-            
+
     #     ab_api_response_address_custom_fields_json = {
     #         'addresses': [
     #             {
@@ -2103,21 +2096,21 @@ try:
     #                     line1 = ""
     #             except:
     #                 line1 = ""
-                    
+
     #             try:
     #                 line2 = each_value['line2']
     #                 if line2 is None:
     #                     line2 = ""
     #             except:
     #                 line2 = ""
-                
+
     #             try:
     #                 city = each_value['location']['city']
     #                 if city is None:
     #                     city = ""
     #             except:
     #                 city = ""
-                
+
     #             try:
     #                 state = each_value['location']['state']
     #                 if state is None:
@@ -2129,24 +2122,24 @@ try:
     #                         state = ""
     #                 except:
     #                     state = ""
-                        
+
     #             try:
     #                 country = each_value['location']['country']
     #                 if country is None:
     #                     country = ""
     #             except:
     #                 country = ""
-                    
+
     #             try:
     #                 zip_code = each_value['zip_code']
     #                 if zip_code is None:
     #                     zip_code = ""
     #             except:
     #                 zip_code = ""
-                
+
     #             if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
     #                 ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
-                    
+
     #                 try:
     #                     likely_address, score = process.extractOne(ab_address, re_address_list)
     #                     if score < 80:
@@ -2171,9 +2164,9 @@ try:
     #             try:
     #                 # Get city, state and country from Address
     #                 get_address(address)
-                    
+
     #                 url = "https://api.sky.blackbaud.com/constituent/v1/addresses"
-                    
+
     #                 params = {
     #                     'constituent_id': re_system_id,
     #                     'type': 'Business',
@@ -2183,9 +2176,9 @@ try:
     #                     'country': country,
     #                     'postal_code': zip
     #                 }
-                    
+
     #                 post_request_re()
-                    
+
     #                 # Will update in PostgreSQL
     #                 insert_updates = """
     #                                 INSERT INTO re_address_added (re_system_id, address, date)
@@ -2200,30 +2193,30 @@ try:
     #     # Compare the ones in AB with RE and find delta
     #     print("Comparing the addresses in AB with RE and finding delta")
     #     ab_address_list = []
-        
+
     #     for each_value in ab_api_response_address['addresses']:
-            
+
     #         try:
     #             line1 = each_value['line1']
     #             if line1 is None:
     #                 line1 = ""
     #         except:
     #             line1 = ""
-                
+
     #         try:
     #             line2 = each_value['line2']
     #             if line2 is None:
     #                 line2 = ""
     #         except:
     #             line2 = ""
-            
+
     #         try:
     #             city = each_value['location']['city']
     #             if city is None:
     #                 city = ""
     #         except:
     #             city = ""
-            
+
     #         try:
     #             state = each_value['location']['state']
     #             if state is None:
@@ -2235,21 +2228,21 @@ try:
     #                     state = ""
     #             except:
     #                 state = ""
-                    
+
     #         try:
     #             country = each_value['location']['country']
     #             if country is None:
     #                 country = ""
     #         except:
     #             country = ""
-                
+
     #         try:
     #             zip_code = each_value['zip_code']
     #             if zip_code is None:
     #                 zip_code = ""
     #         except:
     #             zip_code = ""
-                
+
     #         ab_address = (line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code).replace("  ", " ")
     #         ab_address_list.append(ab_address)
 
@@ -2259,7 +2252,7 @@ try:
     #     for each_value in re_api_response_address['value']:
     #         if each_value != '' or each_value != "":
     #             re_address = each_value['formatted_address'].replace("\r\n",", ")
-            
+
     #         try:
     #             likely_address, score = process.extractOne(re_address, ab_address_list)
     #             if score < 80:
@@ -2292,21 +2285,21 @@ try:
     #                                 line1 = " "
     #                         except:
     #                             line1 = " "
-                                
+
     #                         try:
     #                             line2 = each_value['line2']
     #                             if line2 is None:
     #                                 line2 = " "
     #                         except:
     #                             line2 = " "
-                            
+
     #                         try:
     #                             city = each_value['location']['city']
     #                             if city is None:
     #                                 city = ""
     #                         except:
     #                             city = ""
-                            
+
     #                         try:
     #                             state = each_value['location']['state']
     #                             if state is None:
@@ -2318,46 +2311,46 @@ try:
     #                                     state = ""
     #                             except:
     #                                 state = ""
-                                    
+
     #                         try:
     #                             country = each_value['location']['country']
     #                             if country is None:
     #                                 country = ""
     #                         except:
     #                             country = ""
-                                
+
     #                         try:
     #                             zip_code = each_value['zip_code']
     #                             if zip_code is None:
     #                                 zip_code = ""
     #                         except:
     #                             zip_code = ""
-                            
+
     #                         if line1 != "" and line2 != "" and city != "" and state != "" and country != country and zip_code != "":
     #                             i += 1
-                                
+
     #                             # Stop after 4 addresses
     #                             if i == 4:
     #                                 break
     #                     else:
     #                         break
-                    
+
     #                 # if i == 1:
     #                 #     ab_address_number = i + 2
     #                 # else:
     #                 #     ab_address_number = i + 1
     #                 ab_address_number = i + 1
-                    
+
     #                 # Get city, state and country from Address
     #                 get_address(address)
-                    
+
     #                 # Patch Profile
     #                 url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-                    
+
     #                 # Will add as address
     #                 if ab_address_number == 2:
     #                     print("Will add the new location as Address")  
-                        
+
     #                     params = {
     #                         'addresses': [
     #                             {
@@ -2371,11 +2364,11 @@ try:
     #                             }
     #                         ]
     #                     }
-                    
+
     #                 # Will add as custom field - permanent address   
     #                 elif ab_address_number == 3:
     #                     print("Will add the new location as custom field - permanent address")  
-                        
+
     #                     params = {
     #                         'custom_fields': {
     #                             'permanent_address': {
@@ -2430,11 +2423,11 @@ try:
     #                             }
     #                         }
     #                     }
-                    
+
     #                 # Will add as address
     #                 elif ab_address_number == 4:
     #                     print("Will add the new location as Address")
-                        
+
     #                     print("Will add the new location as custom field - work address")  
     #                     params = {
     #                         'custom_fields': {
@@ -2490,7 +2483,7 @@ try:
     #                             }
     #                         }
     #                     }
-                    
+
     #                 elif ab_address_number == 0:
     #                     params = {
     #                         'addresses': [
@@ -2505,10 +2498,10 @@ try:
     #                             }
     #                         ]
     #                     }
-                    
+
     #                 patch_request_ab()
     #                 i += 1
-                    
+
     #                 # Will update in PostgreSQL
     #                 insert_updates = """
     #                                 INSERT INTO ab_address_added (ab_system_id, address, date)
@@ -2519,7 +2512,7 @@ try:
     #                 print("Added the missing address in Almabase")
     #             except:
     #                 pass
-    
+
     # Retrieve addresses from RE
     print("Retrieving addresses from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/addresses?include_inactive=true" % re_system_id
@@ -2572,7 +2565,7 @@ try:
         ab_permanent_address_zip = ab_api_response_address_custom_fields['custom_fields']['permanent_postal_code']['values'][0]['value']['content']
     except:
         ab_permanent_address_zip = ""
-        
+
     ab_permanent_address = (ab_permanent_address_line_1 + ab_permanent_address_line_2 + ab_permanent_address_city + ab_permanent_address_state + ab_permanent_address_country + ab_permanent_address_zip).replace(" ", "")
 
     # Retrive details from Work address in AlmaBase
@@ -2606,9 +2599,9 @@ try:
         ab_work_address_zip = ab_api_response_address_custom_fields['custom_fields']['work_postal_code']['values'][0]['value']['content']
     except:
         ab_work_address_zip = ""
-        
+
     ab_work_address = (ab_work_address_line_1 + ab_work_address_line_2 + ab_work_address_city + ab_work_address_state + ab_work_address_country + ab_work_address_zip).replace(" ", "")
-        
+
     ab_api_response_address_custom_fields_json = {
         'addresses': [
             {
@@ -2619,7 +2612,7 @@ try:
                     'city': ab_permanent_address_city,
                     'state': ab_permanent_address_state,
                     'country': ab_permanent_address_country
-                    }
+                }
             },
             {
                 'line1': ab_work_address_line_1,
@@ -2629,7 +2622,7 @@ try:
                     'city': ab_work_address_city,
                     'state': ab_work_address_state,
                     'country': ab_work_address_country
-                    }
+                }
             }
         ]
     }
@@ -2658,21 +2651,21 @@ try:
                     line1 = ""
             except:
                 line1 = ""
-                
+
             try:
                 line2 = each_value['line2']
                 if line2 is None or line2 == 'Other':
                     line2 = ""
             except:
                 line2 = ""
-            
+
             try:
                 city = each_value['location']['city']
                 if city is None or city == 'Other':
                     city = ""
             except:
                 city = ""
-            
+
             try:
                 state = each_value['location']['state']
                 if state is None or state == 'Other':
@@ -2684,24 +2677,24 @@ try:
                         state = ""
                 except:
                     state = ""
-                    
+
             try:
                 country = each_value['location']['country']
                 if country is None or country == 'Other':
                     country = ""
             except:
                 country = ""
-                
+
             try:
                 zip_code = each_value['zip_code']
                 if zip_code is None or zip_code == 'Other':
                     zip_code = ""
             except:
                 zip_code = ""
-            
+
             if  line1 != "" or line2 != "" or city != "" or state != "" or country != "" or zip_code != "":
                 ab_address = line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code
-                
+
                 try:
                     if ab_address != '' and ab_address != "" and ab_address != " ":
                         likely_address, score = process.extractOne(ab_address, re_address_list)
@@ -2709,7 +2702,7 @@ try:
                             missing_in_re.append(ab_address)
                 except:
                     if ab_address != '' and ab_address != "" and ab_address != " ":
-                            missing_in_re.append(ab_address)
+                        missing_in_re.append(ab_address)
         except:
             pass
 
@@ -2723,12 +2716,12 @@ try:
     if missing_in_re != []:
         print("Adding missing addresses in RE")
         for address in missing_in_re:
-            
+
             # Get city, state and country from Address
             get_address(address)
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/addresses"
-            
+
             params = {
                 'constituent_id': re_system_id,
                 'type': 'Business',
@@ -2738,14 +2731,14 @@ try:
                 'country': country,
                 'postal_code': zip
             }
-            
+
             post_request_re()
-            
+
             check_for_errors()
-            
+
             # Adding Update Tags
             add_tags('location', address)
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_address_added (re_system_id, address, date)
@@ -2760,28 +2753,28 @@ try:
     ab_address_list = []
 
     for each_value in ab_api_response_address['addresses']:
-        
+
         try:
             line1 = each_value['line1']
             if line1 is None or line1 == 'Other':
                 line1 = ""
         except:
             line1 = ""
-            
+
         try:
             line2 = each_value['line2']
             if line2 is None or line2 == 'Other':
                 line2 = ""
         except:
             line2 = ""
-        
+
         try:
             city = each_value['location']['city']
             if city is None or city == 'Other':
                 city = ""
         except:
             city = ""
-        
+
         try:
             state = each_value['location']['state']
             if state is None or state == 'None':
@@ -2793,21 +2786,21 @@ try:
                     state = ""
             except:
                 state = ""
-                
+
         try:
             country = each_value['location']['country']
             if country is None or country == 'None':
                 country = ""
         except:
             country = ""
-            
+
         try:
             zip_code = each_value['zip_code']
             if zip_code is None or zip_code == 'None':
                 zip_code = ""
         except:
             zip_code = ""
-            
+
         ab_address = (line1 + " " + line2 + " " + city + " " + state + " " + country + " " + zip_code).replace("  ", " ").replace("  ", " ").replace("  ", " ")
         if ab_address != "" and ab_address != " " and ab_address != 'Other' and ab_address != 'India':
             ab_address_list.append(ab_address)
@@ -2818,7 +2811,7 @@ try:
     for each_value in re_api_response_address['value']:
         if each_value != '' and each_value != "" and each_value != " " and each_value != 'India':
             re_address = each_value['formatted_address'].replace("\r\n",", ")
-        
+
         try:
             if re_address != "" and re_address != " " and re_address != 'India':
                 likely_address, score = process.extractOne(re_address, ab_address_list)
@@ -2835,14 +2828,14 @@ try:
         # Removing blank strings
         missing_in_ab = [x.strip() for x in missing if x.strip()]
         print("Missing addresses in Almabase: " + str(missing_in_ab))
-        
+
     # Identifying which Address slot is blank in Almabase
     print("Identifying which Address slot is blank in Almabase")
     almabase_slots = [1, 2, 3, 4]
 
     consumed_slot = []
     print_json(ab_api_response_address)
-    
+
     try:
         for each_type in ab_api_response_address['addresses']:
             consumed_slot.append(each_type['type'])
@@ -2866,29 +2859,29 @@ try:
     if missing_in_ab != [] and available_slots != 0:
         # Patch Profile
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-        
+
         print("Adding missing address in Almabase")
-        
+
         updated_address = []
-        
+
         for address in missing_in_ab:
             # Check where the new address can be added
             print("Checking where the new address can be added in Almabase")
             for ab_address_number in available_slots:
-                
+
                 if missing_in_ab != {} or available_slots != {}:
-            
+
                     # Get city, state and country from Address
                     get_address(address)
-                    
+
                     existing_address = {'addresses': []}
-                    
+
                     # Will add as address
                     if int(ab_address_number) == 1 or int(ab_address_number) == 2:
                         print("Will add the new location as Address")
-                        
+
                         print(ab_address_number)
-                        
+
                         if int(ab_address_number) == 2:
                             try:
                                 for home_address in ab_api_response_address['addresses']:
@@ -2899,12 +2892,12 @@ try:
                                             'addresses': [
                                                 {
                                                     'line1': home_address['line1'],
-                                                'zip_code': home_address['zip_code'],
-                                                'location': {
-                                                    'name': home_address['location']['name'],
-                                                    'type': 1
+                                                    'zip_code': home_address['zip_code'],
+                                                    'location': {
+                                                        'name': home_address['location']['name'],
+                                                        'type': 1
                                                     },
-                                                "type": 1
+                                                    "type": 1
                                                 }
                                             ]
                                         }
@@ -2928,7 +2921,7 @@ try:
                                     #     break
                             except:
                                 pass
-                                    
+
                         if int(ab_address_number) == 1:
                             try:
                                 for home_address in ab_api_response_address['addresses']:
@@ -2942,7 +2935,7 @@ try:
                                                     'location': {
                                                         'name': home_address['location']['name'],
                                                         'type': 1
-                                                        },
+                                                    },
                                                     "type": 2
                                                 }
                                             ]
@@ -2967,7 +2960,7 @@ try:
                                     #     break
                             except:
                                 pass
-                                        
+
                         new_address = {
                             'addresses': [
                                 {
@@ -2981,30 +2974,30 @@ try:
                                 }
                             ]
                         }
-                        
+
                         print("New Address")
                         print_json(new_address)
-                        
+
                         print("Existing Address")
                         print_json(existing_address)
-                        
+
                         params_address = []
                         for each_address in existing_address['addresses']:
                             params_address.append(each_address)
-                            
+
                         for each_address in new_address['addresses']:
                             params_address.append(each_address)
-                            
+
                         params = {
                             'addresses': params_address
                         }
-                        
+
                         print_json(params)
-                        
+
                     # Will add as custom field - permanent address   
                     if int(ab_address_number) == 3:
-                        print("Will add the new location as custom field - permanent address")  
-                        
+                        print("Will add the new location as custom field - permanent address")
+
                         params = {
                             'custom_fields': {
                                 'permanent_address': {
@@ -3059,12 +3052,12 @@ try:
                                 }
                             }
                         }
-                    
+
                     # Will add as address
                     if int(ab_address_number) == 4:
                         print("Will add the new location as Address")
-                        
-                        print("Will add the new location as custom field - work address")  
+
+                        print("Will add the new location as custom field - work address")
                         params = {
                             'custom_fields': {
                                 'work_address_line_1': {
@@ -3119,11 +3112,11 @@ try:
                                 }
                             }
                         }
-                    
+
                     print("I am going with Address No.: " + str(ab_address_number))
                     patch_request_ab()
                     print(ab_api_response)
-                    
+
                     # Will update in PostgreSQL
                     insert_updates = """
                                     INSERT INTO ab_address_added (ab_system_id, address, date)
@@ -3132,23 +3125,23 @@ try:
                     cur.execute(insert_updates, [ab_system_id, address])
                     conn.commit()
                     print("Added the missing address in Almabase")
-                    
+
                     # Remove the slot from the available ones
                     print("Removing the address slot from the available ones")
                     consumed_slot.append(ab_address_number)
                     available_slots = set(almabase_slots) - set(consumed_slot)
-                    
+
                     print("Available address slots: " + str(available_slots))
-                        
+
                     # Remove the address from the missing ones
                     print("Removing the address from the missing ones")
                     updated_address.append(address)
                     new_missing_in_ab = set(missing_in_ab) - set(updated_address)
                     missing_in_ab = new_missing_in_ab
-                    
+
                     print("Yet to be added address in AB: " + str(missing_in_ab))
                 break
-            
+
     # Retrieve IITB education from RE
     print("Retrieving IITB education details from RE")
     url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/educations" % re_system_id
@@ -3160,7 +3153,7 @@ try:
     i = 0
     re_api_response_education = {
         'value': [
-            
+
         ]
     }
 
@@ -3180,150 +3173,150 @@ try:
     # When only one education exists in both
     if len(re_api_response_education['value']) == 1 and ab_api_response_education['count'] == 1:
         print("Only one education record exist in RE")
-        
+
         # Get data from RE
         try:
             re_class_of = re_api_response_education['value'][0]['class_of']
-            
+
             if int(re_class_of) < 1962:
                 re_class_of = ""
         except:
             re_class_of = ""
-            
+
         try:
             re_department = re_api_response_education['value'][0]['majors'][0]
         except:
             re_department = ""
-            
+
         try:
             re_degree = re_api_response_education['value'][0]['degree']
         except:
             re_degree = ""
-            
+
         try:
             re_hostel = re_api_response_education['value'][0]['social_organization']
         except:
             re_hostel = ""
-            
+
         try:
             re_joining_year = re_api_response_education['value'][0]['date_entered']['y']
         except:
             re_joining_year = ""
-            
+
         try:
             re_roll_number = re_api_response_education['value'][0]['known_name']
         except:
             re_roll_number = ""
-            
+
         re_education_id = re_api_response_education['value'][0]['id']
-            
+
         # Get data from AlmaBase
         print("Getting the corresponding education details from Almabase")
         try:
             ab_class_of = ab_api_response_education['results'][0]['class_year']
-            
+
             if int(ab_class_of) < 1962 or ab_class_of == "null" or ab_class_of is None:
                 ab_class_of = ""
         except:
             ab_class_of = ""
-            
+
         try:
             ab_department = ab_api_response_education['results'][0]['branch']['name']
-            
+
             if ab_department == "null" or ab_department is None or ab_department == "Other" or ab_department.strip() == "Other":
                 ab_department = ""
         except:
             ab_department = ""
-            
+
         try:
             ab_degree = ab_api_response_education['results'][0]['course']['name']
             print(ab_degree)
-            
+
             if ab_degree == "Other" or ab_degree == "null" or ab_degree is None or ab_degree.strip() == "Other":
                 print("Convering Other to blank")
                 ab_degree = ""
-            
+
         except:
             ab_degree = ""
-            
+
         print(ab_degree)
-            
+
         try:
             ab_hostel = ab_api_response_education['results'][0]['custom_fields']['hostel']['values'][0]['value']['label']
-            
+
             if ab_hostel == "Other" or ab_hostel == "null" or ab_hostel is None or ab_hostel.strip() == "Other":
                 ab_hostel = ""
         except:
             ab_hostel = ""
-        
+
         try:
             ab_joining_year = ab_api_response_education['results'][0]['year_of_joining']
-            
+
             if ab_joining_year == "null" or ab_joining_year is None:
                 ab_joining_year = ""
         except:
             ab_joining_year = ""
-            
+
         try:
             ab_roll_number = ab_api_response_education['results'][0]['roll_number']
-            
+
             if ab_roll_number == "null" or ab_roll_number is None:
                 ab_roll_number = ""
         except:
             ab_roll_number = ""
-            
+
         ab_education_id = ab_api_response_education['results'][0]['id']
-        
+
         # Upload the delta to RE
         if re_class_of == "" or re_department == "" or re_degree == "" or re_hostel == "" or re_joining_year == "" or re_roll_number == "":
             print("Uploading the delta in RE")
-            
+
             if re_class_of == "" and ab_class_of != "":
                 re_class_of = ab_class_of
                 re_graduation_status = "Graduated"
             else:
                 re_class_of = ""
                 re_graduation_status = ""
-                
+
             if re_department == "" or re_department == "Other" and ab_department != "":
                 extract_department = """
                 SELECT re_department FROM department_mapping WHERE ab_department = '%s' FETCH FIRST 1 ROW ONLY;
                 """
                 cur.execute(extract_sql, [ab_department])
                 result = cur.fetchone()
-                
+
                 # Ensure no comma or brackets in output
                 re_department = result[0]
             else:
                 re_department = ""
-                
+
             if re_degree == "" or re_degree == "Other" and ab_degree != "":
                 extract_degree = """
                 SELECT re_degree FROM degree_mapping WHERE ab_degree = '%s' FETCH FIRST 1 ROW ONLY;
                 """
                 cur.execute(extract_degree, [ab_degree])
                 result = cur.fetchone()
-                
+
                 # Ensure no comma or brackets in output
                 re_degree = result[0]
             else:
                 re_degree = ""
-                
+
             if re_hostel == "" or re_hostel == "Other" and ab_hostel != "":
                 re_hostel = ab_hostel
             else:
                 re_hostel = ""
-            
+
             if re_joining_year == "" and ab_joining_year != "":
                 re_joining_year = ab_joining_year
             else:
                 re_joining_year = ""
-                
+
             if re_roll_number == "" and ab_roll_number != "":
                 re_roll_number = ab_roll_number
             else:
                 re_roll_number = ""
-            
+
             params_re = {
                 'known_name': re_roll_number,
                 'class_of': re_class_of,
@@ -3343,24 +3336,24 @@ try:
                 'social_organization': re_hostel,
                 'status': re_graduation_status,
             }
-            
+
             # Delete blank values from JSON
             for i in range(10):
                 params = del_blank_values_in_json(params_re.copy())
-                
+
             print_json(params)
-                
+
             if params != {}:
                 url = f"https://api.sky.blackbaud.com/constituent/v1/educations/{re_education_id}"
                 patch_request_re()
-                
+
                 check_for_errors()
-                
+
                 # Adding Update Tags
                 add_tags('education', params)
-                
+
                 print(re_api_response)
-                
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_iitb_education_added (re_system_id, roll_number, department, joining_year, class_of, degree, hostel, date)
@@ -3369,52 +3362,52 @@ try:
             cur.execute(insert_updates, [re_system_id, re_roll_number, re_department, re_joining_year, re_class_of, re_degree, re_hostel])
             conn.commit()
             print("Added missing education details in RE")
-        
+
         # Compare the ones present in AlmaBase with RE and find delta
         if ab_class_of == "" or ab_department == "" or ab_degree == "" or ab_hostel == "" or ab_joining_year == "" or ab_roll_number == "":
             if re_class_of != "" and ab_class_of == "":
                 ab_class_of = re_class_of
-                
+
             if re_department != "" and ab_department == "":
                 extract_department = """
                 SELECT ab_department FROM department_mapping WHERE re_department = '%s' FETCH FIRST 1 ROW ONLY;
                 """
                 cur.execute(extract_sql, [re_department])
                 result = cur.fetchone()
-                
+
                 # Ensure no comma or brackets in output
                 ab_department = result[0]
-                
+
             if re_degree != "" and ab_degree == "":
                 extract_degree = """
                 SELECT ab_degree FROM degree_mapping WHERE re_degree = '%s' FETCH FIRST 1 ROW ONLY;
                 """
                 cur.execute(extract_degree, [re_degree])
                 result = cur.fetchone()
-                
+
                 # Ensure no comma or brackets in output
                 ab_degree = result[0]
-                
+
             if re_hostel != "" and ab_hostel == "":
                 # Taking the last Hostel after comma
                 ab_hostel = re_hostel[re_hostel.rfind(",") +1:].lower().replace(" ","_")
             else:
                 ab_hostel_content = ab_hostel.lower().replace(" ","_")
                 ab_hostel = ab_hostel_content
-                
+
             if re_joining_year != "" and ab_joining_year == "":
                 ab_joining_year = re_joining_year
-                
+
             if re_roll_number != "" and ab_roll_number == "":
-                    ab_roll_number = re_roll_number
-                
+                ab_roll_number = re_roll_number
+
             params_ab = {
                 'course': {
                     'name': ab_degree
-                    },
+                },
                 'branch': {
                     'name': ab_department
-                    },
+                },
                 'custom_fields': {
                     'hostel': {
                         'values': [
@@ -3436,19 +3429,19 @@ try:
                     'name': 'IIT Bombay'
                 }
             }
-            
+
             # Delete blank values from JSON
             for i in range(10):
                 params = del_blank_values_in_json(params_ab.copy())
-                
+
             print_json(params)
-            
+
             if params != {} and ab_class_of != "":
                 url = f"https://api.almabaseapp.com/api/profiles/{ab_system_id}/educations/{ab_education_id}"
                 print(url)
                 patch_request_ab()
                 print(ab_api_response)
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO ab_iitb_education_added (ab_system_id, roll_number, department, joining_year, class_of, degree, hostel, date)
@@ -3457,7 +3450,7 @@ try:
                 cur.execute(insert_updates, [ab_system_id, ab_roll_number, ab_department, ab_joining_year, ab_class_of, ab_degree, ab_hostel])
                 conn.commit()
                 print("Added missing education details in Almabase")
-        
+
     # When more than one exists
     else:
         print("Multiple IITB education exists in RE")
@@ -3511,7 +3504,7 @@ try:
         except:
             missing_in_re.append(each_school)
     print("Missing schools in RE: " + str(missing_in_re))
-            
+
     # Add missing records in RE
     if missing_in_re != []:
         print("Adding missing schools in RE")
@@ -3520,56 +3513,56 @@ try:
                 SELECT long_description FROM re_schools;
                 """
         cur.execute(extract_sql)
-        
+
         re_school_name_list = []
         for i in cur.fetchall():
             re_school_name_list.extend(i)
-        
+
         for each_school in missing_in_re:
 
             try:
                 likely_school, score = process.extractOne(each_school, re_school_name_list, score_cutoff = 85)
             except:
                 likely_school = ""
-            
+
             if likely_school != "":
                 # Will add a new education in RE
                 for ab_school in ab_api_response['results']:
                     try:
                         if each_school == ab_school['college']['name']:
-                            
+
                             try:
                                 class_of = ab_school['year_of_graduation']
                                 if class_of == "" or class_of is None or class_of == "Null":
                                     class_of = ""
                             except:
                                 class_of = ""
-                                
+
                             try:
                                 date_entered = ab_school['date_entered']
                                 if date_entered == "" or date_entered is None or date_entered == "Null":
                                     date_entered = ""
                             except:
                                 date_entered = ""
-                            
+
                             try:
                                 degree = ab_school['degree']['name']
                                 if degree == "" or degree is None or degree == "Null":
                                     degree = ""
                             except:
                                 degree = ""
-                            
+
                             if degree != "":
                                 extract_sql = """
                                             SELECT long_description FROM re_degrees;
                                             """
                                 cur.execute(extract_sql)
-                                
+
                                 re_degree_name_list = []
-                                
+
                                 for i in cur.fetchall():
                                     re_degree_name_list.extend(i)
-                                
+
                                 try:
                                     likely_degree, score = process.extractOne(degree, re_degree_name_list, score_cutoff = 90)
                                 except:
@@ -3582,11 +3575,11 @@ try:
                                         params = {
                                             'long_description': degree
                                         }
-                                        
+
                                         url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/6/tableentries"
-                                        
+
                                         post_request_re()
-                                        
+
                                         # Will update in PostgreSQL
                                         insert_updates = """
                                                         INSERT INTO re_degrees (long_description)
@@ -3596,25 +3589,25 @@ try:
                                         conn.commit()
                                     except:
                                         degree = ""
-                            
+
                             try:
                                 department = ab_school['field_of_study']['name']
                                 if department == "" or department is None or department == "Null":
                                     department = ""
                             except:
                                 department = ""
-                                
+
                             if department != "":
                                 extract_sql = """
                                             SELECT long_description FROM re_departments;
                                             """
                                 cur.execute(extract_sql)
-                                
+
                                 re_department_name_list = []
-                                
+
                                 for i in cur.fetchall():
                                     re_department_name_list.extend(i)
-                                
+
                                 try:
                                     likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
                                 except:
@@ -3627,11 +3620,11 @@ try:
                                         params = {
                                             'long_description': department
                                         }
-                                        
+
                                         url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
-                                        
+
                                         post_request_re()
-                                        
+
                                         # Will update in PostgreSQL
                                         insert_updates = """
                                                         INSERT INTO re_departments (long_description)
@@ -3641,7 +3634,7 @@ try:
                                         conn.commit()
                                     except:
                                         degree = ""
-                                
+
                             break
                     except:
                         each_school = ""
@@ -3649,7 +3642,7 @@ try:
                         date_entered = ""
                         degree = ""
                         department = ""
-                
+
                 params_re = {
                     'constituent_id': re_system_id,
                     'school': likely_school,
@@ -3664,21 +3657,21 @@ try:
                     'degree': degree,
                     'campus': department[:50]
                 }
-                
+
                 # Delete blank values from JSON
                 for i in range(10):
                     params = del_blank_values_in_json(params_re.copy())
-                
+
                 url = "https://api.sky.blackbaud.com/constituent/v1/educations"
                 post_request_re()
-                
+
                 check_for_errors()
-            
+
                 # Adding Update Tags
                 add_tags('education', params)
-                
+
                 print(re_api_response)
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO re_other_education_added (re_system_id, school_name, date)
@@ -3694,11 +3687,11 @@ try:
                 params = {
                     'long_description': each_school
                 }
-                
+
                 url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
-                
+
                 post_request_re()
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO re_schools (long_description)
@@ -3706,44 +3699,44 @@ try:
                                 """
                 cur.execute(insert_updates, [each_school.replace(";", ",")])
                 conn.commit()
-                
+
                 # Will add a new education in RE
                 for ab_school in ab_api_response['results']:
                     try:
                         if each_school == ab_school['college']['name']:
-                            
+
                             try:
                                 class_of = ab_school['year_of_graduation']
                                 if class_of == "" or class_of is None or class_of == "Null":
                                     class_of = ""
                             except:
                                 class_of = ""
-                                
+
                             try:
                                 date_entered = ab_school['date_entered']
                                 if date_entered == "" or date_entered is None or date_entered == "Null":
                                     date_entered = ""
                             except:
                                 date_entered = ""
-                            
+
                             try:
                                 degree = ab_school['degree']['name']
                                 if degree == "" or degree is None or degree == "Null":
                                     degree = ""
                             except:
                                 degree = ""
-                            
+
                             if degree != "":
                                 extract_sql = """
                                             SELECT long_description FROM re_degrees;
                                             """
                                 cur.execute(extract_sql)
-                                
+
                                 re_degree_name_list = []
-                                
+
                                 for i in cur.fetchall():
                                     re_degree_name_list.extend(i)
-                                
+
                                 try:
                                     likely_degree, score = process.extractOne(degree, re_degree_name_list, score_cutoff = 90)
                                 except:
@@ -3756,11 +3749,11 @@ try:
                                         params = {
                                             'long_description': degree
                                         }
-                                        
+
                                         url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/6/tableentries"
-                                        
+
                                         post_request_re()
-                                        
+
                                         # Will update in PostgreSQL
                                         insert_updates = """
                                                         INSERT INTO re_degrees (long_description)
@@ -3770,25 +3763,25 @@ try:
                                         conn.commit()
                                     except:
                                         degree = ""
-                            
+
                             try:
                                 department = ab_school['field_of_study']['name']
                                 if department == "" or department is None or department == "Null":
                                     department = ""
                             except:
                                 department = ""
-                                
+
                             if department != "":
                                 extract_sql = """
                                             SELECT long_description FROM re_departments;
                                             """
                                 cur.execute(extract_sql)
-                                
+
                                 re_department_name_list = []
-                                
+
                                 for i in cur.fetchall():
                                     re_department_name_list.extend(i)
-                                
+
                                 try:
                                     likely_department, score = process.extractOne(department, re_department_name_list, score_cutoff = 90)
                                 except:
@@ -3801,11 +3794,11 @@ try:
                                         params = {
                                             'long_description': department
                                         }
-                                        
+
                                         url = "https://api.sky.blackbaud.com/nxt-data-integration/v1/re/codetables/1022/tableentries"
-                                        
+
                                         post_request_re()
-                                        
+
                                         # Will update in PostgreSQL
                                         insert_updates = """
                                                         INSERT INTO re_departments (long_description)
@@ -3815,7 +3808,7 @@ try:
                                         conn.commit()
                                     except:
                                         degree = ""
-                                
+
                             break
                     except:
                         each_school = ""
@@ -3823,7 +3816,7 @@ try:
                         date_entered = ""
                         degree = ""
                         department = ""
-            
+
                 params_re = {
                     'constituent_id': re_system_id,
                     'school': likely_school,
@@ -3838,21 +3831,21 @@ try:
                     'degree': degree,
                     'campus': department[:50]
                 }
-                
+
                 # Delete blank values from JSON
                 for i in range(10):
                     params = del_blank_values_in_json(params_re.copy())
-                
+
                 url = "https://api.sky.blackbaud.com/constituent/v1/educations"
                 post_request_re()
-                
+
                 check_for_errors()
-        
+
                 # Adding Update Tags
                 add_tags('education', params)
-                
+
                 print(re_api_response)
-                
+
                 # Will update in PostgreSQL
                 insert_updates = """
                                 INSERT INTO re_other_education_added (re_system_id, school_name, date)
@@ -3879,21 +3872,21 @@ try:
                 try:
                     i = 0
                     if each_education['name'] == each_school:
-                        
+
                         try:
                             year_of_graduation = each_education['end']['y']
                             if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
                                 year_of_graduation = ""
                         except:
                             year_of_graduation = ""
-                        
+
                         try:
                             year_of_joining = each_education['start']['y']
                             if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
                                 year_of_joining = ""
                         except:
                             year_of_joining = ""
-                            
+
                         try:
                             course = each_education['position']
                             if course == "" or course is None or course == "Null":
@@ -3901,50 +3894,50 @@ try:
                         except:
                             course = ""
                         i = 1
-                        
+
                         department = ""
-                        
+
                         break
                 except:
                     pass
-                
+
             if i == 0:
                 for each_education in re_api_response_education_all['value']:
                     try:
                         if each_education['school'] == each_school:
-                            
+
                             try:
                                 year_of_graduation = each_education['class_of']
                                 if year_of_graduation == "" or year_of_graduation is None or year_of_graduation == "Null":
                                     year_of_graduation = ""
                             except:
                                 year_of_graduation = ""
-                                
+
                             try:
                                 year_of_joining = each_education['date_entered']['y']
                                 if year_of_joining == "" or year_of_joining is None or year_of_joining == "Null":
                                     year_of_joining = ""
                             except:
                                 year_of_joining = ""
-                            
+
                             try:
                                 course = each_education['degree']
                                 if course == "" or course is None or course == "Null":
                                     course = ""
                             except:
                                 course = ""
-                                
+
                             try:
                                 department = each_education['campus']
                                 if department == "" or department is None or department == "Null":
                                     department = ""
                             except:
                                 department = ""
-                                
+
                             break
                     except:
                         pass
-            
+
             params_ab = {
                 'college': {
                     'name': each_school
@@ -3958,14 +3951,14 @@ try:
                 'year_of_graduation': year_of_graduation,
                 'year_of_joining': year_of_joining
             }
-            
+
             # Delete blank values from JSON
             for i in range(10):
                 params = del_blank_values_in_json(params_ab.copy())
-            
+
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/other_educations" % ab_system_id
             post_request_ab()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO ab_other_education_added (ab_system_id, school_name, date)
@@ -3997,21 +3990,21 @@ try:
             re_dob_day = ""
     except:
         re_dob_day = ""
-        
+
     try:
         re_dob_month = re_api_response_generic_details['birthdate']['m']
         if re_dob_month is None or re_dob_month =="Null" or re_dob_month == "null":
             re_dob_month = ""
     except:
         re_dob_month = ""
-        
+
     try:
         re_dob_year = re_api_response_generic_details['birthdate']['y']
         if re_dob_year is None or re_dob_year =="Null" or re_dob_year == "null":
             re_dob_year = ""
     except:
         re_dob_year = ""
-        
+
     re_dob = str(re_dob_year) + "-" + str(re_dob_month) + "-" + str(re_dob_day)
 
     try:
@@ -4020,14 +4013,14 @@ try:
             re_first_name = ""
     except:
         re_first_name = ""
-        
+
     try:
         re_middle_name = re_api_response_generic_details['middle']
         if re_middle_name is None or re_middle_name =="Null" or re_middle_name == "null":
             re_middle_name = ""
     except:
         re_middle_name = ""
-        
+
     try:
         re_last_name = re_api_response_generic_details['last']
         if re_last_name is None or re_last_name =="Null" or re_last_name == "null":
@@ -4068,7 +4061,7 @@ try:
         else:
             date_time_obj = datetime.strptime(ab_dob, '%Y-%m-%d')
             ab_dob_day = date_time_obj.day
-            ab_dob_month = date_time_obj.month 
+            ab_dob_month = date_time_obj.month
             ab_dob_year = date_time_obj.year
     except:
         ab_dob = ""
@@ -4105,7 +4098,7 @@ try:
             ab_deceased = ""
     except:
         ab_deceased = ""
-        
+
     try:
         ab_nickname = ab_api_response_generic_details['nick_name']
         if ab_nickname is None or ab_nickname =="Null" or ab_nickname == "null":
@@ -4129,11 +4122,11 @@ try:
 
     if re_dob_day == "" and re_dob_month == "" and re_dob_year == "":
         re_dob_day_update = ab_dob_day
-        re_dob_month_update = ab_dob_month 
+        re_dob_month_update = ab_dob_month
         re_dob_year_update = ab_dob_year
     else:
         re_dob_day_update = ""
-        re_dob_month_update = "" 
+        re_dob_month_update = ""
         re_dob_year_update = ""
 
     if len(re_first_name) < len(ab_first_name) or re_first_name == ".":
@@ -4188,18 +4181,18 @@ try:
     # Delete blank values from JSON
     for i in range(10):
         params = del_blank_values_in_json(params_re.copy())
-        
+
     if params != {}:
         url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s" % re_system_id
         patch_request_re()
-        
+
         check_for_errors()
-                
+
         # Adding Update Tags
         add_tags('bio', params)
-        
+
         print(re_api_response)
-        
+
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO re_personal_details_added (re_system_id, birth_day, birth_month, birth_year, deceased, first_name, former_name, gender, last_name, middle_name, preferred_name, date)
@@ -4225,22 +4218,22 @@ try:
             ab_dob_update = str(re_dob_month) + "-" + str(re_dob_day)
     else:
         ab_dob_update = ""
-        
+
     if len(re_first_name) > len(ab_first_name) or ab_first_name == ".":
         ab_first_name_update = re_first_name.title()
     else:
         ab_first_name_update = ""
-        
+
     if len(re_middle_name) > len(ab_middle_name) or ab_middle_name == ".":
         ab_middle_name_update = re_middle_name.title()
     else:
         ab_middle_name_update = ""
-        
+
     if len(re_last_name) > len(ab_last_name) or ab_last_name == ".":
         ab_last_name_update = re_last_name.title()
     else:
         ab_last_name_update = ""
-        
+
     if re_deceased == "true" and ab_deceased == "false":
         ab_deceased_update = "true"
     else:
@@ -4260,12 +4253,12 @@ try:
     # Delete blank values from JSON
     for i in range(10):
         params = del_blank_values_in_json(params_ab.copy())
-        
+
     if params != {}:
         print("Uploading delta of personal details in Almabase")
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
         patch_request_ab()
-        
+
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO ab_personal_details_added (ab_system_id, first_name, middle_name, last_name, gender, dob, deceased, date)
@@ -4274,7 +4267,7 @@ try:
         cur.execute(insert_updates, [ab_system_id, ab_first_name_update, ab_middle_name_update, ab_last_name_update, ab_gender_update, ab_dob_update, ab_deceased_update])
         conn.commit()
         print("Uploaded delta of personal details in Almabase")
-        
+
     # Sync Social media details
     print("Syncing Social Media details")
     # Get social media details from RE
@@ -4297,18 +4290,18 @@ try:
             try:
                 if each_social['type'] == "Website":
                     website_re = each_social['address']
-                    
+
                     if website_re is None or website_re == "Null" or website_re == "null":
                         website_re = ""
             except:
                 website_re = ""
-            
+
             # Get LinkedIn
             print("Checing LinkedIn")
             try:
                 if each_social['type'] == "LinkedIn":
                     linkedin_re = each_social['address']
-                    
+
                     if linkedin_re is None or linkedin_re == "Null" or linkedin_re == "null":
                         linkedin_re = ""
             except:
@@ -4319,29 +4312,29 @@ try:
             try:
                 if each_social['type'] == "Facebook":
                     facebook_re = each_social['address']
-                    
+
                     if facebook_re is None or facebook_re == "Null" or facebook_re == "null":
                         facebook_re = ""
             except:
                 facebook_re = ""
-            
+
             # Get Twitter
             print("Checing Twitter")
             try:
                 if each_social['type'] == "Twitter":
                     twitter_re = each_social['address']
-                    
+
                     if twitter_re is None or twitter_re == "Null" or twitter_re == "null":
                         twitter_re = ""
             except:
                 twitter_re = ""
-            
+
             # Get Google
             print("Checing Google")
             try:
                 if each_social['type'] == "Google":
                     google_re = each_social['address']
-                    
+
                     if google_re is None or google_re == "Null" or google_re == "null":
                         google_re = ""
             except:
@@ -4407,18 +4400,18 @@ try:
             try:
                 if each_social['type_display'] == "Website":
                     website_ab = each_social['link']
-                    
+
                     if website_ab is None or website_ab == "Null" or website_ab == "null":
                         website_ab = ""
             except:
                 website_ab = ""
-            
+
             # Get LinkedIn
             print("Checking LinkedIn")
             try:
                 if each_social['type_display'] == "LinkedIn":
                     linkedin = each_social['link']
-                    
+
                     if linkedin_ab is None or linkedin_ab == "Null" or linkedin_ab == "null":
                         linkedin_ab = ""
             except:
@@ -4429,12 +4422,12 @@ try:
             try:
                 if each_social['type_display'] == "Facebook":
                     facebook_ab = each_social['link']
-                    
+
                     if facebook_ab is None or facebook_ab == "Null" or facebook_ab == "null":
                         facebook_ab = ""
             except:
                 facebook_ab = ""
-            
+
             # Get Twitter
             print("Checking Twitter")
             try:
@@ -4445,13 +4438,13 @@ try:
                         twitter_ab = ""
             except:
                 twitter_ab = ""
-            
+
             # Get Google
             print("Checking Google")
             try:
                 if each_social['type_display'] == "Google":
                     google_ab = each_social['link']
-                    
+
                     if google_ab is None or google_ab == "Null" or google_ab == "null":
                         google_ab = ""
             except:
@@ -4535,15 +4528,15 @@ try:
                 'constituent_id': re_system_id,
                 'type': 'Website'
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
-            
+
             check_for_errors()
-    
+
             # Adding Update Tags
             add_tags('online', f'Website: {re_website}')
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4551,7 +4544,7 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, re_website])
             conn.commit()
-            
+
         if re_linkedin != "":
             print("Uploading LinkedIn in RE")
             params = {
@@ -4560,15 +4553,15 @@ try:
                 'type': 'LinkedIn',
                 'primary': 'true'
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
-            
+
             check_for_errors()
-    
+
             # Adding Update Tags
             add_tags('online', f'LinkedIn: {re_linkedin}')
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4576,7 +4569,7 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, re_linkedin])
             conn.commit()
-            
+
         if re_facebook != "":
             print("Uploading Facebook in RE")
             params = {
@@ -4584,15 +4577,15 @@ try:
                 'constituent_id': re_system_id,
                 'type': 'Facebook'
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
-            
+
             check_for_errors()
-    
+
             # Adding Update Tags
             add_tags('online', f'Facebook: {re_facebook}')
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4600,7 +4593,7 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, re_facebook])
             conn.commit()
-            
+
         if re_twitter != "":
             print("Uploading Twitter in RE")
             params = {
@@ -4608,15 +4601,15 @@ try:
                 'constituent_id': re_system_id,
                 'type': 'Twitter'
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
-            
+
             check_for_errors()
-    
+
             # Adding Update Tags
             add_tags('online', f'Twitter: {re_twitter}')
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4624,7 +4617,7 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, re_twitter])
             conn.commit()
-        
+
         if re_google != "":
             print("Uploading Google in RE")
             params = {
@@ -4632,15 +4625,15 @@ try:
                 'constituent_id': re_system_id,
                 'type': 'Google'
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/onlinepresences"
             post_request_re()
-            
+
             check_for_errors()
-    
+
             # Adding Update Tags
             add_tags('online', f'Google: {re_google}')
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_social_media_added (re_system_id, address, type, date)
@@ -4648,7 +4641,7 @@ try:
                             """
             cur.execute(insert_updates, [re_system_id, re_google])
             conn.commit()
-            
+
     # Compare AB with RE
     print("Comparing Social media details of Almabase with RE")
     if ab_website == "" and website_re != "":
@@ -4685,10 +4678,10 @@ try:
                 'link': ab_website,
                 'type': 0
             }
-            
+
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
             post_request_ab()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
@@ -4696,17 +4689,17 @@ try:
                             """
             cur.execute(insert_updates, [ab_system_id, ab_website])
             conn.commit()
-            
+
         if ab_linkedin != "":
             print("Uploading LinkedIn in Almabase")
             params = {
                 'link': ab_linkedin,
                 'type': 1
             }
-            
+
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
             post_request_ab()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
@@ -4714,17 +4707,17 @@ try:
                             """
             cur.execute(insert_updates, [ab_system_id, ab_linkedin])
             conn.commit()
-            
+
         if ab_facebook != "":
             print("Uploading Facebook in Almabase")
             params = {
                 'link': ab_facebook,
                 'type': 2
             }
-            
+
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
             post_request_ab()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
@@ -4732,17 +4725,17 @@ try:
                             """
             cur.execute(insert_updates, [ab_system_id, ab_facebook])
             conn.commit()
-            
+
         if ab_twitter != "":
             print("Uploading Twitter in Almabase")
             params = {
                 'link': ab_twitter,
                 'type': 3
             }
-            
+
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
             post_request_ab()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
@@ -4750,17 +4743,17 @@ try:
                             """
             cur.execute(insert_updates, [ab_system_id, ab_twitter])
             conn.commit()
-            
+
         if ab_google != "":
             print("Uploading Google in Almabase")
             params = {
                 'link': ab_google,
                 'type': 4
             }
-            
+
             url = "https://api.almabaseapp.com/api/v1/profiles/%s/social_links" % ab_system_id
             post_request_ab()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO ab_social_media_added (ab_system_id, address, type, date)
@@ -4822,12 +4815,12 @@ try:
                 'date': datetime.now().replace(microsecond=0).isoformat(),
                 'parent_id': re_system_id
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
             post_request_re()
-            
-            
-            
+
+
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
@@ -4862,13 +4855,13 @@ try:
                 'name': each_interest
             }
             names.append(name)
-        
+
         params = {
             'interests': names
         }
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
         patch_request_ab()
-            
+
         # Will update in PostgreSQL
         for each_interest in missing_in_ab_db:
             insert_updates = """
@@ -4878,7 +4871,7 @@ try:
             cur.execute(insert_updates, [ab_system_id, each_interest])
             conn.commit()
         print("Uploaded missing interests in Almabase")
-        
+
     # Sync skills
     print("Syncing skills")
     # Get skills from RE
@@ -4926,10 +4919,10 @@ try:
                 'date': datetime.now().replace(microsecond=0).isoformat(),
                 'parent_id': re_system_id
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
             post_request_re()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
@@ -4950,7 +4943,7 @@ try:
             missing_in_ab_db.append(each_skill)
 
     missing_in_almabase = re_skill_list + ab_skill_list
-    missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))  
+    missing_in_ab = list(process.dedupe(missing_in_almabase, threshold=80))
 
     # Upload delta to AB
     if missing_in_ab_db != []:
@@ -4962,13 +4955,13 @@ try:
                 'name': each_skill
             }
             names.append(name)
-        
+
         params = {
             'skills': names
         }
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
         patch_request_ab()
-            
+
         # Will update in PostgreSQL
         for each_skill in missing_in_ab_db:
             insert_updates = """
@@ -4997,11 +4990,11 @@ try:
         ab_chapter = ab_profile['custom_fields']['chapter']['values'][0]['value']['content']
     except:
         ab_chapter = ""
-        
+
     # Compare Chapters and update in RE
     print("Comparing Chapters and update in RE")
     if ab_chapter != "" and re_chapter != ab_chapter:
-        
+
         if re_chapter == "":
             # Will post in RE
             print("Will add new chapter in RE")
@@ -5012,10 +5005,10 @@ try:
                 'date': datetime.now().replace(microsecond=0).isoformat(),
                 'parent_id': re_system_id
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields"
             post_request_re()
-            
+
         else:
             # Will patch in RE
             print("Will update chapter in RE")
@@ -5024,10 +5017,10 @@ try:
                 'comment': 'Updated from AlmaBase',
                 'date': datetime.now().replace(microsecond=0).isoformat(),
             }
-            
+
             url = "https://api.sky.blackbaud.com/constituent/v1/constituents/customfields/%s" % custom_field_id
             patch_request_re()
-        
+
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
@@ -5036,13 +5029,13 @@ try:
         cur.execute(insert_updates, [re_system_id, ab_chapter])
         conn.commit()
         print("Updated Chapter in RE")
-        
+
     # Life member update
     print("Checking if Alum is a Life Member")
-    
+
     try:
         ab_life_member = ab_profile['custom_fields']['life_member']['values'][0]['value']['content']
-    
+
     except:
         ab_life_member = 'no'
 
@@ -5051,7 +5044,7 @@ try:
         url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/constituentcodes" % re_system_id
         params = {}
         get_request_re()
-        
+
         re_life_member = "no"
         try:
             for each_value in re_api_response['value']:
@@ -5060,17 +5053,17 @@ try:
                     break
         except:
             re_life_member = "no"
-        
+
         if re_life_member == "no":
             url = "https://api.sky.blackbaud.com/constituent/v1/constituentcodes"
-            
+
             params = {
                 'constituent_id': re_system_id,
                 'description': 'Life Member'
             }
-            
+
             post_request_re()
-            
+
             # Will update in PostgreSQL
             insert_updates = """
                             INSERT INTO re_interests_skills_added (re_system_id, value, type, date)
@@ -5079,23 +5072,23 @@ try:
             cur.execute(insert_updates, [re_system_id])
             conn.commit()
             print("Updated Life membership in RE")
-            
+
     # Add RE ID in AlmaBase (external_database_id)
     print("Adding RE ID in AlmaBase as external_database_id")
     try:
         external_database_id = ab_profile['external_database_id']
     except:
         external_database_id = ""
-        
+
     if external_database_id == "" or external_database_id is None or external_database_id == "Null" or external_database_id == "null":
         url = "https://api.almabaseapp.com/api/v1/profiles/%s" % ab_system_id
-        
+
         params = {
             'external_database_id': re_system_id
         }
-        
+
         patch_request_ab()
-        
+
         # Will update in PostgreSQL
         insert_updates = """
                         INSERT INTO ab_interests_skills_added (ab_system_id, value, type, date)
@@ -5104,14 +5097,14 @@ try:
         cur.execute(insert_updates, [ab_system_id, re_system_id])
         conn.commit()
         print("Added RE ID in AlmaBase as external_database_id")
-        
+
     # Add AlmaBase ID in Raisers Edge (Alias - Almabase ID)
     print("Adding AlmaBase ID in Raisers Edge as Alias - Almabase ID")
     try:
         url = "https://api.sky.blackbaud.com/constituent/v1/constituents/%s/aliases" % re_system_id
         params = {}
         get_request_re()
-        
+
         alias_id = ""
         for each_alias in re_api_response['value']:
             if each_alias['type'] == "Almabase ID":
@@ -5119,7 +5112,7 @@ try:
                 break
     except:
         alias_id = ""
-        
+
     if alias_id == "":
         # Post Alias
         params = {
@@ -5127,20 +5120,20 @@ try:
             'name': ab_system_id,
             'type': "Almabase ID"
         }
-        
+
         url = "https://api.sky.blackbaud.com/constituent/v1/aliases"
         post_request_re()
-        
+
     else:
         # Patch Alias
         params = {
             'name': ab_system_id,
             'type': 'Almabase ID'
         }
-        
+
         url = "https://api.sky.blackbaud.com/constituent/v1/aliases/%s" % alias_id
         patch_request_re()
-        
+
     # Will update in PostgreSQL
     insert_updates = """
                     INSERT INTO already_synced (re_system_id, ab_system_id, date)
@@ -5149,7 +5142,7 @@ try:
     cur.execute(insert_updates, [re_system_id, ab_system_id])
     conn.commit()
     print("Added RE ID in AlmaBase as external_database_id")
-    
+
     # Close writing to Process.log
     if sys.stdout:
         sys.stdout.close()
@@ -5158,16 +5151,16 @@ except Exception as Argument:
     print("Error while syncing Alumni data between Raisers Edge & Almabase")
     subject = "Error while syncing Alumni data between Raisers Edge & Almabase"
     send_error_emails()
-    
+
 finally:
-    
+
     # Close writing to Process.log
     if sys.stdout:
         sys.stdout.close()
-    
+
     # Close DB connection
     if conn:
         cur.close()
         conn.close()
-    
+
     sys.exit()
